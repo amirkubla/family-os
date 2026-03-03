@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "family-os-web",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export PATH=/opt/homebrew/bin:$PATH && npx expo start --web --port 8083"],
+      "port": 8083
+    },
+    {
+      "name": "family-os-static",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export PATH=/opt/homebrew/bin:$PATH && npx serve dist --listen 8084 --single"],
+      "port": 8084
+    }
+  ]
+}
