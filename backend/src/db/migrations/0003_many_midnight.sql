@@ -1,0 +1,2 @@
+ALTER TABLE "chores" ADD COLUMN "selected_for_today" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE INDEX "chores_family_selected_idx" ON "chores" USING btree ("family_id","selected_for_today");

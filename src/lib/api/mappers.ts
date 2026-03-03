@@ -82,6 +82,7 @@ export function apiToLocalChore(a: ApiChore): Chore {
     title: a.title,
     assignedTo: a.assignedTo ?? undefined,
     done: a.done,
+    selectedForToday: a.selectedForToday,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -93,6 +94,7 @@ export function localToApiChore(item: Chore) {
     title: item.title,
     assignedTo: item.assignedTo ?? null,
     done: item.done,
+    selectedForToday: item.selectedForToday,
   };
 }
 

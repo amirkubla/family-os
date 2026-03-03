@@ -59,6 +59,7 @@ interface FamilyState {
   // Chores actions
   addChore: (input: { title: string; assignedTo?: string }) => Chore;
   toggleChoreDone: (id: string) => void;
+  toggleChoreSelectedForToday: (id: string) => void;
   deleteChore: (id: string) => void;
 
   // Projects actions
@@ -204,6 +205,7 @@ export const useFamilyStore = create<FamilyState>()(
           title,
           assignedTo,
           done: false,
+          selectedForToday: false,
           updatedAt: now,
           createdAt: now,
         };
@@ -216,6 +218,15 @@ export const useFamilyStore = create<FamilyState>()(
           chores: s.chores.map((c) =>
             c.id === id
               ? { ...c, done: !c.done, updatedAt: Date.now() }
+              : c
+          ),
+        })),
+
+      toggleChoreSelectedForToday: (id) =>
+        set((s) => ({
+          chores: s.chores.map((c) =>
+            c.id === id
+              ? { ...c, selectedForToday: !c.selectedForToday, updatedAt: Date.now() }
               : c
           ),
         })),

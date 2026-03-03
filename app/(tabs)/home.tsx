@@ -6,16 +6,19 @@ import {
   IconButton,
   Checkbox,
   Chip,
+  Divider,
   ProgressBar,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
+import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
 import {
   toggleNotePinnedRemote,
   deleteNoteRemote,
   toggleChoreDoneRemote,
+  toggleChoreSelectedForTodayRemote,
   deleteChoreRemote,
   deleteProjectRemote,
 } from "@src/lib/sync/remoteCrud";
@@ -29,6 +32,49 @@ const STATUS_COLORS: Record<string, string> = {
   in_progress: "#6C63FF",
   done: "#4ECDC4",
 };
+
+// ---------------------------------------------------------------------------
+// ChoreRow — reusable row for both sections
+// ---------------------------------------------------------------------------
+
+function ChoreRow({ chore }: { chore: Chore }) {
+  return (
+    <View style={styles.choreRow}>
+      <Checkbox
+        status={chore.done ? "checked" : "unchecked"}
+        onPress={() => toggleChoreDoneRemote(chore.id)}
+      />
+      <View style={styles.choreText}>
+        <Text
+          variant="bodyLarge"
+          style={chore.done ? styles.choreDone : styles.choreTitle}
+        >
+          {chore.title}
+        </Text>
+        {chore.assignedTo ? (
+          <Text variant="bodySmall" style={styles.assignee}>
+            {chore.assignedTo}
+          </Text>
+        ) : null}
+      </View>
+      <IconButton
+        icon={chore.selectedForToday ? "white-balance-sunny" : "white-balance-sunny"}
+        size={18}
+        iconColor={chore.selectedForToday ? "#FFA726" : "#D0D0D0"}
+        onPress={() => toggleChoreSelectedForTodayRemote(chore.id)}
+      />
+      <IconButton
+        icon="trash-can-outline"
+        size={18}
+        onPress={() => deleteChoreRemote(chore.id)}
+      />
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Screen
+// ---------------------------------------------------------------------------
 
 export default function HomeScreen() {
   // Store
@@ -47,6 +93,10 @@ export default function HomeScreen() {
   const sortedNotes = [...notes].sort(
     (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
   );
+
+  // Chores split
+  const selectedChores = chores.filter((c) => c.selectedForToday);
+  const backlogChores = chores.filter((c) => !c.selectedForToday);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -134,32 +184,36 @@ export default function HomeScreen() {
               </Text>
             )}
 
-            {chores.map((chore) => (
-              <View key={chore.id} style={styles.choreRow}>
-                <Checkbox
-                  status={chore.done ? "checked" : "unchecked"}
-                  onPress={() => toggleChoreDoneRemote(chore.id)}
-                />
-                <View style={styles.choreText}>
-                  <Text
-                    variant="bodyLarge"
-                    style={chore.done ? styles.choreDone : styles.choreTitle}
-                  >
-                    {chore.title}
+            {/* Selected for today */}
+            {selectedChores.length > 0 && (
+              <>
+                <Text variant="labelLarge" style={styles.subSectionLabel}>
+                  ⭐ {t("home.selectedForToday")}
+                </Text>
+                {selectedChores.map((chore) => (
+                  <ChoreRow key={chore.id} chore={chore} />
+                ))}
+              </>
+            )}
+
+            {/* Divider between sections */}
+            {selectedChores.length > 0 && backlogChores.length > 0 && (
+              <Divider style={styles.choreDivider} />
+            )}
+
+            {/* Backlog */}
+            {backlogChores.length > 0 && (
+              <>
+                {selectedChores.length > 0 && (
+                  <Text variant="labelLarge" style={styles.subSectionLabel}>
+                    {t("home.backlog")}
                   </Text>
-                  {chore.assignedTo ? (
-                    <Text variant="bodySmall" style={styles.assignee}>
-                      {chore.assignedTo}
-                    </Text>
-                  ) : null}
-                </View>
-                <IconButton
-                  icon="trash-can-outline"
-                  size={18}
-                  onPress={() => deleteChoreRemote(chore.id)}
-                />
-              </View>
-            ))}
+                )}
+                {backlogChores.map((chore) => (
+                  <ChoreRow key={chore.id} chore={chore} />
+                ))}
+              </>
+            )}
           </Card.Content>
         </Card>
 
@@ -296,6 +350,14 @@ const styles = StyleSheet.create({
   noteBody: { color: "#6B6B8D", marginTop: 2, textAlign: "right" },
 
   // Chores
+  subSectionLabel: {
+    color: "#6B6B8D",
+    fontWeight: "600",
+    marginTop: 8,
+    marginBottom: 4,
+    textAlign: "right",
+  },
+  choreDivider: { marginVertical: 8 },
   choreRow: {
     flexDirection: "row",
     alignItems: "center",

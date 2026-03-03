@@ -1,12 +1,19 @@
 import React from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
-import { Card, Text, Button, ActivityIndicator } from "react-native-paper";
+import {
+  Card,
+  Text,
+  Checkbox,
+  Button,
+  ActivityIndicator,
+} from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { KIDS } from "@src/models/seed";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useKidBlocksForDay } from "@src/store/scheduleSelectors";
 import { syncAll } from "@src/lib/sync/syncEngine";
+import { toggleChoreDoneRemote } from "@src/lib/sync/remoteCrud";
 import { useState } from "react";
 import { t, LOCALE, blockTypeLabel } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
@@ -117,6 +124,8 @@ export default function TodayScreen() {
   ).length;
   const pinnedNotes = notes.filter((n) => n.pinned).length;
 
+  const todayChores = chores.filter((c) => c.selectedForToday);
+
   const handleSync = async () => {
     setSyncing(true);
     try {
@@ -206,6 +215,42 @@ export default function TodayScreen() {
           </Card.Content>
         </Card>
 
+        {/* Today's chores */}
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          {t("today.todayChores")}
+        </Text>
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            {todayChores.length === 0 ? (
+              <Text variant="bodyMedium" style={styles.choreEmpty}>
+                {t("today.noChoresForToday")}
+              </Text>
+            ) : (
+              todayChores.map((chore) => (
+                <View key={chore.id} style={styles.choreRow}>
+                  <Checkbox
+                    status={chore.done ? "checked" : "unchecked"}
+                    onPress={() => toggleChoreDoneRemote(chore.id)}
+                  />
+                  <View style={styles.choreTextWrap}>
+                    <Text
+                      variant="bodyLarge"
+                      style={chore.done ? styles.choreDoneText : styles.choreText}
+                    >
+                      {chore.title}
+                    </Text>
+                    {chore.assignedTo ? (
+                      <Text variant="bodySmall" style={styles.choreAssignee}>
+                        {chore.assignedTo}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              ))
+            )}
+          </Card.Content>
+        </Card>
+
         {/* Kids — per-kid today schedule */}
         <Text variant="titleMedium" style={styles.sectionTitle}>
           {t("today.kids")}
@@ -252,6 +297,18 @@ const styles = StyleSheet.create({
   statNum: { fontSize: 28, fontWeight: "800", textAlign: "center" },
   statLabel: { fontSize: 12, color: "#6B6B8D", marginTop: 2, textAlign: "center" },
   sectionTitle: { fontWeight: "700", color: "#1A1A2E", marginBottom: 12, textAlign: "right" },
+
+  // Today's chores
+  choreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  choreTextWrap: { flex: 1, marginStart: 4 },
+  choreText: { textAlign: "right" },
+  choreDoneText: { textDecorationLine: "line-through", color: "#8E8BA8", textAlign: "right" },
+  choreAssignee: { color: "#6B6B8D", textAlign: "right" },
+  choreEmpty: { color: "#8E8BA8", textAlign: "right" },
 
   // Kid today cards
   kidCard: {

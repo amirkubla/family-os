@@ -175,6 +175,18 @@ export function toggleChoreDoneRemote(id: string) {
   );
 }
 
+export function toggleChoreSelectedForTodayRemote(id: string) {
+  useFamilyStore.getState().toggleChoreSelectedForToday(id);
+  const item = useFamilyStore.getState().chores.find((c) => c.id === id);
+  if (!item) return;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      choresApi.update(fid, id, { selectedForToday: item.selectedForToday }),
+    ),
+    "Toggle chore selected for today",
+  );
+}
+
 export function deleteChoreRemote(id: string) {
   useFamilyStore.getState().deleteChore(id);
   fireAndForget(

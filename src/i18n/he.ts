@@ -36,6 +36,8 @@ const he = {
     pinnedNotes: "פתקים נעוצים",
     kids: "ילדים",
     noSchedule: "אין תכנון להיום",
+    todayChores: "מטלות להיום",
+    noChoresForToday: "אין מטלות להיום",
     never: "אף פעם",
   },
 
@@ -46,6 +48,8 @@ const he = {
     noNotes: "אין עדיין פתקים — לחצו על + כדי לרשום משהו.",
     note: "פתק",
     chores: "מטלות",
+    selectedForToday: "נבחרו להיום",
+    backlog: "רשימת מטלות",
     allClear: "הכל בסדר — אין מה לעשות כרגע!",
     projects: "פרויקטים",
     noProjects: "אין עדיין פרויקטים — חלמו בגדול!",

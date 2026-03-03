@@ -49,6 +49,7 @@ export interface ApiChore {
   title: string;
   assignedTo: string | null;
   done: boolean;
+  selectedForToday: boolean;
   createdAt: string;
   updatedAt: string;
 }

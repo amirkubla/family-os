@@ -170,11 +170,13 @@ export const chores = pgTable(
     title: text("title").notNull(),
     assignedTo: text("assigned_to"),
     done: boolean("done").default(false).notNull(),
+    selectedForToday: boolean("selected_for_today").default(false).notNull(),
     ...timestamps,
   },
   (t) => [
     index("chores_family_id_idx").on(t.familyId),
     index("chores_family_done_idx").on(t.familyId, t.done),
+    index("chores_family_selected_idx").on(t.familyId, t.selectedForToday),
   ],
 );
 
