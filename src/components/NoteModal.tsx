@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
-import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
+import { addNoteRemote, updateNoteRemote } from "@src/lib/sync/remoteCrud";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -12,8 +12,6 @@ interface Props {
 }
 
 export default function NoteModal({ visible, onDismiss, editNote }: Props) {
-  const addNote = useFamilyStore((s) => s.addNote);
-  const updateNote = useFamilyStore((s) => s.updateNote);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
 
@@ -35,12 +33,12 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
   const handleSubmit = () => {
     if (!body.trim()) return;
     if (editNote) {
-      updateNote(editNote.id, {
+      updateNoteRemote(editNote.id, {
         title: title.trim() || undefined,
         body: body.trim(),
       });
     } else {
-      addNote({ title: title.trim() || undefined, body: body.trim() });
+      addNoteRemote({ title: title.trim() || undefined, body: body.trim() });
     }
     reset();
     onDismiss();

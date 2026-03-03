@@ -11,13 +11,15 @@ import {
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import {
+  toggleGroceryBoughtRemote,
+  deleteGroceryRemote,
+  clearBoughtRemote,
+} from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
 
 export default function GroceryScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
-  const toggleBought = useFamilyStore((s) => s.toggleGroceryBought);
-  const deleteGrocery = useFamilyStore((s) => s.deleteGrocery);
-  const clearBought = useFamilyStore((s) => s.clearBought);
   const [modalOpen, setModalOpen] = useState(false);
 
   const unbought = grocery.filter((g) => !g.isBought);
@@ -46,7 +48,7 @@ export default function GroceryScreen() {
               <View key={item.id} style={styles.row}>
                 <Checkbox
                   status="unchecked"
-                  onPress={() => toggleBought(item.id)}
+                  onPress={() => toggleGroceryBoughtRemote(item.id)}
                 />
                 <View style={styles.rowText}>
                   <Text variant="bodyLarge">{item.title}</Text>
@@ -64,7 +66,7 @@ export default function GroceryScreen() {
                 <IconButton
                   icon="trash-can-outline"
                   size={18}
-                  onPress={() => deleteGrocery(item.id)}
+                  onPress={() => deleteGroceryRemote(item.id)}
                 />
               </View>
             ))}
@@ -76,7 +78,7 @@ export default function GroceryScreen() {
                   <Text variant="labelLarge" style={styles.boughtLabel}>
                     Bought ({bought.length})
                   </Text>
-                  <Button compact onPress={clearBought} textColor="#FF6B6B">
+                  <Button compact onPress={clearBoughtRemote} textColor="#FF6B6B">
                     Clear
                   </Button>
                 </View>
@@ -84,7 +86,7 @@ export default function GroceryScreen() {
                   <View key={item.id} style={[styles.row, styles.boughtRow]}>
                     <Checkbox
                       status="checked"
-                      onPress={() => toggleBought(item.id)}
+                      onPress={() => toggleGroceryBoughtRemote(item.id)}
                     />
                     <View style={styles.rowText}>
                       <Text
@@ -97,7 +99,7 @@ export default function GroceryScreen() {
                     <IconButton
                       icon="trash-can-outline"
                       size={18}
-                      onPress={() => deleteGrocery(item.id)}
+                      onPress={() => deleteGroceryRemote(item.id)}
                     />
                   </View>
                 ))}

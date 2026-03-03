@@ -6,7 +6,12 @@ import type { GroceryItem } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project, ProjectStatus } from "@src/models/project";
+import type { Kid } from "@src/models/seed";
 import { makeId } from "@src/utils/id";
+
+/* ─── Sync status ─── */
+
+export type SyncStatus = "idle" | "syncing" | "error";
 
 /* ─── State shape ─── */
 
@@ -15,30 +20,45 @@ interface FamilyState {
   notes: Note[];
   chores: Chore[];
   projects: Project[];
+  kids: Kid[];
+
+  // Sync metadata
+  syncStatus: SyncStatus;
+  syncError: string | null;
+  lastSyncedAt: number | null;
+
+  // Bulk setters (used by sync engine to replace entire collections)
+  setGrocery: (items: GroceryItem[]) => void;
+  setNotes: (items: Note[]) => void;
+  setChores: (items: Chore[]) => void;
+  setProjects: (items: Project[]) => void;
+  setKids: (items: Kid[]) => void;
+  setSyncStatus: (status: SyncStatus, error?: string | null) => void;
+  setLastSyncedAt: (ts: number) => void;
 
   // Grocery actions
   addGrocery: (input: {
     title: string;
     category: string;
     qty?: string;
-  }) => void;
+  }) => GroceryItem;
   toggleGroceryBought: (id: string) => void;
   deleteGrocery: (id: string) => void;
-  clearBought: () => void;
+  clearBought: () => string[];
 
   // Notes actions
-  addNote: (input: { title?: string; body: string }) => void;
+  addNote: (input: { title?: string; body: string }) => Note;
   updateNote: (id: string, patch: Partial<Pick<Note, "title" | "body">>) => void;
   toggleNotePinned: (id: string) => void;
   deleteNote: (id: string) => void;
 
   // Chores actions
-  addChore: (input: { title: string; assignedTo?: string }) => void;
+  addChore: (input: { title: string; assignedTo?: string }) => Chore;
   toggleChoreDone: (id: string) => void;
   deleteChore: (id: string) => void;
 
   // Projects actions
-  addProject: (input: { title: string; description?: string }) => void;
+  addProject: (input: { title: string; description?: string }) => Project;
   updateProject: (
     id: string,
     patch: Partial<Pick<Project, "title" | "description" | "status" | "progress">>
@@ -50,33 +70,51 @@ interface FamilyState {
 
 export const useFamilyStore = create<FamilyState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       grocery: [],
       notes: [],
       chores: [],
       projects: [],
+      kids: [],
+
+      syncStatus: "idle" as SyncStatus,
+      syncError: null,
+      lastSyncedAt: null,
+
+      /* ── Bulk setters ── */
+
+      setGrocery: (items) => set({ grocery: items }),
+      setNotes: (items) => set({ notes: items }),
+      setChores: (items) => set({ chores: items }),
+      setProjects: (items) => set({ projects: items }),
+      setKids: (items) => set({ kids: items }),
+      setSyncStatus: (status, error = null) =>
+        set({ syncStatus: status, syncError: error }),
+      setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
 
       /* ── Grocery ── */
 
-      addGrocery: ({ title, category, qty }) =>
-        set((s) => ({
-          grocery: [
-            {
-              id: makeId(),
-              title,
-              category,
-              qty,
-              isBought: false,
-              createdAt: Date.now(),
-            },
-            ...s.grocery,
-          ],
-        })),
+      addGrocery: ({ title, category, qty }) => {
+        const now = Date.now();
+        const item: GroceryItem = {
+          id: makeId(),
+          title,
+          category,
+          qty,
+          isBought: false,
+          updatedAt: now,
+          createdAt: now,
+        };
+        set((s) => ({ grocery: [item, ...s.grocery] }));
+        return item;
+      },
 
       toggleGroceryBought: (id) =>
         set((s) => ({
           grocery: s.grocery.map((g) =>
-            g.id === id ? { ...g, isBought: !g.isBought } : g
+            g.id === id
+              ? { ...g, isBought: !g.isBought, updatedAt: Date.now() }
+              : g
           ),
         })),
 
@@ -85,27 +123,30 @@ export const useFamilyStore = create<FamilyState>()(
           grocery: s.grocery.filter((g) => g.id !== id),
         })),
 
-      clearBought: () =>
+      clearBought: () => {
+        const bought = get().grocery.filter((g) => g.isBought);
+        const ids = bought.map((g) => g.id);
         set((s) => ({
           grocery: s.grocery.filter((g) => !g.isBought),
-        })),
+        }));
+        return ids;
+      },
 
       /* ── Notes ── */
 
-      addNote: ({ title, body }) =>
-        set((s) => ({
-          notes: [
-            {
-              id: makeId(),
-              title,
-              body,
-              pinned: false,
-              updatedAt: Date.now(),
-              createdAt: Date.now(),
-            },
-            ...s.notes,
-          ],
-        })),
+      addNote: ({ title, body }) => {
+        const now = Date.now();
+        const item: Note = {
+          id: makeId(),
+          title,
+          body,
+          pinned: false,
+          updatedAt: now,
+          createdAt: now,
+        };
+        set((s) => ({ notes: [item, ...s.notes] }));
+        return item;
+      },
 
       updateNote: (id, patch) =>
         set((s) => ({
@@ -117,7 +158,7 @@ export const useFamilyStore = create<FamilyState>()(
       toggleNotePinned: (id) =>
         set((s) => ({
           notes: s.notes.map((n) =>
-            n.id === id ? { ...n, pinned: !n.pinned } : n
+            n.id === id ? { ...n, pinned: !n.pinned, updatedAt: Date.now() } : n
           ),
         })),
 
@@ -128,24 +169,26 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Chores ── */
 
-      addChore: ({ title, assignedTo }) =>
-        set((s) => ({
-          chores: [
-            {
-              id: makeId(),
-              title,
-              assignedTo,
-              done: false,
-              createdAt: Date.now(),
-            },
-            ...s.chores,
-          ],
-        })),
+      addChore: ({ title, assignedTo }) => {
+        const now = Date.now();
+        const item: Chore = {
+          id: makeId(),
+          title,
+          assignedTo,
+          done: false,
+          updatedAt: now,
+          createdAt: now,
+        };
+        set((s) => ({ chores: [item, ...s.chores] }));
+        return item;
+      },
 
       toggleChoreDone: (id) =>
         set((s) => ({
           chores: s.chores.map((c) =>
-            c.id === id ? { ...c, done: !c.done } : c
+            c.id === id
+              ? { ...c, done: !c.done, updatedAt: Date.now() }
+              : c
           ),
         })),
 
@@ -156,21 +199,20 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Projects ── */
 
-      addProject: ({ title, description }) =>
-        set((s) => ({
-          projects: [
-            {
-              id: makeId(),
-              title,
-              description,
-              status: "idea" as ProjectStatus,
-              progress: 0,
-              updatedAt: Date.now(),
-              createdAt: Date.now(),
-            },
-            ...s.projects,
-          ],
-        })),
+      addProject: ({ title, description }) => {
+        const now = Date.now();
+        const item: Project = {
+          id: makeId(),
+          title,
+          description,
+          status: "idea" as ProjectStatus,
+          progress: 0,
+          updatedAt: now,
+          createdAt: now,
+        };
+        set((s) => ({ projects: [item, ...s.projects] }));
+        return item;
+      },
 
       updateProject: (id, patch) =>
         set((s) => ({
@@ -187,6 +229,14 @@ export const useFamilyStore = create<FamilyState>()(
     {
       name: "family-os-store-v1",
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        grocery: state.grocery,
+        notes: state.notes,
+        chores: state.chores,
+        projects: state.projects,
+        kids: state.kids,
+        lastSyncedAt: state.lastSyncedAt,
+      }),
     }
   )
 );

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button, ProgressBar } from "react-native-paper";
-import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Project, ProjectStatus } from "@src/models/project";
+import { addProjectRemote, updateProjectRemote } from "@src/lib/sync/remoteCrud";
 import ModalWrapper from "./ModalWrapper";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
@@ -22,8 +22,6 @@ export default function ProjectModal({
   onDismiss,
   editProject,
 }: Props) {
-  const addProject = useFamilyStore((s) => s.addProject);
-  const updateProject = useFamilyStore((s) => s.updateProject);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("idea");
@@ -53,14 +51,14 @@ export default function ProjectModal({
   const handleSubmit = () => {
     if (!title.trim()) return;
     if (editProject) {
-      updateProject(editProject.id, {
+      updateProjectRemote(editProject.id, {
         title: title.trim(),
         description: description.trim() || undefined,
         status,
         progress: Math.round(progress),
       });
     } else {
-      addProject({
+      addProjectRemote({
         title: title.trim(),
         description: description.trim() || undefined,
       });

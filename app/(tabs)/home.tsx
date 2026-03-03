@@ -3,7 +3,6 @@ import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import {
   Card,
   Text,
-  Button,
   IconButton,
   Checkbox,
   Chip,
@@ -13,6 +12,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
 import type { Project } from "@src/models/project";
+import {
+  toggleNotePinnedRemote,
+  deleteNoteRemote,
+  toggleChoreDoneRemote,
+  deleteChoreRemote,
+  deleteProjectRemote,
+} from "@src/lib/sync/remoteCrud";
 import NoteModal from "@src/components/NoteModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
@@ -34,11 +40,6 @@ export default function HomeScreen() {
   const notes = useFamilyStore((s) => s.notes);
   const chores = useFamilyStore((s) => s.chores);
   const projects = useFamilyStore((s) => s.projects);
-  const toggleNotePinned = useFamilyStore((s) => s.toggleNotePinned);
-  const deleteNote = useFamilyStore((s) => s.deleteNote);
-  const toggleChoreDone = useFamilyStore((s) => s.toggleChoreDone);
-  const deleteChore = useFamilyStore((s) => s.deleteChore);
-  const deleteProject = useFamilyStore((s) => s.deleteProject);
 
   // Modals
   const [noteModalOpen, setNoteModalOpen] = useState(false);
@@ -106,12 +107,12 @@ export default function HomeScreen() {
                 <IconButton
                   icon={note.pinned ? "pin-off" : "pin"}
                   size={18}
-                  onPress={() => toggleNotePinned(note.id)}
+                  onPress={() => toggleNotePinnedRemote(note.id)}
                 />
                 <IconButton
                   icon="trash-can-outline"
                   size={18}
-                  onPress={() => deleteNote(note.id)}
+                  onPress={() => deleteNoteRemote(note.id)}
                 />
               </View>
             ))}
@@ -142,7 +143,7 @@ export default function HomeScreen() {
               <View key={chore.id} style={styles.choreRow}>
                 <Checkbox
                   status={chore.done ? "checked" : "unchecked"}
-                  onPress={() => toggleChoreDone(chore.id)}
+                  onPress={() => toggleChoreDoneRemote(chore.id)}
                 />
                 <View style={styles.choreText}>
                   <Text
@@ -160,7 +161,7 @@ export default function HomeScreen() {
                 <IconButton
                   icon="trash-can-outline"
                   size={18}
-                  onPress={() => deleteChore(chore.id)}
+                  onPress={() => deleteChoreRemote(chore.id)}
                 />
               </View>
             ))}
@@ -241,7 +242,7 @@ export default function HomeScreen() {
                 <IconButton
                   icon="trash-can-outline"
                   size={18}
-                  onPress={() => deleteProject(proj.id)}
+                  onPress={() => deleteProjectRemote(proj.id)}
                 />
               </View>
             ))}

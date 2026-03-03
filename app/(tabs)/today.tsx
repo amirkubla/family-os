@@ -1,14 +1,23 @@
 import { View, StyleSheet, ScrollView } from "react-native";
-import { Card, Text, Chip } from "react-native-paper";
+import { Card, Text, Chip, Button, ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KIDS } from "@src/models/seed";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { syncAll } from "@src/lib/sync/syncEngine";
+import { useState } from "react";
 
 export default function TodayScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
   const chores = useFamilyStore((s) => s.chores);
   const projects = useFamilyStore((s) => s.projects);
   const notes = useFamilyStore((s) => s.notes);
+  const kids = useFamilyStore((s) => s.kids);
+  const syncStatus = useFamilyStore((s) => s.syncStatus);
+  const lastSyncedAt = useFamilyStore((s) => s.lastSyncedAt);
+
+  const [syncing, setSyncing] = useState(false);
+
+  const displayKids = kids.length > 0 ? kids : KIDS;
 
   const unboughtCount = grocery.filter((g) => !g.isBought).length;
   const undoneChores = chores.filter((c) => !c.done).length;
@@ -17,12 +26,59 @@ export default function TodayScreen() {
   ).length;
   const pinnedNotes = notes.filter((n) => n.pinned).length;
 
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await syncAll();
+    } catch {
+      // error shown via Snackbar
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const formatLastSync = () => {
+    if (!lastSyncedAt) return "Never";
+    const d = new Date(lastSyncedAt);
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text variant="headlineLarge" style={styles.title}>
           Today
         </Text>
+
+        {/* Sync card */}
+        <Card style={styles.syncCard} mode="elevated">
+          <Card.Content style={styles.syncContent}>
+            <View style={styles.syncLeft}>
+              <Text variant="titleSmall" style={styles.syncTitle}>
+                {"\u2601\uFE0F"} Sync
+              </Text>
+              <Text variant="bodySmall" style={styles.syncMeta}>
+                {syncStatus === "syncing"
+                  ? "Syncing..."
+                  : syncStatus === "error"
+                  ? "Sync error"
+                  : `Last: ${formatLastSync()}`}
+              </Text>
+            </View>
+            {syncing ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Button
+                mode="outlined"
+                compact
+                onPress={handleSync}
+                style={styles.syncBtn}
+              >
+                Sync Now
+              </Button>
+            )}
+          </Card.Content>
+        </Card>
 
         {/* Overview */}
         <Card style={styles.card} mode="elevated">
@@ -64,7 +120,7 @@ export default function TodayScreen() {
           Kids
         </Text>
         <View style={styles.kidsRow}>
-          {KIDS.map((kid) => (
+          {displayKids.map((kid) => (
             <Chip
               key={kid.id}
               style={[styles.kidChip, { backgroundColor: kid.color + "22" }]}
@@ -84,6 +140,19 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#FAFAFE" },
   container: { padding: 20, paddingBottom: 40 },
   title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 20 },
+
+  // Sync card
+  syncCard: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 16 },
+  syncContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  syncLeft: { flex: 1 },
+  syncTitle: { fontWeight: "700", color: "#1A1A2E" },
+  syncMeta: { color: "#6B6B8D", marginTop: 2 },
+  syncBtn: { borderRadius: 12 },
+
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 24 },
   cardTitle: { fontWeight: "700", color: "#1A1A2E", marginBottom: 12 },
   statsGrid: {

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
-import { useFamilyStore } from "@src/store/useFamilyStore";
+import { addChoreRemote } from "@src/lib/sync/remoteCrud";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -10,7 +10,6 @@ interface Props {
 }
 
 export default function ChoreAddModal({ visible, onDismiss }: Props) {
-  const addChore = useFamilyStore((s) => s.addChore);
   const [title, setTitle] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
 
@@ -21,7 +20,7 @@ export default function ChoreAddModal({ visible, onDismiss }: Props) {
 
   const handleSubmit = () => {
     if (!title.trim()) return;
-    addChore({
+    addChoreRemote({
       title: title.trim(),
       assignedTo: assignedTo.trim() || undefined,
     });

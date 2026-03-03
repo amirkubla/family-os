@@ -3,5 +3,6 @@ export interface Chore {
   title: string;
   assignedTo?: string;
   done: boolean;
+  updatedAt: number;
   createdAt: number;
 }

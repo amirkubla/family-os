@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import { GROCERY_CATEGORIES } from "@src/models/grocery";
-import { useFamilyStore } from "@src/store/useFamilyStore";
+import { addGroceryRemote } from "@src/lib/sync/remoteCrud";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -11,7 +11,6 @@ interface Props {
 }
 
 export default function GroceryAddModal({ visible, onDismiss }: Props) {
-  const addGrocery = useFamilyStore((s) => s.addGrocery);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Produce");
   const [qty, setQty] = useState("");
@@ -24,7 +23,7 @@ export default function GroceryAddModal({ visible, onDismiss }: Props) {
 
   const handleSubmit = () => {
     if (!title.trim()) return;
-    addGrocery({
+    addGroceryRemote({
       title: title.trim(),
       category,
       qty: qty.trim() || undefined,

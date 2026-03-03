@@ -51,3 +51,6 @@ yarn-error.*
 
 # Testing
 coverage/
+
+# Backend build output
+backend/dist/

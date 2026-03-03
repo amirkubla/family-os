@@ -4,6 +4,7 @@ export interface GroceryItem {
   category: string;
   qty?: string;
   isBought: boolean;
+  updatedAt: number;
   createdAt: number;
 }
 
