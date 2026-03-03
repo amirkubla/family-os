@@ -1,6 +1,7 @@
 import { View, StyleSheet, ScrollView } from "react-native";
 import { Card, Text, Chip, Button, ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { KIDS } from "@src/models/seed";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { syncAll } from "@src/lib/sync/syncEngine";
@@ -16,6 +17,7 @@ export default function TodayScreen() {
   const lastSyncedAt = useFamilyStore((s) => s.lastSyncedAt);
 
   const [syncing, setSyncing] = useState(false);
+  const router = useRouter();
 
   const displayKids = kids.length > 0 ? kids : KIDS;
 
@@ -123,6 +125,7 @@ export default function TodayScreen() {
           {displayKids.map((kid) => (
             <Chip
               key={kid.id}
+              onPress={() => router.push(`/kid/${kid.id}`)}
               style={[styles.kidChip, { backgroundColor: kid.color + "22" }]}
               textStyle={{ color: kid.color, fontWeight: "700" }}
               icon={() => <Text style={{ fontSize: 18 }}>{kid.emoji}</Text>}

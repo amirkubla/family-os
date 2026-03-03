@@ -6,7 +6,9 @@ import type { GroceryItem } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project, ProjectStatus } from "@src/models/project";
+import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { Kid } from "@src/models/seed";
+import { KIDS } from "@src/models/seed";
 import { makeId } from "@src/utils/id";
 
 /* ─── Sync status ─── */
@@ -21,6 +23,7 @@ interface FamilyState {
   chores: Chore[];
   projects: Project[];
   kids: Kid[];
+  scheduleBlocks: ScheduleBlock[];
 
   // Sync metadata
   syncStatus: SyncStatus;
@@ -33,6 +36,7 @@ interface FamilyState {
   setChores: (items: Chore[]) => void;
   setProjects: (items: Project[]) => void;
   setKids: (items: Kid[]) => void;
+  setScheduleBlocks: (items: ScheduleBlock[]) => void;
   setSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setLastSyncedAt: (ts: number) => void;
 
@@ -64,6 +68,28 @@ interface FamilyState {
     patch: Partial<Pick<Project, "title" | "description" | "status" | "progress">>
   ) => void;
   deleteProject: (id: string) => void;
+
+  // Schedule actions
+  addScheduleBlock: (input: {
+    kidId: string;
+    dayOfWeek: number;
+    title: string;
+    type: BlockType;
+    startMinutes: number;
+    endMinutes: number;
+    location?: string;
+    color?: string;
+  }) => ScheduleBlock;
+  updateScheduleBlock: (
+    id: string,
+    patch: Partial<
+      Pick<
+        ScheduleBlock,
+        "dayOfWeek" | "title" | "type" | "startMinutes" | "endMinutes" | "location" | "color"
+      >
+    >
+  ) => void;
+  deleteScheduleBlock: (id: string) => void;
 }
 
 /* ─── Store ─── */
@@ -76,6 +102,7 @@ export const useFamilyStore = create<FamilyState>()(
       chores: [],
       projects: [],
       kids: [],
+      scheduleBlocks: [],
 
       syncStatus: "idle" as SyncStatus,
       syncError: null,
@@ -88,6 +115,7 @@ export const useFamilyStore = create<FamilyState>()(
       setChores: (items) => set({ chores: items }),
       setProjects: (items) => set({ projects: items }),
       setKids: (items) => set({ kids: items }),
+      setScheduleBlocks: (items) => set({ scheduleBlocks: items }),
       setSyncStatus: (status, error = null) =>
         set({ syncStatus: status, syncError: error }),
       setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
@@ -225,6 +253,34 @@ export const useFamilyStore = create<FamilyState>()(
         set((s) => ({
           projects: s.projects.filter((p) => p.id !== id),
         })),
+
+      /* ── Schedule ── */
+
+      addScheduleBlock: (input) => {
+        const now = Date.now();
+        const block: ScheduleBlock = {
+          id: makeId(),
+          ...input,
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((s) => ({
+          scheduleBlocks: [...s.scheduleBlocks, block],
+        }));
+        return block;
+      },
+
+      updateScheduleBlock: (id, patch) =>
+        set((s) => ({
+          scheduleBlocks: s.scheduleBlocks.map((b) =>
+            b.id === id ? { ...b, ...patch, updatedAt: Date.now() } : b
+          ),
+        })),
+
+      deleteScheduleBlock: (id) =>
+        set((s) => ({
+          scheduleBlocks: s.scheduleBlocks.filter((b) => b.id !== id),
+        })),
     }),
     {
       name: "family-os-store-v1",
@@ -235,6 +291,7 @@ export const useFamilyStore = create<FamilyState>()(
         chores: state.chores,
         projects: state.projects,
         kids: state.kids,
+        scheduleBlocks: state.scheduleBlocks,
         lastSyncedAt: state.lastSyncedAt,
       }),
     }

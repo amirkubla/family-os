@@ -11,12 +11,14 @@ import type {
   ApiChore,
   ApiProject,
   ApiKid,
+  ApiScheduleBlock,
 } from "./types";
 import type { GroceryItem } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
 import type { Kid } from "@src/models/seed";
+import type { ScheduleBlock } from "@src/models/schedule";
 
 const toMs = (iso: string) => new Date(iso).getTime();
 
@@ -139,5 +141,39 @@ export function localToApiKid(item: Kid) {
     name: item.name,
     color: item.color,
     emoji: item.emoji || null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Schedule Blocks
+// ---------------------------------------------------------------------------
+
+export function apiToLocalScheduleBlock(a: ApiScheduleBlock): ScheduleBlock {
+  return {
+    id: a.id,
+    kidId: a.kidId,
+    dayOfWeek: a.dayOfWeek,
+    title: a.title,
+    type: a.type,
+    startMinutes: a.startMinutes,
+    endMinutes: a.endMinutes,
+    location: a.location ?? undefined,
+    color: a.color ?? undefined,
+    updatedAt: toMs(a.updatedAt),
+    createdAt: toMs(a.createdAt),
+  };
+}
+
+export function localToApiScheduleBlock(item: ScheduleBlock) {
+  return {
+    id: item.id,
+    kidId: item.kidId,
+    dayOfWeek: item.dayOfWeek,
+    title: item.title,
+    type: item.type,
+    startMinutes: item.startMinutes,
+    endMinutes: item.endMinutes,
+    location: item.location ?? null,
+    color: item.color ?? null,
   };
 }

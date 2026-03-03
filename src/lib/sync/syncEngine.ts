@@ -14,6 +14,7 @@ import {
   choresApi,
   projectsApi,
   kidsApi,
+  scheduleBlocksApi,
 } from "../api/endpoints";
 import {
   apiToLocalGrocery,
@@ -21,11 +22,13 @@ import {
   apiToLocalChore,
   apiToLocalProject,
   apiToLocalKid,
+  apiToLocalScheduleBlock,
   localToApiGrocery,
   localToApiNote,
   localToApiChore,
   localToApiProject,
   localToApiKid,
+  localToApiScheduleBlock,
 } from "../api/mappers";
 
 // ---------------------------------------------------------------------------
@@ -39,19 +42,22 @@ export async function pullAll(): Promise<void> {
   try {
     const fid = await getFamilyId();
 
-    const [grocery, notes, chores, projects, kids] = await Promise.all([
-      groceryApi.list(fid),
-      notesApi.list(fid),
-      choresApi.list(fid),
-      projectsApi.list(fid),
-      kidsApi.list(fid),
-    ]);
+    const [grocery, notes, chores, projects, kids, scheduleBlocks] =
+      await Promise.all([
+        groceryApi.list(fid),
+        notesApi.list(fid),
+        choresApi.list(fid),
+        projectsApi.list(fid),
+        kidsApi.list(fid),
+        scheduleBlocksApi.list(fid),
+      ]);
 
     store.setGrocery(grocery.map(apiToLocalGrocery));
     store.setNotes(notes.map(apiToLocalNote));
     store.setChores(chores.map(apiToLocalChore));
     store.setProjects(projects.map(apiToLocalProject));
     store.setKids(kids.map(apiToLocalKid));
+    store.setScheduleBlocks(scheduleBlocks.map(apiToLocalScheduleBlock));
     store.setLastSyncedAt(Date.now());
     store.setSyncStatus("idle");
   } catch (err) {
@@ -71,7 +77,7 @@ export async function pushAll(): Promise<void> {
 
   try {
     const fid = await getFamilyId();
-    const { grocery, notes, chores, projects, kids } = store;
+    const { grocery, notes, chores, projects, kids, scheduleBlocks } = store;
 
     await Promise.all([
       ...grocery.map((item) =>
@@ -88,6 +94,9 @@ export async function pushAll(): Promise<void> {
       ),
       ...kids.map((item) =>
         kidsApi.upsert(fid, localToApiKid(item)),
+      ),
+      ...scheduleBlocks.map((item) =>
+        scheduleBlocksApi.upsert(fid, localToApiScheduleBlock(item)),
       ),
     ]);
 

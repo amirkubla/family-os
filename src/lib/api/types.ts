@@ -63,3 +63,18 @@ export interface ApiProject {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ApiScheduleBlock {
+  id: string;
+  familyId: string;
+  kidId: string;
+  dayOfWeek: number;
+  title: string;
+  type: "school" | "hobby" | "other";
+  startMinutes: number;
+  endMinutes: number;
+  location: string | null;
+  color: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

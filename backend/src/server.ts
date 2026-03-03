@@ -17,6 +17,7 @@ import { notesRoutes } from "./routes/notes.js";
 import { choresRoutes } from "./routes/chores.js";
 import { projectsRoutes } from "./routes/projects.js";
 import { kidsRoutes } from "./routes/kids.js";
+import { scheduleBlocksRoutes } from "./routes/scheduleBlocks.js";
 
 // ---------------------------------------------------------------------------
 // App
@@ -38,6 +39,7 @@ app.route("/v1/family/:familyId/notes", notesRoutes);
 app.route("/v1/family/:familyId/chores", choresRoutes);
 app.route("/v1/family/:familyId/projects", projectsRoutes);
 app.route("/v1/family/:familyId/kids", kidsRoutes);
+app.route("/v1/family/:familyId/schedule-blocks", scheduleBlocksRoutes);
 
 // ---------------------------------------------------------------------------
 // Start

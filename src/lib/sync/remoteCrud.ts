@@ -16,17 +16,20 @@ import {
   notesApi,
   choresApi,
   projectsApi,
+  scheduleBlocksApi,
 } from "../api/endpoints";
 import {
   localToApiGrocery,
   localToApiNote,
   localToApiChore,
   localToApiProject,
+  localToApiScheduleBlock,
 } from "../api/mappers";
 import type { GroceryItem } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
+import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 
 // ---------------------------------------------------------------------------
 // Error handler — set by UI (Snackbar)
@@ -217,5 +220,58 @@ export function deleteProjectRemote(id: string) {
   fireAndForget(
     getFamilyId().then((fid) => projectsApi.delete(fid, id)),
     "Delete project",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Schedule Blocks
+// ---------------------------------------------------------------------------
+
+export function addScheduleBlockRemote(input: {
+  kidId: string;
+  dayOfWeek: number;
+  title: string;
+  type: BlockType;
+  startMinutes: number;
+  endMinutes: number;
+  location?: string;
+  color?: string;
+}) {
+  const block = useFamilyStore.getState().addScheduleBlock(input);
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      scheduleBlocksApi.upsert(fid, localToApiScheduleBlock(block)),
+    ),
+    "Add schedule block",
+  );
+}
+
+export function updateScheduleBlockRemote(
+  id: string,
+  patch: Partial<
+    Pick<
+      ScheduleBlock,
+      "dayOfWeek" | "title" | "type" | "startMinutes" | "endMinutes" | "location" | "color"
+    >
+  >,
+) {
+  useFamilyStore.getState().updateScheduleBlock(id, patch);
+  const block = useFamilyStore
+    .getState()
+    .scheduleBlocks.find((b) => b.id === id);
+  if (!block) return;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      scheduleBlocksApi.upsert(fid, localToApiScheduleBlock(block)),
+    ),
+    "Update schedule block",
+  );
+}
+
+export function deleteScheduleBlockRemote(id: string) {
+  useFamilyStore.getState().deleteScheduleBlock(id);
+  fireAndForget(
+    getFamilyId().then((fid) => scheduleBlocksApi.delete(fid, id)),
+    "Delete schedule block",
   );
 }

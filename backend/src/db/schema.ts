@@ -42,6 +42,7 @@ export const familiesRelations = relations(families, ({ many }) => ({
   notes: many(notes),
   chores: many(chores),
   projects: many(projects),
+  scheduleBlocks: many(scheduleBlocks),
 }));
 
 // ---------------------------------------------------------------------------
@@ -88,11 +89,12 @@ export const kids = pgTable(
   (t) => [index("kids_family_id_idx").on(t.familyId)],
 );
 
-export const kidsRelations = relations(kids, ({ one }) => ({
+export const kidsRelations = relations(kids, ({ one, many }) => ({
   family: one(families, {
     fields: [kids.familyId],
     references: [families.id],
   }),
+  scheduleBlocks: many(scheduleBlocks),
 }));
 
 // ---------------------------------------------------------------------------
@@ -215,3 +217,61 @@ export const projectsRelations = relations(projects, ({ one }) => ({
     references: [families.id],
   }),
 }));
+
+// ---------------------------------------------------------------------------
+// schedule_blocks
+// ---------------------------------------------------------------------------
+
+export const scheduleBlocks = pgTable(
+  "schedule_blocks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    kidId: uuid("kid_id")
+      .notNull()
+      .references(() => kids.id, { onDelete: "cascade" }),
+    dayOfWeek: integer("day_of_week").notNull(), // 0 = Sun … 6 = Sat
+    title: text("title").notNull(),
+    type: text("type", { enum: ["school", "hobby", "other"] })
+      .default("other")
+      .notNull(),
+    startMinutes: integer("start_minutes").notNull(), // 0–1439
+    endMinutes: integer("end_minutes").notNull(),
+    location: text("location"),
+    color: text("color"),
+    ...timestamps,
+  },
+  (t) => [
+    index("schedule_blocks_family_id_idx").on(t.familyId),
+    index("schedule_blocks_kid_id_idx").on(t.kidId),
+    index("schedule_blocks_kid_dow_idx").on(t.kidId, t.dayOfWeek),
+    check(
+      "schedule_blocks_dow_range",
+      sql`${t.dayOfWeek} >= 0 AND ${t.dayOfWeek} <= 6`,
+    ),
+    check(
+      "schedule_blocks_time_range",
+      sql`${t.startMinutes} >= 0 AND ${t.startMinutes} < 1440 AND ${t.endMinutes} > 0 AND ${t.endMinutes} <= 1440`,
+    ),
+    check(
+      "schedule_blocks_end_after_start",
+      sql`${t.endMinutes} > ${t.startMinutes}`,
+    ),
+  ],
+);
+
+export const scheduleBlocksRelations = relations(
+  scheduleBlocks,
+  ({ one }) => ({
+    family: one(families, {
+      fields: [scheduleBlocks.familyId],
+      references: [families.id],
+    }),
+    kid: one(kids, {
+      fields: [scheduleBlocks.kidId],
+      references: [kids.id],
+    }),
+  }),
+);

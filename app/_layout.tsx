@@ -5,6 +5,7 @@ import { PaperProvider, Snackbar } from "react-native-paper";
 import { theme } from "@src/theme/theme";
 import { pullAll } from "@src/lib/sync/syncEngine";
 import { setSyncErrorHandler } from "@src/lib/sync/remoteCrud";
+import { seedScheduleIfEmpty } from "@src/store/scheduleSeed";
 
 export default function RootLayout() {
   const [snackMsg, setSnackMsg] = useState("");
@@ -27,11 +28,17 @@ export default function RootLayout() {
     });
   }, []);
 
+  // Seed schedule blocks on first run
+  useEffect(() => {
+    seedScheduleIfEmpty();
+  }, []);
+
   return (
     <PaperProvider theme={theme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="kid/[kidId]" options={{ headerShown: true }} />
       </Stack>
       <StatusBar style="dark" />
       <Snackbar

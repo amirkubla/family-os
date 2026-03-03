@@ -3,3 +3,4 @@ export { notesRepo } from "./notesRepo.js";
 export { choresRepo } from "./choresRepo.js";
 export { projectsRepo } from "./projectsRepo.js";
 export { kidsRepo } from "./kidsRepo.js";
+export { scheduleBlocksRepo } from "./scheduleBlocksRepo.js";

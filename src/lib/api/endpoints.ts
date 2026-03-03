@@ -10,6 +10,7 @@ import type {
   ApiChore,
   ApiProject,
   ApiKid,
+  ApiScheduleBlock,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -129,4 +130,25 @@ export const kidsApi = {
 
   delete: (fid: string, id: string) =>
     http.delete<{ deleted: boolean }>(`${fam(fid)}/kids/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Schedule Blocks
+// ---------------------------------------------------------------------------
+
+export const scheduleBlocksApi = {
+  list: (fid: string) =>
+    http.get<ApiScheduleBlock[]>(`${fam(fid)}/schedule-blocks`),
+
+  create: (fid: string, data: Omit<ApiScheduleBlock, "familyId" | "createdAt" | "updatedAt">) =>
+    http.post<ApiScheduleBlock>(`${fam(fid)}/schedule-blocks`, data),
+
+  upsert: (fid: string, data: Omit<ApiScheduleBlock, "familyId" | "createdAt" | "updatedAt">) =>
+    http.put<ApiScheduleBlock>(`${fam(fid)}/schedule-blocks/${data.id}`, data),
+
+  update: (fid: string, id: string, data: Partial<ApiScheduleBlock>) =>
+    http.patch<ApiScheduleBlock>(`${fam(fid)}/schedule-blocks/${id}`, data),
+
+  delete: (fid: string, id: string) =>
+    http.delete<{ deleted: boolean }>(`${fam(fid)}/schedule-blocks/${id}`),
 };

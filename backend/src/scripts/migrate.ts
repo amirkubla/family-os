@@ -49,6 +49,7 @@ async function main() {
     "notes",
     "chores",
     "projects",
+    "schedule_blocks",
   ];
 
   for (const table of tables) {
