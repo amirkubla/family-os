@@ -3,12 +3,13 @@ import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button, ProgressBar } from "react-native-paper";
 import type { Project, ProjectStatus } from "@src/models/project";
 import { addProjectRemote, updateProjectRemote } from "@src/lib/sync/remoteCrud";
+import { t, statusLabel } from "@src/i18n";
 import ModalWrapper from "./ModalWrapper";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
-  { value: "idea", label: "Idea" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "done", label: "Done" },
+  { value: "idea", label: statusLabel("idea") },
+  { value: "in_progress", label: statusLabel("in_progress") },
+  { value: "done", label: statusLabel("done") },
 ];
 
 interface Props {
@@ -75,11 +76,11 @@ export default function ProjectModal({
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
       <Text variant="titleLarge" style={styles.heading}>
-        {editProject ? "Edit Project" : "Add Project"}
+        {editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")}
       </Text>
 
       <TextInput
-        label="Project title"
+        label={t("projectModal.projectTitle")}
         value={title}
         onChangeText={setTitle}
         mode="outlined"
@@ -87,7 +88,7 @@ export default function ProjectModal({
       />
 
       <TextInput
-        label="Description (optional)"
+        label={t("projectModal.description")}
         value={description}
         onChangeText={setDescription}
         mode="outlined"
@@ -99,7 +100,7 @@ export default function ProjectModal({
       {editProject && (
         <>
           <Text variant="labelLarge" style={styles.label}>
-            Status
+            {t("projectModal.status")}
           </Text>
           <View style={styles.statusRow}>
             {STATUS_OPTIONS.map((opt) => (
@@ -117,7 +118,7 @@ export default function ProjectModal({
           </View>
 
           <Text variant="labelLarge" style={styles.label}>
-            Progress: {Math.round(progress)}%
+            {t("projectModal.progress", { n: Math.round(progress) })}
           </Text>
           <View style={styles.sliderRow}>
             <Text style={styles.sliderEdge}>0</Text>
@@ -143,13 +144,13 @@ export default function ProjectModal({
       )}
 
       <View style={styles.actions}>
-        <Button onPress={handleDismiss}>Cancel</Button>
+        <Button onPress={handleDismiss}>{t("cancel")}</Button>
         <Button
           mode="contained"
           onPress={handleSubmit}
           disabled={!title.trim()}
         >
-          {editProject ? "Save" : "Add"}
+          {editProject ? t("save") : t("add")}
         </Button>
       </View>
     </ModalWrapper>
@@ -157,9 +158,9 @@ export default function ProjectModal({
 }
 
 const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 16 },
-  input: { marginBottom: 12 },
-  label: { marginBottom: 8, marginTop: 4, color: "#6B6B8D" },
+  heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
+  input: { marginBottom: 12, textAlign: "right" },
+  label: { marginBottom: 8, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
   statusRow: {
     flexDirection: "row",
     gap: 6,

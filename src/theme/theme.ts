@@ -1,8 +1,9 @@
-import { MD3LightTheme } from "react-native-paper";
+import { MD3LightTheme, configureFonts } from "react-native-paper";
 
 export const theme = {
   ...MD3LightTheme,
   roundness: 16,
+  fonts: configureFonts({ config: { fontFamily: "Rubik" } }),
   colors: {
     ...MD3LightTheme.colors,
     primary: "#6C63FF", // friendly purple

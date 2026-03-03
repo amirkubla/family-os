@@ -3,6 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import type { Note } from "@src/models/note";
 import { addNoteRemote, updateNoteRemote } from "@src/lib/sync/remoteCrud";
+import { t } from "@src/i18n";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -52,11 +53,11 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
       <Text variant="titleLarge" style={styles.heading}>
-        {editNote ? "Edit Note" : "Add Note"}
+        {editNote ? t("noteModal.editTitle") : t("noteModal.addTitle")}
       </Text>
 
       <TextInput
-        label="Title (optional)"
+        label={t("noteModal.titleLabel")}
         value={title}
         onChangeText={setTitle}
         mode="outlined"
@@ -64,7 +65,7 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
       />
 
       <TextInput
-        label="Note body"
+        label={t("noteModal.bodyLabel")}
         value={body}
         onChangeText={setBody}
         mode="outlined"
@@ -74,13 +75,13 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
       />
 
       <View style={styles.actions}>
-        <Button onPress={handleDismiss}>Cancel</Button>
+        <Button onPress={handleDismiss}>{t("cancel")}</Button>
         <Button
           mode="contained"
           onPress={handleSubmit}
           disabled={!body.trim()}
         >
-          {editNote ? "Save" : "Add"}
+          {editNote ? t("save") : t("add")}
         </Button>
       </View>
     </ModalWrapper>
@@ -88,8 +89,8 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
 }
 
 const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 16 },
-  input: { marginBottom: 12 },
+  heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
+  input: { marginBottom: 12, textAlign: "right" },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",

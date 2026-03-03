@@ -1,5 +1,5 @@
 /**
- * scheduleSeed.ts — Pre-seed "School" blocks for each kid Mon–Fri 08:00–13:30.
+ * scheduleSeed.ts — Pre-seed "בית ספר" blocks for each kid Mon–Fri 08:00–13:30.
  * Only seeds if scheduleBlocks is empty.
  *
  * Uses addScheduleBlockRemote so seeds are also pushed to the backend.
@@ -22,7 +22,7 @@ export function seedScheduleIfEmpty() {
       addScheduleBlockRemote({
         kidId: kid.id,
         dayOfWeek: dow,
-        title: "School",
+        title: "בית ספר",
         type: "school",
         startMinutes: 480, // 08:00
         endMinutes: 810, // 13:30

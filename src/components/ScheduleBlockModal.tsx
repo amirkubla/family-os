@@ -11,8 +11,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
-import { DAY_NAMES, BLOCK_TYPES } from "@src/models/schedule";
+import { BLOCK_TYPES } from "@src/models/schedule";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
+import { t, dayNameShort, blockTypeLabel } from "@src/i18n";
 import ModalWrapper from "./ModalWrapper";
 
 // ---------------------------------------------------------------------------
@@ -23,17 +24,17 @@ const timeRegex = /^\d{1,2}:\d{2}$/;
 
 const schema = z
   .object({
-    title: z.string().min(1, "Title is required"),
+    title: z.string().min(1, t("blockModal.titleRequired")),
     type: z.enum(["school", "hobby", "other"]),
     dayOfWeek: z.number().int().min(0).max(6),
     startTime: z
       .string()
-      .regex(timeRegex, "Use HH:MM format")
-      .refine((v) => !isNaN(hhmmToMinutes(v)), "Invalid time"),
+      .regex(timeRegex, t("blockModal.useHHMM"))
+      .refine((v) => !isNaN(hhmmToMinutes(v)), t("blockModal.invalidTime")),
     endTime: z
       .string()
-      .regex(timeRegex, "Use HH:MM format")
-      .refine((v) => !isNaN(hhmmToMinutes(v)), "Invalid time"),
+      .regex(timeRegex, t("blockModal.useHHMM"))
+      .refine((v) => !isNaN(hhmmToMinutes(v)), t("blockModal.invalidTime")),
     location: z.string().optional(),
   })
   .refine(
@@ -42,7 +43,7 @@ const schema = z
       const e = hhmmToMinutes(d.endTime);
       return !isNaN(s) && !isNaN(e) && e > s;
     },
-    { message: "End must be after start", path: ["endTime"] },
+    { message: t("blockModal.endAfterStart"), path: ["endTime"] },
   );
 
 type FormData = z.infer<typeof schema>;
@@ -137,7 +138,7 @@ export default function ScheduleBlockModal({
   return (
     <ModalWrapper visible={visible} onDismiss={onDismiss}>
       <Text variant="titleLarge" style={styles.heading}>
-        {editBlock ? "Edit Block" : "Add Block"}
+        {editBlock ? t("blockModal.editTitle") : t("blockModal.addTitle")}
       </Text>
 
       {/* Title */}
@@ -146,11 +147,11 @@ export default function ScheduleBlockModal({
         name="title"
         render={({ field: { onChange, value } }) => (
           <TextInput
-            label="Title"
+            label={t("blockModal.titleLabel")}
             value={value}
             onChangeText={onChange}
             mode="outlined"
-            style={styles.input}
+            style={styles.rtlInput}
             error={!!errors.title}
           />
         )}
@@ -161,7 +162,7 @@ export default function ScheduleBlockModal({
 
       {/* Type */}
       <Text variant="labelLarge" style={styles.label}>
-        Type
+        {t("blockModal.type")}
       </Text>
       <View style={styles.chipRow}>
         {BLOCK_TYPES.map((bt) => (
@@ -173,17 +174,17 @@ export default function ScheduleBlockModal({
             style={styles.chip}
             labelStyle={styles.chipLabel}
           >
-            {bt.label}
+            {blockTypeLabel(bt.value)}
           </Button>
         ))}
       </View>
 
       {/* Day of week */}
       <Text variant="labelLarge" style={styles.label}>
-        Day
+        {t("blockModal.day")}
       </Text>
       <View style={styles.chipRow}>
-        {DAY_NAMES.map((name, idx) => (
+        {Array.from({ length: 7 }, (_, idx) => (
           <Button
             key={idx}
             mode={selectedDay === idx ? "contained" : "outlined"}
@@ -192,7 +193,7 @@ export default function ScheduleBlockModal({
             style={styles.chip}
             labelStyle={styles.chipLabel}
           >
-            {name.slice(0, 3)}
+            {dayNameShort(idx)}
           </Button>
         ))}
       </View>
@@ -200,36 +201,18 @@ export default function ScheduleBlockModal({
       {/* Times */}
       <View style={styles.timeRow}>
         <View style={styles.timeCol}>
-          <Controller
-            control={control}
-            name="startTime"
-            render={({ field: { onChange, value } }) => (
-              <TextInput
-                label="Start (HH:MM)"
-                value={value}
-                onChangeText={onChange}
-                mode="outlined"
-                style={styles.input}
-                placeholder="08:00"
-                error={!!errors.startTime}
-              />
-            )}
-          />
-          {errors.startTime && (
-            <Text style={styles.error}>{errors.startTime.message}</Text>
-          )}
-        </View>
-        <View style={styles.timeCol}>
+          <Text variant="labelLarge" style={styles.label}>
+            {t("blockModal.endTime")}
+          </Text>
           <Controller
             control={control}
             name="endTime"
             render={({ field: { onChange, value } }) => (
               <TextInput
-                label="End (HH:MM)"
                 value={value}
                 onChangeText={onChange}
                 mode="outlined"
-                style={styles.input}
+                style={styles.rtlInput}
                 placeholder="10:00"
                 error={!!errors.endTime}
               />
@@ -237,6 +220,28 @@ export default function ScheduleBlockModal({
           />
           {errors.endTime && (
             <Text style={styles.error}>{errors.endTime.message}</Text>
+          )}
+        </View>
+        <View style={styles.timeCol}>
+          <Text variant="labelLarge" style={styles.label}>
+            {t("blockModal.startTime")}
+          </Text>
+          <Controller
+            control={control}
+            name="startTime"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                value={value}
+                onChangeText={onChange}
+                mode="outlined"
+                style={styles.rtlInput}
+                placeholder="08:00"
+                error={!!errors.startTime}
+              />
+            )}
+          />
+          {errors.startTime && (
+            <Text style={styles.error}>{errors.startTime.message}</Text>
           )}
         </View>
       </View>
@@ -247,20 +252,20 @@ export default function ScheduleBlockModal({
         name="location"
         render={({ field: { onChange, value } }) => (
           <TextInput
-            label="Location (optional)"
+            label={t("blockModal.location")}
             value={value}
             onChangeText={onChange}
             mode="outlined"
-            style={styles.input}
+            style={styles.rtlInput}
           />
         )}
       />
 
       {/* Actions */}
       <View style={styles.actions}>
-        <Button onPress={onDismiss}>Cancel</Button>
+        <Button onPress={onDismiss}>{t("cancel")}</Button>
         <Button mode="contained" onPress={handleSubmit(doSubmit)}>
-          {editBlock ? "Save" : "Add"}
+          {editBlock ? t("save") : t("add")}
         </Button>
       </View>
     </ModalWrapper>
@@ -268,9 +273,10 @@ export default function ScheduleBlockModal({
 }
 
 const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 16 },
+  heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
   input: { marginBottom: 8 },
-  label: { marginBottom: 6, marginTop: 4, color: "#6B6B8D" },
+  rtlInput: { marginBottom: 8, textAlign: "right" },
+  label: { marginBottom: 6, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
   chip: { borderRadius: 20 },
   chipLabel: { fontSize: 12 },

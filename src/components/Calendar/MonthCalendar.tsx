@@ -13,6 +13,8 @@
 import React, { useMemo, useCallback } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { Text, IconButton } from "react-native-paper";
+import he from "@src/i18n/he";
+import { LOCALE } from "@src/i18n";
 
 interface MarkedDate {
   dotColor?: string;
@@ -25,7 +27,7 @@ interface Props {
   accentColor?: string;
 }
 
-const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const DAY_LABELS = he.calendarDays;
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -107,26 +109,26 @@ export default function MonthCalendar({
     return rows;
   }, [year, month]);
 
-  const monthLabel = new Date(year, month).toLocaleString("default", {
+  const monthLabel = new Date(year, month).toLocaleString(LOCALE, {
     month: "long",
     year: "numeric",
   });
 
   return (
     <View style={styles.root}>
-      {/* Header: < Month Year > */}
+      {/* Header: > Month Year < (RTL: forward on left, back on right) */}
       <View style={styles.header}>
-        <IconButton icon="chevron-left" size={22} onPress={goBack} />
+        <IconButton icon="chevron-right" size={22} onPress={goForward} />
         <Text variant="titleMedium" style={styles.monthLabel}>
           {monthLabel}
         </Text>
-        <IconButton icon="chevron-right" size={22} onPress={goForward} />
+        <IconButton icon="chevron-left" size={22} onPress={goBack} />
       </View>
 
       {/* Day-of-week labels */}
       <View style={styles.weekRow}>
-        {DAY_LABELS.map((d) => (
-          <View key={d} style={styles.cell}>
+        {DAY_LABELS.map((d, i) => (
+          <View key={i} style={styles.cell}>
             <Text variant="labelSmall" style={styles.dayLabel}>
               {d}
             </Text>
@@ -193,7 +195,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 4,
   },
-  monthLabel: { fontWeight: "700", color: "#1A1A2E" },
+  monthLabel: { fontWeight: "700", color: "#1A1A2E", textAlign: "center" },
   weekRow: { flexDirection: "row" },
   cell: {
     flex: 1,
@@ -201,13 +203,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  dayLabel: { color: "#8E8BA8", fontWeight: "600" },
+  dayLabel: { color: "#8E8BA8", fontWeight: "600", textAlign: "center" },
   dayCell: { borderRadius: CELL_SIZE / 2, marginVertical: 1 },
   todayCell: {
     borderWidth: 1.5,
     borderColor: "#6C63FF",
   },
-  dayNum: { fontSize: 14, fontWeight: "500", color: "#1A1A2E" },
+  dayNum: { fontSize: 14, fontWeight: "500", color: "#1A1A2E", textAlign: "center" },
   selectedText: { color: "#FFFFFF", fontWeight: "700" },
   dot: {
     position: "absolute",

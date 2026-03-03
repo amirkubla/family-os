@@ -27,9 +27,9 @@ import {
 } from "@src/lib/sync/remoteCrud";
 import { KIDS } from "@src/models/seed";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
-import { DAY_NAMES } from "@src/models/schedule";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
+import { t, dayName, blockTypeLabel } from "@src/i18n";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
@@ -76,7 +76,7 @@ function BlockRow({
           { backgroundColor: TYPE_COLORS[block.type] + "22" },
         ]}
       >
-        {block.type}
+        {blockTypeLabel(block.type)}
       </Chip>
       <IconButton icon="trash-can-outline" size={18} onPress={onDelete} />
     </Pressable>
@@ -99,7 +99,7 @@ export default function KidScheduleScreen() {
   // Set header options once
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: kid ? `${kid.emoji} ${kid.name}` : "Schedule",
+      title: kid ? `${kid.emoji} ${kid.name}` : t("kid.schedule"),
       headerTintColor: kidColor,
     });
   }, [navigation, kid?.name, kid?.emoji, kidColor]);
@@ -178,7 +178,7 @@ export default function KidScheduleScreen() {
           {/* Header accent bar */}
           <View style={[styles.accentBar, { backgroundColor: kidColor + "22" }]}>
             <Text style={[styles.accentText, { color: kidColor }]}>
-              {kid?.emoji} {kid?.name ?? "Kid"}'s Schedule
+              {kid?.emoji} {t("kid.kidSchedule", { name: kid?.name ?? "" })}
             </Text>
           </View>
 
@@ -187,13 +187,13 @@ export default function KidScheduleScreen() {
             value={tab}
             onValueChange={setTab}
             buttons={[
-              { value: "calendar", label: "Calendar" },
-              { value: "template", label: "Template" },
+              { value: "calendar", label: t("kid.calendar") },
+              { value: "template", label: t("kid.template") },
             ]}
             style={styles.tabs}
           />
 
-          {/* ─── Calendar View ─── */}
+          {/* --- Calendar View --- */}
           {tab === "calendar" && (
             <>
               <Card style={styles.card} mode="elevated">
@@ -208,12 +208,12 @@ export default function KidScheduleScreen() {
               </Card>
 
               <Text variant="titleMedium" style={styles.sectionTitle}>
-                {DAY_NAMES[selectedDow]} Schedule
+                {t("kid.daySchedule", { day: dayName(selectedDow) })}
               </Text>
 
               {dayBlocks.length === 0 ? (
                 <Text variant="bodyMedium" style={styles.emptyText}>
-                  Nothing scheduled for {DAY_NAMES[selectedDow]}.
+                  {t("kid.nothingScheduled", { day: dayName(selectedDow) })}
                 </Text>
               ) : (
                 <Card style={styles.card} mode="elevated">
@@ -233,14 +233,14 @@ export default function KidScheduleScreen() {
             </>
           )}
 
-          {/* ─── Template View ─── */}
+          {/* --- Template View --- */}
           {tab === "template" && (
             <>
-              {DAY_NAMES.map((name, dow) => (
+              {Array.from({ length: 7 }, (_, dow) => (
                 <View key={dow} style={styles.templateDay}>
                   <View style={styles.templateHeader}>
                     <Text variant="titleSmall" style={styles.templateDayName}>
-                      {name}
+                      {dayName(dow)}
                     </Text>
                     <IconButton
                       icon="plus"
@@ -251,7 +251,7 @@ export default function KidScheduleScreen() {
 
                   {blocksByDay[dow].length === 0 ? (
                     <Text variant="bodySmall" style={styles.emptyText}>
-                      No blocks
+                      {t("kid.noBlocks")}
                     </Text>
                   ) : (
                     blocksByDay[dow].map((b) => (
@@ -302,14 +302,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: "center",
   },
-  accentText: { fontSize: 18, fontWeight: "800" },
+  accentText: { fontSize: 18, fontWeight: "800", textAlign: "center" },
 
   tabs: { marginBottom: 16 },
 
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 16 },
 
-  sectionTitle: { fontWeight: "700", color: "#1A1A2E", marginBottom: 8 },
-  emptyText: { color: "#8E8BA8", marginBottom: 12 },
+  sectionTitle: { fontWeight: "700", color: "#1A1A2E", marginBottom: 8, textAlign: "right" },
+  emptyText: { color: "#8E8BA8", marginBottom: 12, textAlign: "right" },
 
   // Block row
   blockRow: {
@@ -323,12 +323,12 @@ const styles = StyleSheet.create({
     width: 4,
     height: 36,
     borderRadius: 2,
-    marginRight: 10,
+    marginEnd: 10,
   },
   blockInfo: { flex: 1 },
-  blockTitle: { fontWeight: "600", color: "#1A1A2E" },
-  blockTime: { color: "#6B6B8D", marginTop: 2 },
-  typeChip: { borderRadius: 10, height: 24, marginRight: 4 },
+  blockTitle: { fontWeight: "600", color: "#1A1A2E", textAlign: "right" },
+  blockTime: { color: "#6B6B8D", marginTop: 2, textAlign: "right" },
+  typeChip: { borderRadius: 10, height: 24, marginEnd: 4 },
 
   // Template
   templateDay: {
@@ -342,11 +342,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  templateDayName: { fontWeight: "700", color: "#1A1A2E" },
+  templateDayName: { fontWeight: "700", color: "#1A1A2E", textAlign: "right" },
 
   fab: {
     position: "absolute",
-    right: 20,
+    left: 20,
     bottom: 24,
     borderRadius: 16,
   },

@@ -3,6 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import { GROCERY_CATEGORIES } from "@src/models/grocery";
 import { addGroceryRemote } from "@src/lib/sync/remoteCrud";
+import { t, groceryCategoryLabel } from "@src/i18n";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -40,11 +41,11 @@ export default function GroceryAddModal({ visible, onDismiss }: Props) {
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
       <Text variant="titleLarge" style={styles.heading}>
-        Add Grocery Item
+        {t("groceryModal.title")}
       </Text>
 
       <TextInput
-        label="Item name"
+        label={t("groceryModal.itemName")}
         value={title}
         onChangeText={setTitle}
         mode="outlined"
@@ -53,7 +54,7 @@ export default function GroceryAddModal({ visible, onDismiss }: Props) {
       />
 
       <Text variant="labelLarge" style={styles.label}>
-        Category
+        {t("groceryModal.category")}
       </Text>
       <View style={styles.categoryWrap}>
         {GROCERY_CATEGORIES.map((cat) => (
@@ -65,13 +66,13 @@ export default function GroceryAddModal({ visible, onDismiss }: Props) {
             style={styles.catChip}
             labelStyle={styles.catLabel}
           >
-            {cat}
+            {groceryCategoryLabel(cat)}
           </Button>
         ))}
       </View>
 
       <TextInput
-        label="Qty (optional)"
+        label={t("groceryModal.qty")}
         value={qty}
         onChangeText={setQty}
         mode="outlined"
@@ -79,13 +80,13 @@ export default function GroceryAddModal({ visible, onDismiss }: Props) {
       />
 
       <View style={styles.actions}>
-        <Button onPress={handleDismiss}>Cancel</Button>
+        <Button onPress={handleDismiss}>{t("cancel")}</Button>
         <Button
           mode="contained"
           onPress={handleSubmit}
           disabled={!title.trim()}
         >
-          Add
+          {t("add")}
         </Button>
       </View>
     </ModalWrapper>
@@ -93,9 +94,9 @@ export default function GroceryAddModal({ visible, onDismiss }: Props) {
 }
 
 const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 16 },
-  input: { marginBottom: 12 },
-  label: { marginBottom: 8, color: "#6B6B8D" },
+  heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
+  input: { marginBottom: 12, textAlign: "right" },
+  label: { marginBottom: 8, color: "#6B6B8D", textAlign: "right" },
   categoryWrap: {
     flexDirection: "row",
     flexWrap: "wrap",

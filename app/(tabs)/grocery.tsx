@@ -17,6 +17,7 @@ import {
   clearBoughtRemote,
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
+import { t, groceryCategoryLabel } from "@src/i18n";
 
 export default function GroceryScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
@@ -29,18 +30,18 @@ export default function GroceryScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text variant="headlineLarge" style={styles.title}>
-          Grocery
+          {t("grocery.title")}
         </Text>
 
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <Text variant="titleMedium" style={styles.cardTitle}>
-              Shopping List
+              {t("grocery.shoppingList")}
             </Text>
 
             {grocery.length === 0 && (
               <Text variant="bodyMedium" style={styles.cardBody}>
-                Your list is empty — add items below!
+                {t("grocery.emptyList")}
               </Text>
             )}
 
@@ -51,14 +52,14 @@ export default function GroceryScreen() {
                   onPress={() => toggleGroceryBoughtRemote(item.id)}
                 />
                 <View style={styles.rowText}>
-                  <Text variant="bodyLarge">{item.title}</Text>
+                  <Text variant="bodyLarge" style={styles.itemTitle}>{item.title}</Text>
                   <View style={styles.meta}>
                     <Chip compact textStyle={styles.chipText} style={styles.chip}>
-                      {item.category}
+                      {groceryCategoryLabel(item.category)}
                     </Chip>
                     {item.qty ? (
                       <Text variant="bodySmall" style={styles.qty}>
-                        ×{item.qty}
+                        x{item.qty}
                       </Text>
                     ) : null}
                   </View>
@@ -76,10 +77,10 @@ export default function GroceryScreen() {
                 <Divider style={styles.divider} />
                 <View style={styles.boughtHeader}>
                   <Text variant="labelLarge" style={styles.boughtLabel}>
-                    Bought ({bought.length})
+                    {t("grocery.bought", { count: bought.length })}
                   </Text>
                   <Button compact onPress={clearBoughtRemote} textColor="#FF6B6B">
-                    Clear
+                    {t("grocery.clear")}
                   </Button>
                 </View>
                 {bought.map((item) => (
@@ -91,7 +92,7 @@ export default function GroceryScreen() {
                     <View style={styles.rowText}>
                       <Text
                         variant="bodyLarge"
-                        style={styles.boughtText}
+                        style={[styles.itemTitle, styles.boughtText]}
                       >
                         {item.title}
                       </Text>
@@ -115,7 +116,7 @@ export default function GroceryScreen() {
           contentStyle={styles.addButtonContent}
           onPress={() => setModalOpen(true)}
         >
-          Quick Add
+          {t("grocery.quickAdd")}
         </Button>
       </ScrollView>
 
@@ -130,20 +131,21 @@ export default function GroceryScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#FAFAFE" },
   container: { padding: 20, paddingBottom: 40 },
-  title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 20 },
+  title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 20, textAlign: "right" },
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 24 },
-  cardTitle: { fontWeight: "700", color: "#1A1A2E", marginBottom: 8 },
-  cardBody: { color: "#6B6B8D" },
+  cardTitle: { fontWeight: "700", color: "#1A1A2E", marginBottom: 8, textAlign: "right" },
+  cardBody: { color: "#6B6B8D", textAlign: "right" },
   row: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 4,
   },
-  rowText: { flex: 1, marginLeft: 4 },
+  rowText: { flex: 1, marginStart: 4 },
+  itemTitle: { textAlign: "right" },
   meta: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
   chip: { height: 24, backgroundColor: "#F0EEFF" },
   chipText: { fontSize: 11 },
-  qty: { color: "#6B6B8D" },
+  qty: { color: "#6B6B8D", textAlign: "right" },
   divider: { marginVertical: 12 },
   boughtHeader: {
     flexDirection: "row",
@@ -151,9 +153,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  boughtLabel: { color: "#8E8BA8" },
+  boughtLabel: { color: "#8E8BA8", textAlign: "right" },
   boughtRow: { opacity: 0.5 },
-  boughtText: { textDecorationLine: "line-through", color: "#8E8BA8" },
+  boughtText: { textDecorationLine: "line-through", color: "#8E8BA8", textAlign: "right" },
   addButton: { borderRadius: 14, backgroundColor: "#FF6B6B" },
   addButtonContent: { paddingVertical: 6 },
 });

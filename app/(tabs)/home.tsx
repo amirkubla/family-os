@@ -22,17 +22,12 @@ import {
 import NoteModal from "@src/components/NoteModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
+import { t, statusLabel } from "@src/i18n";
 
 const STATUS_COLORS: Record<string, string> = {
   idea: "#8E8BA8",
   in_progress: "#6C63FF",
   done: "#4ECDC4",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  idea: "Idea",
-  in_progress: "In Progress",
-  done: "Done",
 };
 
 export default function HomeScreen() {
@@ -57,15 +52,15 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text variant="headlineLarge" style={styles.title}>
-          Home
+          {t("home.title")}
         </Text>
 
-        {/* ── Notes ── */}
+        {/* -- Notes -- */}
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <View style={styles.sectionHeader}>
               <Text variant="titleMedium" style={styles.cardTitle}>
-                Notes
+                {t("home.notes")}
               </Text>
               <IconButton
                 icon="plus"
@@ -79,7 +74,7 @@ export default function HomeScreen() {
 
             {notes.length === 0 && (
               <Text variant="bodyMedium" style={styles.emptyText}>
-                No notes yet — tap + to jot something down.
+                {t("home.noNotes")}
               </Text>
             )}
 
@@ -93,8 +88,8 @@ export default function HomeScreen() {
                   }}
                 >
                   <Text variant="bodyLarge" style={styles.noteTitle}>
-                    {note.pinned ? "📌 " : ""}
-                    {note.title || "Note"}
+                    {note.pinned ? "\uD83D\uDCCC " : ""}
+                    {note.title || t("home.note")}
                   </Text>
                   <Text
                     variant="bodySmall"
@@ -119,12 +114,12 @@ export default function HomeScreen() {
           </Card.Content>
         </Card>
 
-        {/* ── Chores ── */}
+        {/* -- Chores -- */}
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <View style={styles.sectionHeader}>
               <Text variant="titleMedium" style={styles.cardTitle}>
-                Chores
+                {t("home.chores")}
               </Text>
               <IconButton
                 icon="plus"
@@ -135,7 +130,7 @@ export default function HomeScreen() {
 
             {chores.length === 0 && (
               <Text variant="bodyMedium" style={styles.emptyText}>
-                All clear — nothing to do right now!
+                {t("home.allClear")}
               </Text>
             )}
 
@@ -154,7 +149,7 @@ export default function HomeScreen() {
                   </Text>
                   {chore.assignedTo ? (
                     <Text variant="bodySmall" style={styles.assignee}>
-                      → {chore.assignedTo}
+                      {chore.assignedTo}
                     </Text>
                   ) : null}
                 </View>
@@ -168,12 +163,12 @@ export default function HomeScreen() {
           </Card.Content>
         </Card>
 
-        {/* ── Projects ── */}
+        {/* -- Projects -- */}
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <View style={styles.sectionHeader}>
               <Text variant="titleMedium" style={styles.cardTitle}>
-                Projects
+                {t("home.projects")}
               </Text>
               <IconButton
                 icon="plus"
@@ -187,7 +182,7 @@ export default function HomeScreen() {
 
             {projects.length === 0 && (
               <Text variant="bodyMedium" style={styles.emptyText}>
-                No projects yet — dream big!
+                {t("home.noProjects")}
               </Text>
             )}
 
@@ -218,7 +213,7 @@ export default function HomeScreen() {
                         },
                       ]}
                     >
-                      {STATUS_LABELS[proj.status]}
+                      {statusLabel(proj.status)}
                     </Chip>
                   </View>
                   {proj.description ? (
@@ -277,16 +272,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#FAFAFE" },
   container: { padding: 20, paddingBottom: 40 },
-  title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 20 },
+  title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 20, textAlign: "right" },
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 20 },
-  cardTitle: { fontWeight: "700", color: "#1A1A2E", flex: 1 },
+  cardTitle: { fontWeight: "700", color: "#1A1A2E", flex: 1, textAlign: "right" },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 4,
   },
-  emptyText: { color: "#6B6B8D", marginBottom: 4 },
+  emptyText: { color: "#6B6B8D", marginBottom: 4, textAlign: "right" },
 
   // Notes
   noteRow: {
@@ -297,8 +292,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F0EEFF",
   },
   noteContent: { flex: 1, cursor: "pointer" } as any,
-  noteTitle: { fontWeight: "600" },
-  noteBody: { color: "#6B6B8D", marginTop: 2 },
+  noteTitle: { fontWeight: "600", textAlign: "right" },
+  noteBody: { color: "#6B6B8D", marginTop: 2, textAlign: "right" },
 
   // Chores
   choreRow: {
@@ -306,9 +301,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 2,
   },
-  choreText: { flex: 1, marginLeft: 4 },
+  choreText: { flex: 1, marginStart: 4 },
   choreDone: { textDecorationLine: "line-through", color: "#8E8BA8" },
-  assignee: { color: "#6B6B8D" },
+  assignee: { color: "#6B6B8D", textAlign: "right" },
 
   // Projects
   projectRow: {
@@ -325,7 +320,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statusChip: { borderRadius: 12, height: 26 },
-  projDesc: { color: "#6B6B8D", marginTop: 4 },
+  projDesc: { color: "#6B6B8D", marginTop: 4, textAlign: "right" },
   progressBar: { height: 5, borderRadius: 3, marginTop: 8 },
-  progressLabel: { color: "#8E8BA8", marginTop: 2 },
+  progressLabel: { color: "#8E8BA8", marginTop: 2, textAlign: "right" },
 });

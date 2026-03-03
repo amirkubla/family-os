@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import { addChoreRemote } from "@src/lib/sync/remoteCrud";
+import { t } from "@src/i18n";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -36,11 +37,11 @@ export default function ChoreAddModal({ visible, onDismiss }: Props) {
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
       <Text variant="titleLarge" style={styles.heading}>
-        Add Chore
+        {t("choreModal.title")}
       </Text>
 
       <TextInput
-        label="What needs doing?"
+        label={t("choreModal.whatNeedsDoing")}
         value={title}
         onChangeText={setTitle}
         mode="outlined"
@@ -49,7 +50,7 @@ export default function ChoreAddModal({ visible, onDismiss }: Props) {
       />
 
       <TextInput
-        label="Assigned to (optional)"
+        label={t("choreModal.assignedTo")}
         value={assignedTo}
         onChangeText={setAssignedTo}
         mode="outlined"
@@ -57,13 +58,13 @@ export default function ChoreAddModal({ visible, onDismiss }: Props) {
       />
 
       <View style={styles.actions}>
-        <Button onPress={handleDismiss}>Cancel</Button>
+        <Button onPress={handleDismiss}>{t("cancel")}</Button>
         <Button
           mode="contained"
           onPress={handleSubmit}
           disabled={!title.trim()}
         >
-          Add
+          {t("add")}
         </Button>
       </View>
     </ModalWrapper>
@@ -71,8 +72,8 @@ export default function ChoreAddModal({ visible, onDismiss }: Props) {
 }
 
 const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 16 },
-  input: { marginBottom: 12 },
+  heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
+  input: { marginBottom: 12, textAlign: "right" },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",

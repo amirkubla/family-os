@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/theme";
+import { t } from "@src/i18n";
 
 export default function TabLayout() {
   return (
@@ -18,6 +19,7 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "600",
+          fontFamily: "Rubik-Medium",
         },
         headerShown: false,
       }}
@@ -25,7 +27,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="today"
         options={{
-          title: "Today",
+          title: t("tabs.today"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="sunny" size={size} color={color} />
           ),
@@ -34,7 +36,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="grocery"
         options={{
-          title: "Grocery",
+          title: t("tabs.grocery"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart" size={size} color={color} />
           ),
@@ -43,7 +45,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Home",
+          title: t("tabs.home"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
