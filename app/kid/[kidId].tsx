@@ -25,7 +25,6 @@ import {
   updateScheduleBlockRemote,
   deleteScheduleBlockRemote,
 } from "@src/lib/sync/remoteCrud";
-import { KIDS } from "@src/models/seed";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
@@ -92,8 +91,7 @@ export default function KidScheduleScreen() {
   const storeKids = useFamilyStore((s) => s.kids);
 
   const navigation = useNavigation();
-  const displayKids = storeKids.length > 0 ? storeKids : KIDS;
-  const kid = displayKids.find((k) => k.id === kidId);
+  const kid = storeKids.find((k) => k.id === kidId);
   const kidColor = kid?.color ?? "#6C63FF";
 
   // Set header options once

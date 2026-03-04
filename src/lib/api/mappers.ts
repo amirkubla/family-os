@@ -12,13 +12,15 @@ import type {
   ApiProject,
   ApiKid,
   ApiScheduleBlock,
+  ApiFamilyMember,
 } from "./types";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
-import type { Kid } from "@src/models/seed";
+import type { Kid } from "@src/models/kid";
 import type { ScheduleBlock } from "@src/models/schedule";
+import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 
 const toMs = (iso: string) => new Date(iso).getTime();
 
@@ -83,6 +85,7 @@ export function apiToLocalChore(a: ApiChore): Chore {
     id: a.id,
     title: a.title,
     assignedTo: a.assignedTo ?? undefined,
+    assignedToMemberId: a.assignedToMemberId ?? undefined,
     done: a.done,
     selectedForToday: a.selectedForToday,
     updatedAt: toMs(a.updatedAt),
@@ -95,6 +98,7 @@ export function localToApiChore(item: Chore) {
     id: item.id,
     title: item.title,
     assignedTo: item.assignedTo ?? null,
+    assignedToMemberId: item.assignedToMemberId ?? null,
     done: item.done,
     selectedForToday: item.selectedForToday,
   };
@@ -136,6 +140,9 @@ export function apiToLocalKid(a: ApiKid): Kid {
     name: a.name,
     color: a.color,
     emoji: a.emoji ?? "",
+    isActive: a.isActive,
+    updatedAt: toMs(a.updatedAt),
+    createdAt: toMs(a.createdAt),
   };
 }
 
@@ -145,6 +152,7 @@ export function localToApiKid(item: Kid) {
     name: item.name,
     color: item.color,
     emoji: item.emoji || null,
+    isActive: item.isActive,
   };
 }
 
@@ -179,5 +187,33 @@ export function localToApiScheduleBlock(item: ScheduleBlock) {
     endMinutes: item.endMinutes,
     location: item.location ?? null,
     color: item.color ?? null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Family Members
+// ---------------------------------------------------------------------------
+
+export function apiToLocalFamilyMember(a: ApiFamilyMember): FamilyMember {
+  return {
+    id: a.id,
+    name: a.displayName,
+    role: (a.role ?? "other") as MemberRole,
+    color: a.color ?? undefined,
+    avatarEmoji: a.avatarEmoji ?? undefined,
+    isActive: a.isActive,
+    updatedAt: toMs(a.updatedAt),
+    createdAt: toMs(a.createdAt),
+  };
+}
+
+export function localToApiFamilyMember(item: FamilyMember) {
+  return {
+    id: item.id,
+    displayName: item.name,
+    role: item.role,
+    color: item.color ?? null,
+    avatarEmoji: item.avatarEmoji ?? null,
+    isActive: item.isActive,
   };
 }

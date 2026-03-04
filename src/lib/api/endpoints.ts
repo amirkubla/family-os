@@ -11,6 +11,7 @@ import type {
   ApiProject,
   ApiKid,
   ApiScheduleBlock,
+  ApiFamilyMember,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -151,4 +152,25 @@ export const scheduleBlocksApi = {
 
   delete: (fid: string, id: string) =>
     http.delete<{ deleted: boolean }>(`${fam(fid)}/schedule-blocks/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Family Members
+// ---------------------------------------------------------------------------
+
+export const familyMembersApi = {
+  list: (fid: string) =>
+    http.get<ApiFamilyMember[]>(`${fam(fid)}/members`),
+
+  create: (fid: string, data: Omit<ApiFamilyMember, "familyId" | "createdAt" | "updatedAt">) =>
+    http.post<ApiFamilyMember>(`${fam(fid)}/members`, data),
+
+  upsert: (fid: string, data: Omit<ApiFamilyMember, "familyId" | "createdAt" | "updatedAt">) =>
+    http.put<ApiFamilyMember>(`${fam(fid)}/members/${data.id}`, data),
+
+  update: (fid: string, id: string, data: Partial<ApiFamilyMember>) =>
+    http.patch<ApiFamilyMember>(`${fam(fid)}/members/${id}`, data),
+
+  delete: (fid: string, id: string) =>
+    http.delete<{ deleted: boolean }>(`${fam(fid)}/members/${id}`),
 };

@@ -7,8 +7,8 @@ import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project, ProjectStatus } from "@src/models/project";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
-import type { Kid } from "@src/models/seed";
-import { KIDS } from "@src/models/seed";
+import type { Kid } from "@src/models/kid";
+import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import { makeId } from "@src/utils/id";
 
 /* ─── Sync status ─── */
@@ -24,6 +24,7 @@ interface FamilyState {
   projects: Project[];
   kids: Kid[];
   scheduleBlocks: ScheduleBlock[];
+  familyMembers: FamilyMember[];
 
   // Sync metadata
   syncStatus: SyncStatus;
@@ -37,6 +38,7 @@ interface FamilyState {
   setProjects: (items: Project[]) => void;
   setKids: (items: Kid[]) => void;
   setScheduleBlocks: (items: ScheduleBlock[]) => void;
+  setFamilyMembers: (items: FamilyMember[]) => void;
   setSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setLastSyncedAt: (ts: number) => void;
 
@@ -58,10 +60,28 @@ interface FamilyState {
   deleteNote: (id: string) => void;
 
   // Chores actions
-  addChore: (input: { title: string; assignedTo?: string }) => Chore;
+  addChore: (input: { title: string; assignedTo?: string; assignedToMemberId?: string }) => Chore;
   toggleChoreDone: (id: string) => void;
   toggleChoreSelectedForToday: (id: string) => void;
   deleteChore: (id: string) => void;
+
+  // Kids actions
+  addKid: (input: { name: string; emoji: string; color: string }) => Kid;
+  updateKid: (id: string, patch: Partial<Pick<Kid, "name" | "emoji" | "color">>) => void;
+  setKidActive: (id: string, isActive: boolean) => void;
+
+  // Family Members actions
+  addFamilyMember: (input: {
+    name: string;
+    role: MemberRole;
+    color?: string;
+    avatarEmoji?: string;
+  }) => FamilyMember;
+  updateFamilyMember: (
+    id: string,
+    patch: Partial<Pick<FamilyMember, "name" | "role" | "color" | "avatarEmoji">>
+  ) => void;
+  setFamilyMemberActive: (id: string, isActive: boolean) => void;
 
   // Projects actions
   addProject: (input: { title: string; description?: string }) => Project;
@@ -105,6 +125,7 @@ export const useFamilyStore = create<FamilyState>()(
       projects: [],
       kids: [],
       scheduleBlocks: [],
+      familyMembers: [],
 
       syncStatus: "idle" as SyncStatus,
       syncError: null,
@@ -118,6 +139,7 @@ export const useFamilyStore = create<FamilyState>()(
       setProjects: (items) => set({ projects: items }),
       setKids: (items) => set({ kids: items }),
       setScheduleBlocks: (items) => set({ scheduleBlocks: items }),
+      setFamilyMembers: (items) => set({ familyMembers: items }),
       setSyncStatus: (status, error = null) =>
         set({ syncStatus: status, syncError: error }),
       setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
@@ -202,12 +224,13 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Chores ── */
 
-      addChore: ({ title, assignedTo }) => {
+      addChore: ({ title, assignedTo, assignedToMemberId }) => {
         const now = Date.now();
         const item: Chore = {
           id: makeId(),
           title,
           assignedTo,
+          assignedToMemberId,
           done: false,
           selectedForToday: false,
           updatedAt: now,
@@ -296,10 +319,73 @@ export const useFamilyStore = create<FamilyState>()(
         set((s) => ({
           scheduleBlocks: s.scheduleBlocks.filter((b) => b.id !== id),
         })),
+
+      /* ── Kids ── */
+
+      addKid: ({ name, emoji, color }) => {
+        const now = Date.now();
+        const item: Kid = {
+          id: makeId(),
+          name,
+          emoji,
+          color,
+          isActive: true,
+          updatedAt: now,
+          createdAt: now,
+        };
+        set((s) => ({ kids: [item, ...s.kids] }));
+        return item;
+      },
+
+      updateKid: (id, patch) =>
+        set((s) => ({
+          kids: s.kids.map((k) =>
+            k.id === id ? { ...k, ...patch, updatedAt: Date.now() } : k
+          ),
+        })),
+
+      setKidActive: (id, isActive) =>
+        set((s) => ({
+          kids: s.kids.map((k) =>
+            k.id === id ? { ...k, isActive, updatedAt: Date.now() } : k
+          ),
+        })),
+
+      /* ── Family Members ── */
+
+      addFamilyMember: ({ name, role, color, avatarEmoji }) => {
+        const now = Date.now();
+        const item: FamilyMember = {
+          id: makeId(),
+          name,
+          role,
+          color,
+          avatarEmoji,
+          isActive: true,
+          updatedAt: now,
+          createdAt: now,
+        };
+        set((s) => ({ familyMembers: [item, ...s.familyMembers] }));
+        return item;
+      },
+
+      updateFamilyMember: (id, patch) =>
+        set((s) => ({
+          familyMembers: s.familyMembers.map((m) =>
+            m.id === id ? { ...m, ...patch, updatedAt: Date.now() } : m
+          ),
+        })),
+
+      setFamilyMemberActive: (id, isActive) =>
+        set((s) => ({
+          familyMembers: s.familyMembers.map((m) =>
+            m.id === id ? { ...m, isActive, updatedAt: Date.now() } : m
+          ),
+        })),
     }),
     {
       name: "family-os-store-v2",
-      version: 2,
+      version: 4,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         grocery: state.grocery,
@@ -308,6 +394,7 @@ export const useFamilyStore = create<FamilyState>()(
         projects: state.projects,
         kids: state.kids,
         scheduleBlocks: state.scheduleBlocks,
+        familyMembers: state.familyMembers,
         lastSyncedAt: state.lastSyncedAt,
       }),
       migrate: (persisted: any, version: number) => {
@@ -323,7 +410,24 @@ export const useFamilyStore = create<FamilyState>()(
             ...c,
             selectedForToday: c.selectedForToday ?? false,
           }));
-          return { ...persisted, grocery, chores };
+          persisted = { ...persisted, grocery, chores };
+        }
+        if (version < 3) {
+          // Add familyMembers array + assignedToMemberId to chores
+          persisted.familyMembers = persisted.familyMembers ?? [];
+          persisted.chores = (persisted.chores ?? []).map((c: any) => ({
+            ...c,
+            assignedToMemberId: c.assignedToMemberId ?? undefined,
+          }));
+        }
+        if (version < 4) {
+          // Enhance kids with isActive + timestamps
+          persisted.kids = (persisted.kids ?? []).map((k: any) => ({
+            ...k,
+            isActive: k.isActive ?? true,
+            createdAt: k.createdAt ?? Date.now(),
+            updatedAt: k.updatedAt ?? Date.now(),
+          }));
         }
         return persisted;
       },

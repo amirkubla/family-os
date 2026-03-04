@@ -16,20 +16,26 @@ import {
   notesApi,
   choresApi,
   projectsApi,
+  kidsApi,
   scheduleBlocksApi,
+  familyMembersApi,
 } from "../api/endpoints";
 import {
   localToApiGrocery,
   localToApiNote,
   localToApiChore,
   localToApiProject,
+  localToApiKid,
   localToApiScheduleBlock,
+  localToApiFamilyMember,
 } from "../api/mappers";
 import type { GroceryItem } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
+import type { Kid } from "@src/models/kid";
+import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 
 // ---------------------------------------------------------------------------
 // Error handler — set by UI (Snackbar)
@@ -154,6 +160,7 @@ export function deleteNoteRemote(id: string) {
 export function addChoreRemote(input: {
   title: string;
   assignedTo?: string;
+  assignedToMemberId?: string;
 }) {
   const item = useFamilyStore.getState().addChore(input);
   fireAndForget(
@@ -286,5 +293,100 @@ export function deleteScheduleBlockRemote(id: string) {
   fireAndForget(
     getFamilyId().then((fid) => scheduleBlocksApi.delete(fid, id)),
     "Delete schedule block",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Kids
+// ---------------------------------------------------------------------------
+
+export function addKidRemote(input: {
+  name: string;
+  emoji: string;
+  color: string;
+}) {
+  const item = useFamilyStore.getState().addKid(input);
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      kidsApi.upsert(fid, localToApiKid(item)),
+    ),
+    "Add kid",
+  );
+}
+
+export function updateKidRemote(
+  id: string,
+  patch: Partial<Pick<Kid, "name" | "emoji" | "color">>,
+) {
+  useFamilyStore.getState().updateKid(id, patch);
+  const item = useFamilyStore.getState().kids.find((k) => k.id === id);
+  if (!item) return;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      kidsApi.upsert(fid, localToApiKid(item)),
+    ),
+    "Update kid",
+  );
+}
+
+export function setKidActiveRemote(id: string, isActive: boolean) {
+  useFamilyStore.getState().setKidActive(id, isActive);
+  const item = useFamilyStore.getState().kids.find((k) => k.id === id);
+  if (!item) return;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      kidsApi.update(fid, id, { isActive }),
+    ),
+    "Toggle kid active",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Family Members
+// ---------------------------------------------------------------------------
+
+export function addFamilyMemberRemote(input: {
+  name: string;
+  role: MemberRole;
+  color?: string;
+  avatarEmoji?: string;
+}) {
+  const item = useFamilyStore.getState().addFamilyMember(input);
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      familyMembersApi.upsert(fid, localToApiFamilyMember(item)),
+    ),
+    "Add family member",
+  );
+}
+
+export function updateFamilyMemberRemote(
+  id: string,
+  patch: Partial<Pick<FamilyMember, "name" | "role" | "color" | "avatarEmoji">>,
+) {
+  useFamilyStore.getState().updateFamilyMember(id, patch);
+  const item = useFamilyStore
+    .getState()
+    .familyMembers.find((m) => m.id === id);
+  if (!item) return;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      familyMembersApi.upsert(fid, localToApiFamilyMember(item)),
+    ),
+    "Update family member",
+  );
+}
+
+export function setFamilyMemberActiveRemote(id: string, isActive: boolean) {
+  useFamilyStore.getState().setFamilyMemberActive(id, isActive);
+  const item = useFamilyStore
+    .getState()
+    .familyMembers.find((m) => m.id === id);
+  if (!item) return;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      familyMembersApi.update(fid, id, { isActive }),
+    ),
+    "Toggle family member active",
   );
 }

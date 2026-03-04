@@ -9,7 +9,7 @@ import {
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { KIDS } from "@src/models/seed";
+import type { Kid } from "@src/models/kid";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useKidBlocksForDay } from "@src/store/scheduleSelectors";
 import { syncAll } from "@src/lib/sync/syncEngine";
@@ -34,13 +34,6 @@ const todayDow = new Date().getDay();
 // ---------------------------------------------------------------------------
 // KidTodayCard — shows a single kid's today schedule
 // ---------------------------------------------------------------------------
-
-interface Kid {
-  id: string;
-  name: string;
-  color: string;
-  emoji: string;
-}
 
 function KidTodayCard({ kid }: { kid: Kid }) {
   const router = useRouter();
@@ -109,13 +102,14 @@ export default function TodayScreen() {
   const projects = useFamilyStore((s) => s.projects);
   const notes = useFamilyStore((s) => s.notes);
   const kids = useFamilyStore((s) => s.kids);
+  const familyMembers = useFamilyStore((s) => s.familyMembers);
   const syncStatus = useFamilyStore((s) => s.syncStatus);
   const lastSyncedAt = useFamilyStore((s) => s.lastSyncedAt);
 
   const [syncing, setSyncing] = useState(false);
   const router = useRouter();
 
-  const displayKids = kids.length > 0 ? kids : KIDS;
+  const activeKids = kids.filter((k) => k.isActive);
 
   const unboughtCount = grocery.filter((g) => !g.isBought).length;
   const undoneChores = chores.filter((c) => !c.done).length;
@@ -226,27 +220,35 @@ export default function TodayScreen() {
                 {t("today.noChoresForToday")}
               </Text>
             ) : (
-              todayChores.map((chore) => (
-                <View key={chore.id} style={styles.choreRow}>
-                  <Checkbox
-                    status={chore.done ? "checked" : "unchecked"}
-                    onPress={() => toggleChoreDoneRemote(chore.id)}
-                  />
-                  <View style={styles.choreTextWrap}>
-                    <Text
-                      variant="bodyLarge"
-                      style={chore.done ? styles.choreDoneText : styles.choreText}
-                    >
-                      {chore.title}
-                    </Text>
-                    {chore.assignedTo ? (
-                      <Text variant="bodySmall" style={styles.choreAssignee}>
-                        {chore.assignedTo}
+              todayChores.map((chore) => {
+                const member = chore.assignedToMemberId
+                  ? familyMembers.find((m) => m.id === chore.assignedToMemberId)
+                  : undefined;
+                const assigneeDisplay = member
+                  ? `${member.avatarEmoji ?? ""} ${member.name}`
+                  : chore.assignedTo;
+                return (
+                  <View key={chore.id} style={styles.choreRow}>
+                    <Checkbox
+                      status={chore.done ? "checked" : "unchecked"}
+                      onPress={() => toggleChoreDoneRemote(chore.id)}
+                    />
+                    <View style={styles.choreTextWrap}>
+                      <Text
+                        variant="bodyLarge"
+                        style={chore.done ? styles.choreDoneText : styles.choreText}
+                      >
+                        {chore.title}
                       </Text>
-                    ) : null}
+                      {assigneeDisplay ? (
+                        <Text variant="bodySmall" style={styles.choreAssignee}>
+                          {assigneeDisplay}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
-                </View>
-              ))
+                );
+              })
             )}
           </Card.Content>
         </Card>
@@ -255,7 +257,7 @@ export default function TodayScreen() {
         <Text variant="titleMedium" style={styles.sectionTitle}>
           {t("today.kids")}
         </Text>
-        {displayKids.map((kid) => (
+        {activeKids.map((kid) => (
           <KidTodayCard key={kid.id} kid={kid} />
         ))}
       </ScrollView>

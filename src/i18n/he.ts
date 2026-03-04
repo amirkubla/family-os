@@ -19,6 +19,7 @@ const he = {
     today: "היום",
     grocery: "קניות",
     home: "בית",
+    settings: "הגדרות",
   },
 
   // ── Today screen ──
@@ -107,6 +108,8 @@ const he = {
     title: "הוספת מטלה",
     whatNeedsDoing: "מה צריך לעשות?",
     assignedTo: "מוקצה ל (אופציונלי)",
+    selectMember: "משויך ל:",
+    noAssignment: "ללא",
   },
 
   // ── Project Modal ──
@@ -186,6 +189,40 @@ const he = {
 
   // ── Calendar day-of-week header labels (Sunday first) ──
   calendarDays: ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"] as string[],
+
+  // ── Member roles ──
+  memberRole: {
+    parent: "הורה",
+    caregiver: "מטפל/ת",
+    other: "אחר",
+  } as Record<string, string>,
+
+  // ── Settings screen ──
+  settings: {
+    title: "הגדרות",
+    familyMembers: "חברי משפחה",
+    familyMembersSubtitle: "מי מנהל/ת את הבית ומופיע/ה בהקצאת מטלות",
+    noMembers: "אין חברי משפחה — לחצו על + כדי להוסיף.",
+    archived: "בארכיון",
+    addMember: "הוספת חבר/ת משפחה",
+    editMember: "עריכת חבר/ת משפחה",
+    memberName: "שם",
+    memberRole: "תפקיד",
+    memberEmoji: "אימוג׳י",
+    memberColor: "צבע",
+    archive: "ארכיון",
+    restore: "שחזור",
+    nameRequired: "שם הוא שדה חובה",
+    nameMinLength: "שם חייב להכיל לפחות 2 תווים",
+    kids: "ילדים",
+    kidsSubtitle: "הילדים שמופיעים במערכת השעות ובמסך היום",
+    noKids: "אין ילדים — לחצו על + כדי להוסיף.",
+    addKid: "הוספת ילד/ה",
+    editKid: "עריכת ילד/ה",
+    kidName: "שם",
+    kidEmoji: "אימוג׳י",
+    kidColor: "צבע",
+  },
 } as const;
 
 export default he;

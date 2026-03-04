@@ -63,5 +63,10 @@ export function statusLabel(statusKey: string): string {
   return (he.status as Record<string, string>)[statusKey] ?? statusKey;
 }
 
+/** Hebrew member role label from English role key. */
+export function memberRoleLabel(roleKey: string): string {
+  return (he.memberRole as Record<string, string>)[roleKey] ?? roleKey;
+}
+
 /** Locale string for toLocaleString/toLocaleTimeString calls. */
 export const LOCALE = "he-IL";

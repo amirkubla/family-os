@@ -37,6 +37,7 @@ export const kidsRepo = {
           name: sql`excluded.name`,
           color: sql`excluded.color`,
           emoji: sql`excluded.emoji`,
+          isActive: sql`excluded.is_active`,
           updatedAt: new Date(),
         },
       })

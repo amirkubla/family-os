@@ -36,6 +36,20 @@
       "when": 1772665400000,
       "tag": "0004_shopping_category",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772750000000,
+      "tag": "0005_family_members_extend",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772840000000,
+      "tag": "0006_kids_is_active",
+      "breakpoints": true
     }
   ]
 }

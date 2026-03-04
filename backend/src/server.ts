@@ -18,6 +18,7 @@ import { choresRoutes } from "./routes/chores.js";
 import { projectsRoutes } from "./routes/projects.js";
 import { kidsRoutes } from "./routes/kids.js";
 import { scheduleBlocksRoutes } from "./routes/scheduleBlocks.js";
+import { familyMembersRoutes } from "./routes/familyMembers.js";
 
 // ---------------------------------------------------------------------------
 // App
@@ -40,6 +41,7 @@ app.route("/v1/family/:familyId/chores", choresRoutes);
 app.route("/v1/family/:familyId/projects", projectsRoutes);
 app.route("/v1/family/:familyId/kids", kidsRoutes);
 app.route("/v1/family/:familyId/schedule-blocks", scheduleBlocksRoutes);
+app.route("/v1/family/:familyId/members", familyMembersRoutes);
 
 // ---------------------------------------------------------------------------
 // Start

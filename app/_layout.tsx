@@ -15,6 +15,8 @@ import { theme } from "@src/theme/theme";
 import { pullAll } from "@src/lib/sync/syncEngine";
 import { setSyncErrorHandler } from "@src/lib/sync/remoteCrud";
 import { seedScheduleIfEmpty } from "@src/store/scheduleSeed";
+import { seedFamilyMembersIfEmpty } from "@src/store/familyMemberSeed";
+import { seedKidsIfEmpty } from "@src/store/kidSeed";
 import { t } from "@src/i18n";
 
 // ── RTL bootstrap (runs once at module load, before any render) ──
@@ -58,16 +60,17 @@ export default function RootLayout() {
     setSyncErrorHandler(showSnack);
   }, [showSnack]);
 
-  // Best-effort initial pull on mount
+  // Pull from backend first, then seed only if collections are still empty
   useEffect(() => {
-    pullAll().catch((err) => {
-      console.warn("[sync] Initial pull failed:", err.message);
-    });
-  }, []);
-
-  // Seed schedule blocks on first run
-  useEffect(() => {
-    seedScheduleIfEmpty();
+    pullAll()
+      .catch((err) => {
+        console.warn("[sync] Initial pull failed:", err.message);
+      })
+      .finally(() => {
+        seedFamilyMembersIfEmpty();
+        seedKidsIfEmpty();
+        seedScheduleIfEmpty();
+      });
   }, []);
 
   // Hide splash once fonts are loaded

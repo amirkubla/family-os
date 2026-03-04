@@ -38,6 +38,15 @@ const STATUS_COLORS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 function ChoreRow({ chore }: { chore: Chore }) {
+  const assignedMember = useFamilyStore((s) =>
+    chore.assignedToMemberId
+      ? s.familyMembers.find((m) => m.id === chore.assignedToMemberId)
+      : undefined,
+  );
+  const assigneeDisplay = assignedMember
+    ? `${assignedMember.avatarEmoji ?? ""} ${assignedMember.name}`
+    : chore.assignedTo;
+
   return (
     <View style={styles.choreRow}>
       <Checkbox
@@ -51,9 +60,9 @@ function ChoreRow({ chore }: { chore: Chore }) {
         >
           {chore.title}
         </Text>
-        {chore.assignedTo ? (
+        {assigneeDisplay ? (
           <Text variant="bodySmall" style={styles.assignee}>
-            {chore.assignedTo}
+            {assigneeDisplay}
           </Text>
         ) : null}
       </View>

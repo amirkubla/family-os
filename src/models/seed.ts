@@ -1,11 +1,8 @@
-export interface Kid {
-  id: string;
-  name: string;
-  color: string;
-  emoji: string;
-}
+/**
+ * seed.ts — Re-exports from kid.ts for backward compatibility.
+ *
+ * @deprecated Import directly from "@src/models/kid" instead.
+ */
 
-export const KIDS: Kid[] = [
-  { id: "1", name: "Lily", color: "#FF6B6B", emoji: "🌸" },
-  { id: "2", name: "Max", color: "#4ECDC4", emoji: "🚀" },
-];
+export type { Kid } from "./kid";
+export { DEFAULT_KIDS as KIDS } from "./kid";

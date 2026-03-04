@@ -18,6 +18,7 @@ export interface ApiKid {
   name: string;
   color: string;
   emoji: string | null;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,8 +50,21 @@ export interface ApiChore {
   familyId: string;
   title: string;
   assignedTo: string | null;
+  assignedToMemberId: string | null;
   done: boolean;
   selectedForToday: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiFamilyMember {
+  id: string;
+  familyId: string;
+  displayName: string;
+  role: string | null;
+  color: string | null;
+  avatarEmoji: string | null;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
