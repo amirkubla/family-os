@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import { Card, Text, IconButton, Divider, TextInput, Button } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -396,12 +396,12 @@ const styles = StyleSheet.create({
   subtitle: { color: "#8E8BA8", textAlign: "right", marginTop: 2 },
   emptyText: { color: "#6B6B8D", textAlign: "right", marginVertical: 8 },
   memberRow: {
-    flexDirection: "row",
+    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
     alignItems: "center",
     paddingVertical: 8,
   },
   archivedRow: { opacity: 0.5 },
-  rowActions: { flexDirection: "row" },
+  rowActions: { flexDirection: Platform.OS === "web" ? "row-reverse" : "row" },
   memberInfo: { flex: 1, marginHorizontal: 8, alignItems: "flex-end" },
   memberName: { fontWeight: "600", textAlign: "right", color: "#1A1A2E" },
   memberRole: { color: "#8E8BA8", textAlign: "right" },

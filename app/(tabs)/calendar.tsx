@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import {
   Card,
   Text,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
 
   // Event row
   eventRow: {
-    flexDirection: "row",
+    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
     alignItems: "center",
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -277,12 +277,12 @@ const styles = StyleSheet.create({
   },
   eventInfo: { flex: 1 },
   eventTitleRow: {
-    flexDirection: "row",
+    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
     alignItems: "center",
     gap: 8,
   },
   eventTitle: { fontWeight: "600", color: "#1A1A2E", textAlign: "right" },
-  eventMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
+  eventMetaRow: { flexDirection: Platform.OS === "web" ? "row-reverse" : "row", alignItems: "center", gap: 8, marginTop: 2 },
   eventTime: { color: "#6B6B8D", textAlign: "right" },
   assigneeBadge: {
     fontSize: 11,
