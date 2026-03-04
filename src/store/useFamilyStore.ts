@@ -19,6 +19,7 @@ export type SyncStatus = "idle" | "syncing" | "error";
 /* ─── State shape ─── */
 
 interface FamilyState {
+  familyName: string;
   grocery: GroceryItem[];
   notes: Note[];
   chores: Chore[];
@@ -32,6 +33,9 @@ interface FamilyState {
   syncStatus: SyncStatus;
   syncError: string | null;
   lastSyncedAt: number | null;
+
+  // Family name
+  setFamilyName: (name: string) => void;
 
   // Bulk setters (used by sync engine to replace entire collections)
   setGrocery: (items: GroceryItem[]) => void;
@@ -148,6 +152,7 @@ interface FamilyState {
 export const useFamilyStore = create<FamilyState>()(
   persist(
     (set, get) => ({
+      familyName: "",
       grocery: [],
       notes: [],
       chores: [],
@@ -160,6 +165,10 @@ export const useFamilyStore = create<FamilyState>()(
       syncStatus: "idle" as SyncStatus,
       syncError: null,
       lastSyncedAt: null,
+
+      /* ── Family name ── */
+
+      setFamilyName: (name) => set({ familyName: name }),
 
       /* ── Bulk setters ── */
 
@@ -448,9 +457,10 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
+        familyName: state.familyName,
         grocery: state.grocery,
         notes: state.notes,
         chores: state.chores,
@@ -504,6 +514,10 @@ export const useFamilyStore = create<FamilyState>()(
         if (version < 6) {
           // Add familyEvents array
           persisted.familyEvents = persisted.familyEvents ?? [];
+        }
+        if (version < 7) {
+          // Add familyName string
+          persisted.familyName = persisted.familyName ?? "";
         }
         return persisted;
       },

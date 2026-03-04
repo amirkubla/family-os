@@ -34,6 +34,7 @@ import { t, dayName, assigneeTypeLabel } from "@src/i18n";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import FamilyEventModal from "@src/components/FamilyEventModal";
+import FamilyBadge from "@src/components/FamilyBadge";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -183,6 +184,7 @@ export default function CalendarScreen() {
         <Text variant="headlineLarge" style={styles.title}>
           {t("calendar.title")}
         </Text>
+        <FamilyBadge />
 
         {/* Calendar */}
         <Card style={styles.card} mode="elevated">

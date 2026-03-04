@@ -26,6 +26,7 @@ import NoteModal from "@src/components/NoteModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
 import { t, statusLabel } from "@src/i18n";
+import FamilyBadge from "@src/components/FamilyBadge";
 
 const STATUS_COLORS: Record<string, string> = {
   idea: "#8E8BA8",
@@ -113,6 +114,7 @@ export default function HomeScreen() {
         <Text variant="headlineLarge" style={styles.title}>
           {t("home.title")}
         </Text>
+        <FamilyBadge />
 
         {/* -- Notes -- */}
         <Card style={styles.card} mode="elevated">

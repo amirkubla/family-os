@@ -12,6 +12,7 @@
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { getFamilyId } from "../familyContext";
 import {
+  familyApi,
   groceryApi,
   notesApi,
   choresApi,
@@ -56,6 +57,18 @@ function fireAndForget(promise: Promise<unknown>, label: string) {
     console.warn("[sync]", msg);
     _onSyncError?.(msg);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Family Name
+// ---------------------------------------------------------------------------
+
+export function updateFamilyNameRemote(name: string) {
+  useFamilyStore.getState().setFamilyName(name);
+  fireAndForget(
+    getFamilyId().then((fid) => familyApi.update(fid, { name })),
+    "Update family name",
+  );
 }
 
 // ---------------------------------------------------------------------------

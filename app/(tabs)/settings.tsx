@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
-import { Card, Text, IconButton, Divider } from "react-native-paper";
+import { Card, Text, IconButton, Divider, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
   setFamilyMemberActiveRemote,
   setKidActiveRemote,
+  updateFamilyNameRemote,
 } from "@src/lib/sync/remoteCrud";
 import FamilyMemberModal from "@src/components/FamilyMemberModal";
 import KidModal from "@src/components/KidModal";
@@ -111,9 +112,22 @@ function KidRow({
 export default function SettingsScreen() {
   const familyMembers = useFamilyStore((s) => s.familyMembers);
   const kids = useFamilyStore((s) => s.kids);
+  const familyName = useFamilyStore((s) => s.familyName);
+  const [editingName, setEditingName] = useState(familyName);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+
+  useEffect(() => {
+    setEditingName(familyName);
+  }, [familyName]);
+
+  const handleSaveName = () => {
+    const trimmed = editingName.trim();
+    if (trimmed && trimmed !== familyName) {
+      updateFamilyNameRemote(trimmed);
+    }
+  };
 
   // Kids state
   const [kidModalOpen, setKidModalOpen] = useState(false);
@@ -152,6 +166,33 @@ export default function SettingsScreen() {
         <Text variant="headlineLarge" style={styles.title}>
           {t("settings.title")}
         </Text>
+
+        {/* ── Family Name card ── */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            <View style={styles.sectionHeader}>
+              <View style={{ width: 40 }} />
+              <View style={styles.sectionTitleWrap}>
+                <Text variant="titleMedium" style={styles.cardTitle}>
+                  {t("settings.familyName")}
+                </Text>
+                <Text variant="bodySmall" style={styles.subtitle}>
+                  {t("settings.familyNameSubtitle")}
+                </Text>
+              </View>
+            </View>
+            <TextInput
+              mode="outlined"
+              value={editingName}
+              onChangeText={setEditingName}
+              onBlur={handleSaveName}
+              onSubmitEditing={handleSaveName}
+              placeholder={t("settings.familyNamePlaceholder")}
+              style={styles.nameInput}
+              right={<TextInput.Icon icon="check" onPress={handleSaveName} />}
+            />
+          </Card.Content>
+        </Card>
 
         {/* ── Family Members card ── */}
         <Card style={styles.card} mode="elevated">
@@ -334,4 +375,5 @@ const styles = StyleSheet.create({
   divider: { marginVertical: 12 },
   archivedHeaderRow: { paddingVertical: 4 },
   archivedHeader: { color: "#8E8BA8", textAlign: "right" },
+  nameInput: { textAlign: "right", backgroundColor: "#FFFFFF" },
 });

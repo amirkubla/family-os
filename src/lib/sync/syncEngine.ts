@@ -9,6 +9,7 @@
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { getFamilyId } from "../familyContext";
 import {
+  familyApi,
   groceryApi,
   notesApi,
   choresApi,
@@ -48,8 +49,9 @@ export async function pullAll(): Promise<void> {
   try {
     const fid = await getFamilyId();
 
-    const [grocery, notes, chores, projects, kids, scheduleBlocks, familyMembers, familyEvents] =
+    const [familyList, grocery, notes, chores, projects, kids, scheduleBlocks, familyMembers, familyEvents] =
       await Promise.all([
+        familyApi.list(),
         groceryApi.list(fid),
         notesApi.list(fid),
         choresApi.list(fid),
@@ -59,6 +61,12 @@ export async function pullAll(): Promise<void> {
         familyMembersApi.list(fid),
         familyEventsApi.list(fid),
       ]);
+
+    // Set family name from matching family
+    const currentFamily = familyList.find((f) => f.id === fid);
+    if (currentFamily) {
+      store.setFamilyName(currentFamily.name);
+    }
 
     store.setGrocery(grocery.map(apiToLocalGrocery));
     store.setNotes(notes.map(apiToLocalNote));

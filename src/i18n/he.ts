@@ -243,9 +243,17 @@ const he = {
     other: "אחר",
   } as Record<string, string>,
 
+  // ── Family badge ──
+  familyBadge: {
+    prefix: "משפחת",
+  },
+
   // ── Settings screen ──
   settings: {
     title: "הגדרות",
+    familyName: "שם המשפחה",
+    familyNamePlaceholder: "למשל: כהן",
+    familyNameSubtitle: "השם שמופיע בראש המסכים",
     familyMembers: "חברי משפחה",
     familyMembersSubtitle: "מי מנהל/ת את הבית ומופיע/ה בהקצאת מטלות",
     noMembers: "אין חברי משפחה — לחצו על + כדי להוסיף.",

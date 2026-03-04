@@ -21,6 +21,7 @@ import { t, LOCALE, blockTypeLabel, assigneeTypeLabel } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
 import type { BlockType } from "@src/models/schedule";
 import type { AssigneeType } from "@src/models/familyEvent";
+import FamilyBadge from "@src/components/FamilyBadge";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -154,6 +155,7 @@ export default function TodayScreen() {
         <Text variant="headlineLarge" style={styles.title}>
           {t("today.title")}
         </Text>
+        <FamilyBadge />
 
         {/* Sync card */}
         <Card style={styles.syncCard} mode="elevated">
