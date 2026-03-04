@@ -2,8 +2,7 @@
  * http.ts — Thin fetch wrapper with base URL, timeout, typed JSON.
  */
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 
 const TIMEOUT_MS = 10_000;
 

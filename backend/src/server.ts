@@ -6,7 +6,9 @@
  */
 
 import "dotenv/config";
+import { existsSync } from "node:fs";
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -37,8 +39,8 @@ app.onError((err, c) => {
   return c.json({ error: err.message }, 500);
 });
 
-// Health check
-app.get("/", (c) => c.json({ status: "ok", service: "family-os-api" }));
+// Health check (Cloud Run uses this)
+app.get("/healthz", (c) => c.json({ status: "ok", service: "family-os-api" }));
 
 // Routes
 app.route("/v1/family", familyRoutes);
@@ -50,6 +52,22 @@ app.route("/v1/family/:familyId/kids", kidsRoutes);
 app.route("/v1/family/:familyId/schedule-blocks", scheduleBlocksRoutes);
 app.route("/v1/family/:familyId/members", familyMembersRoutes);
 app.route("/v1/family/:familyId/family-events", familyEventsRoutes);
+
+// ---------------------------------------------------------------------------
+// Static web app (only when /public exists — i.e. Docker production image)
+// ---------------------------------------------------------------------------
+
+const WEB_ROOT = "./public";
+
+if (existsSync(WEB_ROOT)) {
+  // Serve static assets (JS bundles, images, fonts, etc.)
+  app.use("/*", serveStatic({ root: WEB_ROOT }));
+
+  // SPA fallback — any non-API, non-file request gets index.html
+  app.get("*", serveStatic({ root: WEB_ROOT, path: "index.html" }));
+
+  console.log("📦  Serving static web app from /public");
+}
 
 // ---------------------------------------------------------------------------
 // Start
