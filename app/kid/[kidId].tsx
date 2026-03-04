@@ -108,6 +108,7 @@ export default function KidScheduleScreen() {
     navigation.setOptions({
       title: kid ? `${kid.emoji} ${kid.name}` : t("kid.schedule"),
       headerTintColor: kidColor,
+      headerBackTitle: t("tabs.today"),
     });
   }, [navigation, kid?.name, kid?.emoji, kidColor]);
 

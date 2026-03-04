@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import {
   Card,
@@ -10,10 +10,12 @@ import {
   ProgressBar,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
+import type { Kid } from "@src/models/kid";
 import {
   toggleNotePinnedRemote,
   deleteNoteRemote,
@@ -25,6 +27,7 @@ import {
 import NoteModal from "@src/components/NoteModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
+import KidModal from "@src/components/KidModal";
 import { t, statusLabel } from "@src/i18n";
 import FamilyBadge from "@src/components/FamilyBadge";
 
@@ -92,10 +95,14 @@ function ChoreRow({ chore, onEdit }: { chore: Chore; onEdit: () => void }) {
 // ---------------------------------------------------------------------------
 
 export default function HomeScreen() {
+  const router = useRouter();
+
   // Store
   const notes = useFamilyStore((s) => s.notes);
   const chores = useFamilyStore((s) => s.chores);
   const projects = useFamilyStore((s) => s.projects);
+  const kids = useFamilyStore((s) => s.kids);
+  const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
 
   // Modals
   const [noteModalOpen, setNoteModalOpen] = useState(false);
@@ -104,6 +111,8 @@ export default function HomeScreen() {
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [kidModalOpen, setKidModalOpen] = useState(false);
+  const [editingKid, setEditingKid] = useState<Kid | null>(null);
 
   // Notes sorted: pinned first
   const sortedNotes = [...notes].sort(
@@ -121,6 +130,45 @@ export default function HomeScreen() {
           {t("home.title")}
         </Text>
         <FamilyBadge />
+
+        {/* -- Kids -- */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            <View style={styles.sectionHeader}>
+              <Text variant="titleMedium" style={styles.cardTitle}>
+                {t("home.kids")}
+              </Text>
+              <IconButton
+                icon="plus"
+                size={20}
+                onPress={() => {
+                  setEditingKid(null);
+                  setKidModalOpen(true);
+                }}
+              />
+            </View>
+
+            {activeKids.length === 0 && (
+              <Text variant="bodyMedium" style={styles.emptyText}>
+                {t("home.noKids")}
+              </Text>
+            )}
+
+            <View style={styles.kidsRow}>
+              {activeKids.map((kid) => (
+                <Pressable
+                  key={kid.id}
+                  style={[styles.kidCard, { backgroundColor: kid.color + "18", borderColor: kid.color + "44" }]}
+                  onPress={() => router.push(`/kid/${kid.id}`)}
+                >
+                  <Text style={styles.kidEmoji}>{kid.emoji}</Text>
+                  <Text style={[styles.kidName, { color: kid.color }]}>{kid.name}</Text>
+                  <Text style={[styles.kidArrow, { color: kid.color }]}>‹</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Card.Content>
+        </Card>
 
         {/* -- Notes -- */}
         <Card style={styles.card} mode="elevated">
@@ -357,6 +405,14 @@ export default function HomeScreen() {
         }}
         editProject={editingProject}
       />
+      <KidModal
+        visible={kidModalOpen}
+        onDismiss={() => {
+          setKidModalOpen(false);
+          setEditingKid(null);
+        }}
+        editKid={editingKid}
+      />
     </SafeAreaView>
   );
 }
@@ -374,6 +430,25 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   emptyText: { color: "#6B6B8D", marginBottom: 4, textAlign: "right" },
+
+  // Kids
+  kidsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  kidCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  kidEmoji: { fontSize: 22 },
+  kidName: { fontWeight: "700", fontSize: 15 },
+  kidArrow: { fontSize: 18, fontWeight: "700", marginStart: "auto" },
 
   // Notes
   noteRow: {
