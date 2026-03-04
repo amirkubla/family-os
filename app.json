@@ -51,6 +51,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a3e9a1c2-1255-4548-b6a2-c4058d93ae78"
+      }
+    },
+    "owner": "amirkubla"
   }
 }

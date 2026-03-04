@@ -5,6 +5,7 @@
 
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { http } from "../api/http";
 
 // Configure how notifications appear when the app is in the foreground
@@ -44,9 +45,16 @@ export async function registerForPushNotifications(
   }
 
   // 2. Get the Expo push token
-  const tokenData = await Notifications.getExpoPushTokenAsync({
-    projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
-  });
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    process.env.EXPO_PUBLIC_PROJECT_ID;
+
+  if (!projectId) {
+    console.warn("[push] No EAS projectId found — run `npx eas init` to link your project");
+    return null;
+  }
+
+  const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
   const token = tokenData.data;
   console.log("[push] Expo push token:", token);
 

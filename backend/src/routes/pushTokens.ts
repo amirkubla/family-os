@@ -3,6 +3,13 @@ import { pushTokensRepo } from "../repos/pushTokensRepo.js";
 
 export const pushTokenRoutes = new Hono();
 
+// GET /v1/family/:familyId/push-tokens — list tokens for a family
+pushTokenRoutes.get("/", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const tokens = await pushTokensRepo.listByFamily(familyId);
+  return c.json(tokens);
+});
+
 // POST /v1/family/:familyId/push-tokens — register a push token
 pushTokenRoutes.post("/", async (c) => {
   const familyId = c.req.param("familyId")!;
