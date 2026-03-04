@@ -16,6 +16,7 @@ import {
   toggleGroceryBoughtRemote,
   deleteGroceryRemote,
   clearBoughtRemote,
+  clearAllCategoryRemote,
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
@@ -57,10 +58,22 @@ export default function GroceryScreen() {
           style={styles.segments}
         />
 
-        {/* Item count */}
-        <Text variant="bodySmall" style={styles.itemCount}>
-          {t("grocery.itemCount", { count: unbought.length })}
-        </Text>
+        {/* Item count + clear all */}
+        <View style={styles.countRow}>
+          <Text variant="bodySmall" style={styles.itemCount}>
+            {t("grocery.itemCount", { count: unbought.length })}
+          </Text>
+          {filtered.length > 0 && (
+            <Button
+              compact
+              onPress={() => clearAllCategoryRemote(selectedCategory)}
+              textColor="#FF6B6B"
+              icon="delete-sweep-outline"
+            >
+              {t("grocery.clearAll")}
+            </Button>
+          )}
+        </View>
 
         <Card style={styles.card} mode="elevated">
           <Card.Content>
@@ -165,7 +178,13 @@ const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 40 },
   title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 16, textAlign: "right" },
   segments: { marginBottom: 12 },
-  itemCount: { color: "#8E8BA8", marginBottom: 12, textAlign: "right" },
+  countRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  itemCount: { color: "#8E8BA8", textAlign: "right" },
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 24 },
   cardBody: { color: "#6B6B8D", textAlign: "right" },
   row: {

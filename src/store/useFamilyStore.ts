@@ -59,6 +59,7 @@ interface FamilyState {
   toggleGroceryBought: (id: string) => void;
   deleteGrocery: (id: string) => void;
   clearBought: (shoppingCategory?: ShoppingCategory) => string[];
+  clearAllCategory: (shoppingCategory: ShoppingCategory) => string[];
 
   // Notes actions
   addNote: (input: { title?: string; body: string }) => Note;
@@ -226,6 +227,17 @@ export const useFamilyStore = create<FamilyState>()(
           (g) => g.isBought && (!shoppingCategory || g.shoppingCategory === shoppingCategory),
         );
         const ids = bought.map((g) => g.id);
+        set((s) => ({
+          grocery: s.grocery.filter((g) => !ids.includes(g.id)),
+        }));
+        return ids;
+      },
+
+      clearAllCategory: (shoppingCategory) => {
+        const items = get().grocery.filter(
+          (g) => g.shoppingCategory === shoppingCategory,
+        );
+        const ids = items.map((g) => g.id);
         set((s) => ({
           grocery: s.grocery.filter((g) => !ids.includes(g.id)),
         }));

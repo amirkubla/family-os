@@ -120,6 +120,16 @@ export function clearBoughtRemote(shoppingCategory?: import("@src/models/grocery
   );
 }
 
+export function clearAllCategoryRemote(shoppingCategory: import("@src/models/grocery").ShoppingCategory) {
+  const ids = useFamilyStore.getState().clearAllCategory(shoppingCategory);
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      Promise.all(ids.map((id) => groceryApi.delete(fid, id))),
+    ),
+    "Clear all category",
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Notes
 // ---------------------------------------------------------------------------

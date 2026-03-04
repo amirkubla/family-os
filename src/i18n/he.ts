@@ -72,6 +72,7 @@ const he = {
     emptyHome: "אין פריטים לבית עדיין",
     bought: "נקנו ({{count}})",
     clear: "נקה",
+    clearAll: "נקה הכל",
     quickAdd: "הוספה",
     itemCount: "{{count}} פריטים",
   },
