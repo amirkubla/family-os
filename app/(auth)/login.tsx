@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 32,
   },
-  input: { backgroundColor: "#FFFFFF", textAlign: "right", marginBottom: 2 },
+  input: { backgroundColor: "#FFFFFF", textAlign: "right", writingDirection: "rtl", marginBottom: 2 },
   helper: { textAlign: "right" },
   btn: { borderRadius: 12, marginTop: 8 },
   btnContent: { paddingVertical: 6 },

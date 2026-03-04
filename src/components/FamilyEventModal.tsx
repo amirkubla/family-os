@@ -18,6 +18,7 @@ import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, assigneeTypeLabel } from "@src/i18n";
 import ModalWrapper from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
+import DatePicker, { formatDateHe } from "./DatePicker";
 
 // ---------------------------------------------------------------------------
 // Zod schema
@@ -204,6 +205,9 @@ export default function FamilyEventModal({
       <Text variant="titleLarge" style={styles.heading}>
         {editEvent ? t("eventModal.editTitle") : t("eventModal.addTitle")}
       </Text>
+      {!editEvent && defaultDate && (
+        <Text style={styles.dateSubtitle}>{formatDateHe(defaultDate)}</Text>
+      )}
 
       {/* Title */}
       <Controller
@@ -322,14 +326,7 @@ export default function FamilyEventModal({
             control={control}
             name="date"
             render={({ field: { onChange, value } }) => (
-              <TextInput
-                value={value}
-                onChangeText={onChange}
-                mode="outlined"
-                style={styles.rtlInput}
-                placeholder="2026-03-15"
-                error={!!errors.date}
-              />
+              <DatePicker value={value ?? toYMD(new Date())} onChange={onChange} />
             )}
           />
           {errors.date && (
@@ -426,8 +423,9 @@ export default function FamilyEventModal({
 }
 
 const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
-  rtlInput: { marginBottom: 8, textAlign: "right" },
+  heading: { fontWeight: "700", marginBottom: 2, textAlign: "right" },
+  dateSubtitle: { fontSize: 14, color: "#6C63FF", textAlign: "right", marginBottom: 12 },
+  rtlInput: { marginBottom: 8, textAlign: "right", writingDirection: "rtl" },
   label: { marginBottom: 6, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
   chip: { borderRadius: 20 },

@@ -159,7 +159,7 @@ export default function ProjectModal({
 
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
-  input: { marginBottom: 12, textAlign: "right" },
+  input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
   label: { marginBottom: 8, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
   statusRow: {
     flexDirection: "row",

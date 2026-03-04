@@ -90,7 +90,7 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
 
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
-  input: { marginBottom: 12, textAlign: "right" },
+  input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",

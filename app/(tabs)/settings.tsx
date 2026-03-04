@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   divider: { marginVertical: 12 },
   archivedHeaderRow: { paddingVertical: 4 },
   archivedHeader: { color: "#8E8BA8", textAlign: "right" },
-  nameInput: { textAlign: "right", backgroundColor: "#FFFFFF" },
+  nameInput: { textAlign: "right", writingDirection: "rtl", backgroundColor: "#FFFFFF" },
   accountInfo: { marginBottom: 12 },
   accountText: { textAlign: "right", color: "#1A1A2E", marginBottom: 4 },
   familyIdText: { textAlign: "right", color: "#8E8BA8", fontSize: 11 },

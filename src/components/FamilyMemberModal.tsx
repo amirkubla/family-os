@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 4,
     textAlign: "right",
+    writingDirection: "rtl",
     backgroundColor: "#fff",
   },
   error: {

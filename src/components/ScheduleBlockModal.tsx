@@ -336,7 +336,7 @@ export default function ScheduleBlockModal({
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
   input: { marginBottom: 8 },
-  rtlInput: { marginBottom: 8, textAlign: "right" },
+  rtlInput: { marginBottom: 8, textAlign: "right", writingDirection: "rtl" },
   label: { marginBottom: 6, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
   chip: { borderRadius: 20 },

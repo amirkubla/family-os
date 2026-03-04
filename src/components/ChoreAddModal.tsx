@@ -123,7 +123,7 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
 
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
-  input: { marginBottom: 12, textAlign: "right" },
+  input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
   label: {
     textAlign: "right",
     marginBottom: 6,

@@ -177,8 +177,8 @@ const he = {
 
   // ── Assignee type labels ──
   assigneeType: {
-    family: "כל המשפחה",
-    member: "חבר משפחה",
+    family: "כולם",
+    member: "הורה",
     kid: "ילד/ה",
   } as Record<string, string>,
 

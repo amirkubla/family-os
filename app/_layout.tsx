@@ -28,6 +28,7 @@ if (!I18nManager.isRTL) {
 
 if (Platform.OS === "web" && typeof document !== "undefined") {
   document.documentElement.lang = "he";
+  document.documentElement.dir = "rtl";
 }
 
 SplashScreen.preventAutoHideAsync();

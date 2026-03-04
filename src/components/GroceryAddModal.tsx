@@ -109,7 +109,7 @@ export default function GroceryAddModal({
 
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
-  input: { marginBottom: 12, textAlign: "right" },
+  input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
   label: { marginBottom: 8, color: "#6B6B8D", textAlign: "right" },
   categoryWrap: {
     flexDirection: "row",
