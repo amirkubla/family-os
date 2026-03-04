@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import {
   Card,
   Text,
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   // Sync card
   syncCard: { borderRadius: 16, backgroundColor: "#FFFFFF", marginTop: 16, marginBottom: 16 },
   syncContent: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
 
   // Today's chores
   choreRow: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 4,
   },
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   kidHeader: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
 
   // Block rows inside kid cards
   blockRow: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 6,
   },

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import {
   Card,
   Text,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 20 },
   cardTitle: { fontWeight: "700", color: "#1A1A2E", flex: 1, textAlign: "right" },
   sectionHeader: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 4,
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   kidCard: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
 
   // Notes
   noteRow: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   },
   choreDivider: { marginVertical: 8 },
   choreRow: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 2,
   },
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
 
   // Projects
   projectRow: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "flex-start",
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
   },
   projectContent: { flex: 1, cursor: "pointer" } as any,
   projectTop: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, StyleSheet, ScrollView } from "react-native";
 import {
   Card,
   Text,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 16, textAlign: "right" },
   segments: { marginBottom: 12 },
   countRow: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 24 },
   cardBody: { color: "#6B6B8D", textAlign: "right" },
   row: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 4,
   },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   qty: { color: "#6B6B8D", textAlign: "right" },
   divider: { marginVertical: 12 },
   boughtHeader: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 4,

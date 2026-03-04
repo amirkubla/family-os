@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { Card, Text, IconButton, Divider, TextInput, Button } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   },
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 24 },
   sectionHeader: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
   },
@@ -396,12 +396,12 @@ const styles = StyleSheet.create({
   subtitle: { color: "#8E8BA8", textAlign: "right", marginTop: 2 },
   emptyText: { color: "#6B6B8D", textAlign: "right", marginVertical: 8 },
   memberRow: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
   },
   archivedRow: { opacity: 0.5 },
-  rowActions: { flexDirection: Platform.OS === "web" ? "row-reverse" : "row" },
+  rowActions: { flexDirection: "row" },
   memberInfo: { flex: 1, marginHorizontal: 8, alignItems: "flex-end" },
   memberName: { fontWeight: "600", textAlign: "right", color: "#1A1A2E" },
   memberRole: { color: "#8E8BA8", textAlign: "right" },
