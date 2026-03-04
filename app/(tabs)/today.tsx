@@ -12,13 +12,15 @@ import { useRouter } from "expo-router";
 import type { Kid } from "@src/models/kid";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useKidBlocksForDate } from "@src/store/scheduleSelectors";
+import { useTodayFamilyEvents } from "@src/store/familyEventSelectors";
 import { toYMD } from "@src/utils/date";
 import { syncAll } from "@src/lib/sync/syncEngine";
 import { toggleChoreDoneRemote } from "@src/lib/sync/remoteCrud";
 import { useState } from "react";
-import { t, LOCALE, blockTypeLabel } from "@src/i18n";
+import { t, LOCALE, blockTypeLabel, assigneeTypeLabel } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
 import type { BlockType } from "@src/models/schedule";
+import type { AssigneeType } from "@src/models/familyEvent";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,6 +30,12 @@ const TYPE_COLORS: Record<BlockType, string> = {
   school: "#6C63FF",
   hobby: "#FF6B6B",
   other: "#4ECDC4",
+};
+
+const ASSIGNEE_COLORS: Record<AssigneeType, string> = {
+  family: "#4ECDC4",
+  member: "#6C63FF",
+  kid: "#FF6B6B",
 };
 
 const todayDow = new Date().getDay();
@@ -121,6 +129,7 @@ export default function TodayScreen() {
   const pinnedNotes = notes.filter((n) => n.pinned).length;
 
   const todayChores = chores.filter((c) => c.selectedForToday);
+  const todayEvents = useTodayFamilyEvents(todayDate, todayDow);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -248,6 +257,61 @@ export default function TodayScreen() {
                         </Text>
                       ) : null}
                     </View>
+                  </View>
+                );
+              })
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Family Events for today */}
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          {t("today.familyEvents")}
+        </Text>
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            {todayEvents.length === 0 ? (
+              <Text variant="bodyMedium" style={styles.choreEmpty}>
+                {t("today.noEventsForToday")}
+              </Text>
+            ) : (
+              todayEvents.map((event) => {
+                const color = event.color ?? ASSIGNEE_COLORS[event.assigneeType];
+                let assigneeDisplay = t("today.wholeFamily");
+                if (event.assigneeType === "member" && event.assigneeId) {
+                  const member = familyMembers.find((m) => m.id === event.assigneeId);
+                  assigneeDisplay = member
+                    ? `${member.avatarEmoji ?? ""} ${member.name}`
+                    : assigneeTypeLabel("member");
+                } else if (event.assigneeType === "kid" && event.assigneeId) {
+                  const kid = kids.find((k) => k.id === event.assigneeId);
+                  assigneeDisplay = kid
+                    ? `${kid.emoji} ${kid.name}`
+                    : assigneeTypeLabel("kid");
+                }
+                return (
+                  <View key={event.id} style={styles.blockRow}>
+                    <View style={[styles.blockStripe, { backgroundColor: color }]} />
+                    <View style={styles.blockInfo}>
+                      <Text variant="bodyMedium" style={styles.blockTitle}>
+                        {event.title}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.blockTime}>
+                        {minutesToHHMM(event.startMinutes)} – {minutesToHHMM(event.endMinutes)}
+                        {event.location ? `  ·  ${event.location}` : ""}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.blockType,
+                        {
+                          color: ASSIGNEE_COLORS[event.assigneeType],
+                          backgroundColor: ASSIGNEE_COLORS[event.assigneeType] + "22",
+                        },
+                      ]}
+                    >
+                      {assigneeDisplay}
+                    </Text>
                   </View>
                 );
               })

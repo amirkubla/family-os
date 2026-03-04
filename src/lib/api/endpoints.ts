@@ -12,6 +12,7 @@ import type {
   ApiKid,
   ApiScheduleBlock,
   ApiFamilyMember,
+  ApiFamilyEvent,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -173,4 +174,25 @@ export const familyMembersApi = {
 
   delete: (fid: string, id: string) =>
     http.delete<{ deleted: boolean }>(`${fam(fid)}/members/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Family Events
+// ---------------------------------------------------------------------------
+
+export const familyEventsApi = {
+  list: (fid: string) =>
+    http.get<ApiFamilyEvent[]>(`${fam(fid)}/family-events`),
+
+  create: (fid: string, data: Omit<ApiFamilyEvent, "familyId" | "createdAt" | "updatedAt">) =>
+    http.post<ApiFamilyEvent>(`${fam(fid)}/family-events`, data),
+
+  upsert: (fid: string, data: Omit<ApiFamilyEvent, "familyId" | "createdAt" | "updatedAt">) =>
+    http.put<ApiFamilyEvent>(`${fam(fid)}/family-events/${data.id}`, data),
+
+  update: (fid: string, id: string, data: Partial<ApiFamilyEvent>) =>
+    http.patch<ApiFamilyEvent>(`${fam(fid)}/family-events/${id}`, data),
+
+  delete: (fid: string, id: string) =>
+    http.delete<{ deleted: boolean }>(`${fam(fid)}/family-events/${id}`),
 };

@@ -68,5 +68,10 @@ export function memberRoleLabel(roleKey: string): string {
   return (he.memberRole as Record<string, string>)[roleKey] ?? roleKey;
 }
 
+/** Hebrew assignee type label from English type key. */
+export function assigneeTypeLabel(typeKey: string): string {
+  return (he.assigneeType as Record<string, string>)[typeKey] ?? typeKey;
+}
+
 /** Locale string for toLocaleString/toLocaleTimeString calls. */
 export const LOCALE = "he-IL";

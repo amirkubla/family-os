@@ -43,6 +43,7 @@ export const familiesRelations = relations(families, ({ many }) => ({
   chores: many(chores),
   projects: many(projects),
   scheduleBlocks: many(scheduleBlocks),
+  familyEvents: many(familyEvents),
 }));
 
 // ---------------------------------------------------------------------------
@@ -286,3 +287,53 @@ export const scheduleBlocksRelations = relations(
     }),
   }),
 );
+
+// ---------------------------------------------------------------------------
+// family_events
+// ---------------------------------------------------------------------------
+
+export const familyEvents = pgTable(
+  "family_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    assigneeType: text("assignee_type", { enum: ["member", "kid", "family"] })
+      .default("family")
+      .notNull(),
+    assigneeId: uuid("assignee_id"),
+    dayOfWeek: integer("day_of_week").notNull(), // 0 = Sun … 6 = Sat
+    startMinutes: integer("start_minutes").notNull(), // 0–1439
+    endMinutes: integer("end_minutes").notNull(),
+    location: text("location"),
+    color: text("color"),
+    isRecurring: boolean("is_recurring").default(true).notNull(),
+    date: text("date"), // "YYYY-MM-DD" for one-time events
+    ...timestamps,
+  },
+  (t) => [
+    index("family_events_family_id_idx").on(t.familyId),
+    index("family_events_family_dow_idx").on(t.familyId, t.dayOfWeek),
+    check(
+      "family_events_dow_range",
+      sql`${t.dayOfWeek} >= 0 AND ${t.dayOfWeek} <= 6`,
+    ),
+    check(
+      "family_events_time_range",
+      sql`${t.startMinutes} >= 0 AND ${t.startMinutes} < 1440 AND ${t.endMinutes} > 0 AND ${t.endMinutes} <= 1440`,
+    ),
+    check(
+      "family_events_end_after_start",
+      sql`${t.endMinutes} > ${t.startMinutes}`,
+    ),
+  ],
+);
+
+export const familyEventsRelations = relations(familyEvents, ({ one }) => ({
+  family: one(families, {
+    fields: [familyEvents.familyId],
+    references: [families.id],
+  }),
+}));

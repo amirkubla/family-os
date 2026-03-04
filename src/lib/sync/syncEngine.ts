@@ -16,6 +16,7 @@ import {
   kidsApi,
   scheduleBlocksApi,
   familyMembersApi,
+  familyEventsApi,
 } from "../api/endpoints";
 import {
   apiToLocalGrocery,
@@ -25,6 +26,7 @@ import {
   apiToLocalKid,
   apiToLocalScheduleBlock,
   apiToLocalFamilyMember,
+  apiToLocalFamilyEvent,
   localToApiGrocery,
   localToApiNote,
   localToApiChore,
@@ -32,6 +34,7 @@ import {
   localToApiKid,
   localToApiScheduleBlock,
   localToApiFamilyMember,
+  localToApiFamilyEvent,
 } from "../api/mappers";
 
 // ---------------------------------------------------------------------------
@@ -45,7 +48,7 @@ export async function pullAll(): Promise<void> {
   try {
     const fid = await getFamilyId();
 
-    const [grocery, notes, chores, projects, kids, scheduleBlocks, familyMembers] =
+    const [grocery, notes, chores, projects, kids, scheduleBlocks, familyMembers, familyEvents] =
       await Promise.all([
         groceryApi.list(fid),
         notesApi.list(fid),
@@ -54,6 +57,7 @@ export async function pullAll(): Promise<void> {
         kidsApi.list(fid),
         scheduleBlocksApi.list(fid),
         familyMembersApi.list(fid),
+        familyEventsApi.list(fid),
       ]);
 
     store.setGrocery(grocery.map(apiToLocalGrocery));
@@ -63,6 +67,7 @@ export async function pullAll(): Promise<void> {
     store.setKids(kids.map(apiToLocalKid));
     store.setScheduleBlocks(scheduleBlocks.map(apiToLocalScheduleBlock));
     store.setFamilyMembers(familyMembers.map(apiToLocalFamilyMember));
+    store.setFamilyEvents(familyEvents.map(apiToLocalFamilyEvent));
     store.setLastSyncedAt(Date.now());
     store.setSyncStatus("idle");
   } catch (err) {
@@ -82,7 +87,7 @@ export async function pushAll(): Promise<void> {
 
   try {
     const fid = await getFamilyId();
-    const { grocery, notes, chores, projects, kids, scheduleBlocks, familyMembers } = store;
+    const { grocery, notes, chores, projects, kids, scheduleBlocks, familyMembers, familyEvents } = store;
 
     await Promise.all([
       ...grocery.map((item) =>
@@ -105,6 +110,9 @@ export async function pushAll(): Promise<void> {
       ),
       ...familyMembers.map((item) =>
         familyMembersApi.upsert(fid, localToApiFamilyMember(item)),
+      ),
+      ...familyEvents.map((item) =>
+        familyEventsApi.upsert(fid, localToApiFamilyEvent(item)),
       ),
     ]);
 

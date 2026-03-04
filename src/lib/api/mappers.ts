@@ -13,6 +13,7 @@ import type {
   ApiKid,
   ApiScheduleBlock,
   ApiFamilyMember,
+  ApiFamilyEvent,
 } from "./types";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
@@ -21,6 +22,7 @@ import type { Project } from "@src/models/project";
 import type { Kid } from "@src/models/kid";
 import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
+import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 
 const toMs = (iso: string) => new Date(iso).getTime();
 
@@ -219,5 +221,43 @@ export function localToApiFamilyMember(item: FamilyMember) {
     color: item.color ?? null,
     avatarEmoji: item.avatarEmoji ?? null,
     isActive: item.isActive,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Family Events
+// ---------------------------------------------------------------------------
+
+export function apiToLocalFamilyEvent(a: ApiFamilyEvent): FamilyEvent {
+  return {
+    id: a.id,
+    title: a.title,
+    assigneeType: a.assigneeType as AssigneeType,
+    assigneeId: a.assigneeId ?? undefined,
+    dayOfWeek: a.dayOfWeek,
+    startMinutes: a.startMinutes,
+    endMinutes: a.endMinutes,
+    location: a.location ?? undefined,
+    color: a.color ?? undefined,
+    isRecurring: a.isRecurring,
+    date: a.date ?? undefined,
+    updatedAt: toMs(a.updatedAt),
+    createdAt: toMs(a.createdAt),
+  };
+}
+
+export function localToApiFamilyEvent(item: FamilyEvent) {
+  return {
+    id: item.id,
+    title: item.title,
+    assigneeType: item.assigneeType,
+    assigneeId: item.assigneeId ?? null,
+    dayOfWeek: item.dayOfWeek,
+    startMinutes: item.startMinutes,
+    endMinutes: item.endMinutes,
+    location: item.location ?? null,
+    color: item.color ?? null,
+    isRecurring: item.isRecurring,
+    date: item.date ?? null,
   };
 }

@@ -9,6 +9,7 @@ import type { Project, ProjectStatus } from "@src/models/project";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
+import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import { makeId } from "@src/utils/id";
 
 /* ─── Sync status ─── */
@@ -25,6 +26,7 @@ interface FamilyState {
   kids: Kid[];
   scheduleBlocks: ScheduleBlock[];
   familyMembers: FamilyMember[];
+  familyEvents: FamilyEvent[];
 
   // Sync metadata
   syncStatus: SyncStatus;
@@ -39,6 +41,7 @@ interface FamilyState {
   setKids: (items: Kid[]) => void;
   setScheduleBlocks: (items: ScheduleBlock[]) => void;
   setFamilyMembers: (items: FamilyMember[]) => void;
+  setFamilyEvents: (items: FamilyEvent[]) => void;
   setSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setLastSyncedAt: (ts: number) => void;
 
@@ -91,6 +94,30 @@ interface FamilyState {
   ) => void;
   deleteProject: (id: string) => void;
 
+  // Family Events actions
+  addFamilyEvent: (input: {
+    title: string;
+    assigneeType: AssigneeType;
+    assigneeId?: string;
+    dayOfWeek: number;
+    startMinutes: number;
+    endMinutes: number;
+    location?: string;
+    color?: string;
+    isRecurring?: boolean;
+    date?: string;
+  }) => FamilyEvent;
+  updateFamilyEvent: (
+    id: string,
+    patch: Partial<
+      Pick<
+        FamilyEvent,
+        "title" | "assigneeType" | "assigneeId" | "dayOfWeek" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date"
+      >
+    >
+  ) => void;
+  deleteFamilyEvent: (id: string) => void;
+
   // Schedule actions
   addScheduleBlock: (input: {
     kidId: string;
@@ -128,6 +155,7 @@ export const useFamilyStore = create<FamilyState>()(
       kids: [],
       scheduleBlocks: [],
       familyMembers: [],
+      familyEvents: [],
 
       syncStatus: "idle" as SyncStatus,
       syncError: null,
@@ -142,6 +170,7 @@ export const useFamilyStore = create<FamilyState>()(
       setKids: (items) => set({ kids: items }),
       setScheduleBlocks: (items) => set({ scheduleBlocks: items }),
       setFamilyMembers: (items) => set({ familyMembers: items }),
+      setFamilyEvents: (items) => set({ familyEvents: items }),
       setSyncStatus: (status, error = null) =>
         set({ syncStatus: status, syncError: error }),
       setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
@@ -294,6 +323,36 @@ export const useFamilyStore = create<FamilyState>()(
           projects: s.projects.filter((p) => p.id !== id),
         })),
 
+      /* ── Family Events ── */
+
+      addFamilyEvent: (input) => {
+        const now = Date.now();
+        const item: FamilyEvent = {
+          id: makeId(),
+          ...input,
+          isRecurring: input.isRecurring ?? true,
+          date: input.date,
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((s) => ({
+          familyEvents: [item, ...s.familyEvents],
+        }));
+        return item;
+      },
+
+      updateFamilyEvent: (id, patch) =>
+        set((s) => ({
+          familyEvents: s.familyEvents.map((e) =>
+            e.id === id ? { ...e, ...patch, updatedAt: Date.now() } : e
+          ),
+        })),
+
+      deleteFamilyEvent: (id) =>
+        set((s) => ({
+          familyEvents: s.familyEvents.filter((e) => e.id !== id),
+        })),
+
       /* ── Schedule ── */
 
       addScheduleBlock: (input) => {
@@ -389,7 +448,7 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         grocery: state.grocery,
@@ -399,6 +458,7 @@ export const useFamilyStore = create<FamilyState>()(
         kids: state.kids,
         scheduleBlocks: state.scheduleBlocks,
         familyMembers: state.familyMembers,
+        familyEvents: state.familyEvents,
         lastSyncedAt: state.lastSyncedAt,
       }),
       migrate: (persisted: any, version: number) => {
@@ -440,6 +500,10 @@ export const useFamilyStore = create<FamilyState>()(
             isRecurring: b.isRecurring ?? true,
             date: b.date ?? undefined,
           }));
+        }
+        if (version < 6) {
+          // Add familyEvents array
+          persisted.familyEvents = persisted.familyEvents ?? [];
         }
         return persisted;
       },

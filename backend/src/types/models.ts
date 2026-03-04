@@ -8,6 +8,7 @@ import type {
   chores,
   projects,
   scheduleBlocks,
+  familyEvents,
 } from "../db/schema.js";
 
 // ---------------------------------------------------------------------------
@@ -22,6 +23,7 @@ export type Note = InferSelectModel<typeof notes>;
 export type Chore = InferSelectModel<typeof chores>;
 export type Project = InferSelectModel<typeof projects>;
 export type ScheduleBlock = InferSelectModel<typeof scheduleBlocks>;
+export type FamilyEvent = InferSelectModel<typeof familyEvents>;
 
 // ---------------------------------------------------------------------------
 // Insert types  (what you SEND to create a row)
@@ -35,6 +37,7 @@ export type NewNote = InferInsertModel<typeof notes>;
 export type NewChore = InferInsertModel<typeof chores>;
 export type NewProject = InferInsertModel<typeof projects>;
 export type NewScheduleBlock = InferInsertModel<typeof scheduleBlocks>;
+export type NewFamilyEvent = InferInsertModel<typeof familyEvents>;
 
 // ---------------------------------------------------------------------------
 // Update (patch) types  (partial insert minus id, with optional fields)
@@ -48,6 +51,7 @@ export type UpdateNote = Partial<Omit<NewNote, "id">>;
 export type UpdateChore = Partial<Omit<NewChore, "id">>;
 export type UpdateProject = Partial<Omit<NewProject, "id">>;
 export type UpdateScheduleBlock = Partial<Omit<NewScheduleBlock, "id">>;
+export type UpdateFamilyEvent = Partial<Omit<NewFamilyEvent, "id">>;
 
 // ---------------------------------------------------------------------------
 // Enums (mirrored from schema for convenience)

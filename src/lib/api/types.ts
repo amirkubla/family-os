@@ -96,3 +96,20 @@ export interface ApiScheduleBlock {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ApiFamilyEvent {
+  id: string;
+  familyId: string;
+  title: string;
+  assigneeType: "member" | "kid" | "family";
+  assigneeId: string | null;
+  dayOfWeek: number;
+  startMinutes: number;
+  endMinutes: number;
+  location: string | null;
+  color: string | null;
+  isRecurring: boolean;
+  date: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -18,6 +18,7 @@ const he = {
   tabs: {
     today: "היום",
     grocery: "קניות",
+    calendar: "לוח שנה",
     home: "בית",
     settings: "הגדרות",
   },
@@ -39,6 +40,9 @@ const he = {
     noSchedule: "אין תכנון להיום",
     todayChores: "מטלות להיום",
     noChoresForToday: "אין מטלות להיום",
+    familyEvents: "אירועים משפחתיים",
+    noEventsForToday: "אין אירועים להיום",
+    wholeFamily: "כל המשפחה",
     never: "אף פעם",
   },
 
@@ -142,6 +146,42 @@ const he = {
     date: "תאריך",
     dateRequired: "תאריך הוא שדה חובה",
     invalidDate: "תאריך לא תקין (YYYY-MM-DD)",
+  },
+
+  // ── Family Event Modal ──
+  eventModal: {
+    addTitle: "הוספת אירוע",
+    editTitle: "עריכת אירוע",
+    titleLabel: "כותרת",
+    assignee: "משויך ל:",
+    titleRequired: "כותרת היא שדה חובה",
+    useHHMM: "השתמשו בפורמט HH:MM",
+    invalidTime: "שעה לא תקינה",
+    endAfterStart: "הסיום חייב להיות אחרי ההתחלה",
+    startTime: "התחלה",
+    endTime: "סיום",
+    location: "מיקום (אופציונלי)",
+    recurring: "קבוע",
+    oneTime: "חד פעמי",
+    day: "יום",
+    date: "תאריך",
+    dateRequired: "תאריך הוא שדה חובה",
+    invalidDate: "תאריך לא תקין (YYYY-MM-DD)",
+  },
+
+  // ── Assignee type labels ──
+  assigneeType: {
+    family: "כל המשפחה",
+    member: "חבר משפחה",
+    kid: "ילד/ה",
+  } as Record<string, string>,
+
+  // ── Calendar screen ──
+  calendar: {
+    title: "לוח שנה",
+    eventsForDate: "אירועים ליום {{day}}",
+    noEvents: "אין אירועים ליום זה",
+    oneTimeEvent: "חד פעמי",
   },
 
   // ── Project status labels ──

@@ -19,6 +19,7 @@ import {
   kidsApi,
   scheduleBlocksApi,
   familyMembersApi,
+  familyEventsApi,
 } from "../api/endpoints";
 import {
   localToApiGrocery,
@@ -28,6 +29,7 @@ import {
   localToApiKid,
   localToApiScheduleBlock,
   localToApiFamilyMember,
+  localToApiFamilyEvent,
 } from "../api/mappers";
 import type { GroceryItem } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
@@ -36,6 +38,7 @@ import type { Project } from "@src/models/project";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
+import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 
 // ---------------------------------------------------------------------------
 // Error handler — set by UI (Snackbar)
@@ -390,5 +393,60 @@ export function setFamilyMemberActiveRemote(id: string, isActive: boolean) {
       familyMembersApi.update(fid, id, { isActive }),
     ),
     "Toggle family member active",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Family Events
+// ---------------------------------------------------------------------------
+
+export function addFamilyEventRemote(input: {
+  title: string;
+  assigneeType: AssigneeType;
+  assigneeId?: string;
+  dayOfWeek: number;
+  startMinutes: number;
+  endMinutes: number;
+  location?: string;
+  color?: string;
+  isRecurring?: boolean;
+  date?: string;
+}) {
+  const item = useFamilyStore.getState().addFamilyEvent(input);
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      familyEventsApi.upsert(fid, localToApiFamilyEvent(item)),
+    ),
+    "Add family event",
+  );
+}
+
+export function updateFamilyEventRemote(
+  id: string,
+  patch: Partial<
+    Pick<
+      FamilyEvent,
+      "title" | "assigneeType" | "assigneeId" | "dayOfWeek" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date"
+    >
+  >,
+) {
+  useFamilyStore.getState().updateFamilyEvent(id, patch);
+  const item = useFamilyStore
+    .getState()
+    .familyEvents.find((e) => e.id === id);
+  if (!item) return;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      familyEventsApi.upsert(fid, localToApiFamilyEvent(item)),
+    ),
+    "Update family event",
+  );
+}
+
+export function deleteFamilyEventRemote(id: string) {
+  useFamilyStore.getState().deleteFamilyEvent(id);
+  fireAndForget(
+    getFamilyId().then((fid) => familyEventsApi.delete(fid, id)),
+    "Delete family event",
   );
 }
