@@ -13,17 +13,26 @@ import ModalWrapper from "./ModalWrapper";
 // ── Preset choices ──
 
 const COLOR_SWATCHES = [
-  "#FF6B6B",
-  "#4ECDC4",
-  "#6C63FF",
-  "#FFA726",
-  "#AB47BC",
-  "#26A69A",
-  "#42A5F5",
-  "#EF5350",
+  "#FF6B6B", // coral
+  "#4ECDC4", // teal
+  "#6C63FF", // purple
+  "#FFA726", // orange
+  "#AB47BC", // violet
+  "#26A69A", // green
+  "#42A5F5", // blue
+  "#EF5350", // red
+  "#EC407A", // pink
+  "#66BB6A", // emerald
+  "#8D6E63", // brown
+  "#78909C", // slate
+  "#FFCA28", // gold
+  "#29B6F6", // sky blue
 ];
 
-const EMOJI_OPTIONS = ["👩", "👨", "👵", "👴", "🧑", "👩‍🦰", "👨‍🦱", "👤"];
+const EMOJI_OPTIONS = [
+  "👩", "👨", "👵", "👴", "🧑", "👩‍🦰", "👨‍🦱", "👤",
+  "🧔", "👱", "🧓", "🦸",
+];
 
 // ── Component ──
 

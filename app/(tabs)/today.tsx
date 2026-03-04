@@ -166,36 +166,6 @@ export default function TodayScreen() {
         </Text>
         <FamilyBadge />
 
-        {/* Sync card */}
-        <Card style={styles.syncCard} mode="elevated">
-          <Card.Content style={styles.syncContent}>
-            <View style={styles.syncLeft}>
-              <Text variant="titleSmall" style={styles.syncTitle}>
-                {t("today.sync")}
-              </Text>
-              <Text variant="bodySmall" style={styles.syncMeta}>
-                {syncStatus === "syncing"
-                  ? t("today.syncing")
-                  : syncStatus === "error"
-                  ? t("today.syncError")
-                  : t("today.lastSync", { time: formatLastSync() })}
-              </Text>
-            </View>
-            {syncing ? (
-              <ActivityIndicator size="small" />
-            ) : (
-              <Button
-                mode="outlined"
-                compact
-                onPress={handleSync}
-                style={styles.syncBtn}
-              >
-                {t("today.syncNow")}
-              </Button>
-            )}
-          </Card.Content>
-        </Card>
-
         {/* Overview */}
         <Card style={styles.card} mode="elevated">
           <Card.Content>
@@ -203,12 +173,15 @@ export default function TodayScreen() {
               {t("today.overview")}
             </Text>
             <View style={styles.statsGrid}>
-              <View style={[styles.stat, { backgroundColor: "#FFE0E0" }]}>
+              <Pressable
+                style={[styles.stat, { backgroundColor: "#FFE0E0" }]}
+                onPress={() => router.push("/(tabs)/grocery")}
+              >
                 <Text style={[styles.statNum, { color: "#FF6B6B" }]}>
                   {unboughtCount}
                 </Text>
                 <Text style={styles.statLabel}>{t("today.groceryItems")}</Text>
-              </View>
+              </Pressable>
               <View style={[styles.stat, { backgroundColor: "#D4F5F2" }]}>
                 <Text style={[styles.statNum, { color: "#4ECDC4" }]}>
                   {undoneChores}
@@ -377,6 +350,36 @@ export default function TodayScreen() {
         {activeKids.map((kid) => (
           <KidTodayCard key={kid.id} kid={kid} />
         ))}
+
+        {/* Sync card */}
+        <Card style={styles.syncCard} mode="elevated">
+          <Card.Content style={styles.syncContent}>
+            <View style={styles.syncLeft}>
+              <Text variant="titleSmall" style={styles.syncTitle}>
+                {t("today.sync")}
+              </Text>
+              <Text variant="bodySmall" style={styles.syncMeta}>
+                {syncStatus === "syncing"
+                  ? t("today.syncing")
+                  : syncStatus === "error"
+                  ? t("today.syncError")
+                  : t("today.lastSync", { time: formatLastSync() })}
+              </Text>
+            </View>
+            {syncing ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Button
+                mode="outlined"
+                compact
+                onPress={handleSync}
+                style={styles.syncBtn}
+              >
+                {t("today.syncNow")}
+              </Button>
+            )}
+          </Card.Content>
+        </Card>
       </ScrollView>
 
       <NoteModal
@@ -397,7 +400,7 @@ const styles = StyleSheet.create({
   title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 20, textAlign: "right" },
 
   // Sync card
-  syncCard: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 16 },
+  syncCard: { borderRadius: 16, backgroundColor: "#FFFFFF", marginTop: 16, marginBottom: 16 },
   syncContent: {
     flexDirection: "row",
     alignItems: "center",
@@ -406,7 +409,7 @@ const styles = StyleSheet.create({
   syncLeft: { flex: 1 },
   syncTitle: { fontWeight: "700", color: "#1A1A2E", textAlign: "right" },
   syncMeta: { color: "#6B6B8D", marginTop: 2, textAlign: "right" },
-  syncBtn: { borderRadius: 12 },
+  syncBtn: { borderRadius: 12, marginStart: 12 },
 
   card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 24 },
   cardTitle: { fontWeight: "700", color: "#1A1A2E", marginBottom: 12, textAlign: "right" },
