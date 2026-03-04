@@ -28,13 +28,7 @@ if (!I18nManager.isRTL) {
 
 if (Platform.OS === "web" && typeof document !== "undefined") {
   document.documentElement.lang = "he";
-  // NOTE: Do NOT set dir="rtl" on the root element — it flips CSS flex
-  // layout globally and conflicts with React Native Web's style system.
-  // Input RTL is handled by writingDirection:"rtl" on each TextInput style.
-  // Add a safety-net CSS rule for any inputs we might have missed:
-  const rtlStyle = document.createElement("style");
-  rtlStyle.textContent = "input, textarea { direction: rtl; }";
-  document.head.appendChild(rtlStyle);
+  document.documentElement.dir = "rtl";
 }
 
 SplashScreen.preventAutoHideAsync();

@@ -134,7 +134,7 @@ function TabItem({ label, iconName, isFocused, palette, onPress }: TabItemProps)
 
 const styles = StyleSheet.create({
   bar: {
-    flexDirection: Platform.OS === "web" ? "row-reverse" : "row",
+    flexDirection: "row",
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#E0DFF5",
