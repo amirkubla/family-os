@@ -111,9 +111,10 @@ function ProgressSlider({
           pointerEvents="none"
           style={[
             styles.sliderThumb,
-            Platform.OS === "web"
-              ? { right: `${pct}%`, marginRight: -(THUMB_SIZE / 2) }
-              : { left: `${pct}%`, marginLeft: -(THUMB_SIZE / 2) },
+            {
+              left: `${Platform.OS === "web" ? 100 - pct : pct}%`,
+              marginLeft: -(THUMB_SIZE / 2),
+            },
           ]}
         />
       </View>
