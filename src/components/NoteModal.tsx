@@ -4,6 +4,7 @@ import { Text, TextInput, Button } from "react-native-paper";
 import type { Note } from "@src/models/note";
 import { addNoteRemote, updateNoteRemote } from "@src/lib/sync/remoteCrud";
 import { t } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
   input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
   inputContent: { textAlign: "right" },
   actions: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "flex-end",
     gap: 8,
     marginTop: 8,

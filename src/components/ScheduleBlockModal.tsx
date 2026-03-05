@@ -15,6 +15,7 @@ import { BLOCK_TYPES } from "@src/models/schedule";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, blockTypeLabel } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
 
@@ -342,15 +343,15 @@ const styles = StyleSheet.create({
   rtlInput: { marginBottom: 8, textAlign: "right", writingDirection: "rtl" },
   rtlInputContent: { textAlign: "right" },
   label: { marginBottom: 6, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
+  chipRow: { flexDirection: RTL_ROW, flexWrap: "wrap", gap: 6, marginBottom: 10 },
   chip: { borderRadius: 20 },
   chipLabel: { fontSize: 12 },
   segmented: { marginBottom: 10, marginTop: 4 },
-  timeRow: { flexDirection: "row", gap: 12 },
+  timeRow: { flexDirection: RTL_ROW, gap: 12 },
   timeCol: { flex: 1 },
   error: { color: "#FF6B6B", fontSize: 12, marginBottom: 4, marginTop: -4 },
   actions: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "flex-end",
     gap: 8,
     marginTop: 12,

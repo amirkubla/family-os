@@ -7,6 +7,7 @@ import {
 } from "@src/lib/sync/remoteCrud";
 import type { Kid } from "@src/models/kid";
 import { t } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 
 // ── Preset choices ──
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
     color: "#6B6B8D",
   },
   pickerRow: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     flexWrap: "wrap",
     gap: 8,
     marginBottom: 4,
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
     borderColor: "#1A1A2E",
   },
   actions: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "space-between",
     marginTop: 20,
   },

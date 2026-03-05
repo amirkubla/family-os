@@ -5,6 +5,7 @@ import { GROCERY_SUBCATEGORIES } from "@src/models/grocery";
 import type { ShoppingCategory } from "@src/models/grocery";
 import { addGroceryRemote } from "@src/lib/sync/remoteCrud";
 import { t, groceryCategoryLabel } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   inputContent: { textAlign: "right" },
   label: { marginBottom: 8, color: "#6B6B8D", textAlign: "right" },
   categoryWrap: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     flexWrap: "wrap",
     gap: 6,
     marginBottom: 12,
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
   catChip: { borderRadius: 20 },
   catLabel: { fontSize: 12 },
   actions: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "flex-end",
     gap: 8,
     marginTop: 8,

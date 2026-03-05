@@ -4,6 +4,7 @@ import { Text, TextInput, Button } from "react-native-paper";
 import { addChoreRemote, updateChoreRemote } from "@src/lib/sync/remoteCrud";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { t } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 import type { Chore } from "@src/models/chore";
 import ModalWrapper from "./ModalWrapper";
 
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
     color: "#6B6B8D",
   },
   memberWrap: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     flexWrap: "wrap",
     gap: 6,
     marginBottom: 12,
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
   memberChip: { borderRadius: 20 },
   memberLabel: { fontSize: 13 },
   actions: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "flex-end",
     gap: 8,
     marginTop: 8,

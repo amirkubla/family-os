@@ -8,6 +8,7 @@ import {
 import { MEMBER_ROLES } from "@src/models/familyMember";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import { t, memberRoleLabel } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 
 // ── Preset choices ──
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
   },
   segments: { marginBottom: 4 },
   pickerRow: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     flexWrap: "wrap",
     gap: 8,
     marginBottom: 4,
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
     borderColor: "#1A1A2E",
   },
   actions: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "space-between",
     marginTop: 20,
   },

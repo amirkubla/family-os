@@ -4,6 +4,7 @@ import { Text, TextInput, Button, ProgressBar } from "react-native-paper";
 import type { Project, ProjectStatus } from "@src/models/project";
 import { addProjectRemote, updateProjectRemote } from "@src/lib/sync/remoteCrud";
 import { t, statusLabel } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
@@ -165,14 +166,14 @@ const styles = StyleSheet.create({
   inputContent: { textAlign: "right" },
   label: { marginBottom: 8, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
   statusRow: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     gap: 6,
     marginBottom: 12,
   },
   statusBtn: { borderRadius: 20 },
   statusLabel: { fontSize: 12 },
   sliderRow: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     alignItems: "center",
     gap: 8,
     marginBottom: 4,
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
   progressInput: { width: 64, textAlign: "center" },
   progressBar: { height: 6, borderRadius: 3, marginBottom: 12 },
   actions: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "flex-end",
     gap: 8,
     marginTop: 12,

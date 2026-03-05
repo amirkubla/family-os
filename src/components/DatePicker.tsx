@@ -10,6 +10,7 @@ import { View, StyleSheet, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { dayName } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 
 // Hebrew month names
 const MONTHS_HE = [
@@ -79,7 +80,7 @@ export default function DatePicker({ value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F5F3FF",
