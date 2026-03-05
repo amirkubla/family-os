@@ -75,3 +75,53 @@ export function useKidOneTimeBlocks(kidId: string): ScheduleBlock[] {
     [blocks, kidId],
   );
 }
+
+// ---------------------------------------------------------------------------
+// All-kids selectors (used by Calendar view)
+// ---------------------------------------------------------------------------
+
+/** All schedule blocks for a specific date across all kids. */
+export function useAllKidBlocksForDate(
+  dateStr: string,
+  dayOfWeek: number,
+): ScheduleBlock[] {
+  const blocks = useFamilyStore((s) => s.scheduleBlocks);
+  return useMemo(
+    () =>
+      blocks
+        .filter(
+          (b) =>
+            (b.isRecurring && b.dayOfWeek === dayOfWeek) ||
+            (!b.isRecurring && b.date === dateStr),
+        )
+        .sort((a, b) => a.startMinutes - b.startMinutes),
+    [blocks, dateStr, dayOfWeek],
+  );
+}
+
+/** Recurring blocks by day-of-week across all kids (for calendar dots). */
+export function useAllKidRecurringByDay(): Record<number, ScheduleBlock[]> {
+  const blocks = useFamilyStore((s) => s.scheduleBlocks);
+  return useMemo(() => {
+    const map: Record<number, ScheduleBlock[]> = {};
+    for (let d = 0; d < 7; d++) map[d] = [];
+    for (const b of blocks) {
+      if (b.isRecurring) {
+        map[b.dayOfWeek]?.push(b);
+      }
+    }
+    return map;
+  }, [blocks]);
+}
+
+/** All one-time schedule blocks across all kids (for calendar dots). */
+export function useAllKidOneTimeBlocks(): ScheduleBlock[] {
+  const blocks = useFamilyStore((s) => s.scheduleBlocks);
+  return useMemo(
+    () =>
+      blocks
+        .filter((b) => !b.isRecurring)
+        .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? "") || a.startMinutes - b.startMinutes),
+    [blocks],
+  );
+}

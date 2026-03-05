@@ -22,18 +22,27 @@ import {
   useFamilyEventRecurringByDay,
 } from "@src/store/familyEventSelectors";
 import {
+  useAllKidBlocksForDate,
+  useAllKidRecurringByDay,
+  useAllKidOneTimeBlocks,
+} from "@src/store/scheduleSelectors";
+import {
   addFamilyEventRemote,
   updateFamilyEventRemote,
   deleteFamilyEventRemote,
+  updateScheduleBlockRemote,
+  deleteScheduleBlockRemote,
 } from "@src/lib/sync/remoteCrud";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
+import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
-import { t, dayName, assigneeTypeLabel } from "@src/i18n";
+import { t, dayName, assigneeTypeLabel, blockTypeLabel } from "@src/i18n";
 import { RTL_ROW } from "@src/ui/rtl";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import FamilyEventModal from "@src/components/FamilyEventModal";
+import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import FamilyBadge from "@src/components/FamilyBadge";
 
 // ---------------------------------------------------------------------------
@@ -41,11 +50,18 @@ import FamilyBadge from "@src/components/FamilyBadge";
 // ---------------------------------------------------------------------------
 
 const ACCENT_COLOR = "#6C63FF";
+const KID_BLOCK_DOT_COLOR = "#FF6B6B";
 
 const ASSIGNEE_COLORS: Record<AssigneeType, string> = {
   family: "#4ECDC4",
   member: "#6C63FF",
   kid: "#FF6B6B",
+};
+
+const TYPE_COLORS: Record<BlockType, string> = {
+  school: "#6C63FF",
+  hobby: "#FF6B6B",
+  other: "#4ECDC4",
 };
 
 function EventRow({
@@ -107,6 +123,59 @@ function EventRow({
   );
 }
 
+function KidBlockRow({
+  block,
+  onEdit,
+  onDelete,
+}: {
+  block: ScheduleBlock;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const kids = useFamilyStore((s) => s.kids);
+  const kid = kids.find((k) => k.id === block.kidId);
+  const color = block.color ?? kid?.color ?? "#FF6B6B";
+  const typeColor = TYPE_COLORS[block.type];
+
+  return (
+    <Pressable style={styles.eventRow} onPress={onEdit}>
+      <View style={[styles.eventStripe, { backgroundColor: color }]} />
+      <View style={styles.eventInfo}>
+        <View style={styles.eventTitleRow}>
+          <Text variant="bodyMedium" style={styles.eventTitle}>
+            {block.title}
+          </Text>
+          {kid && (
+            <Text
+              style={[
+                styles.assigneeBadge,
+                { color: "#FF6B6B", backgroundColor: "#FF6B6B22" },
+              ]}
+            >
+              {kid.emoji} {kid.name}
+            </Text>
+          )}
+        </View>
+        <View style={styles.eventMetaRow}>
+          <Text variant="bodySmall" style={styles.eventTime}>
+            {minutesToHHMM(block.startMinutes)} – {minutesToHHMM(block.endMinutes)}
+            {block.location ? `  ·  ${block.location}` : ""}
+          </Text>
+          <Text
+            style={[
+              styles.assigneeBadge,
+              { color: typeColor, backgroundColor: typeColor + "22" },
+            ]}
+          >
+            {blockTypeLabel(block.type)}
+          </Text>
+        </View>
+      </View>
+      <IconButton icon="trash-can-outline" size={18} onPress={onDelete} />
+    </Pressable>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
@@ -115,14 +184,21 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
   const selectedDow = dayOfWeekFromYMD(selectedDate);
   const dayEvents = useFamilyEventsForDate(selectedDate, selectedDow);
+  const dayBlocks = useAllKidBlocksForDate(selectedDate, selectedDow);
 
-  // For calendar dots
+  // For calendar dots — family events
   const recurringByDay = useFamilyEventRecurringByDay();
   const oneTimeEvents = useFamilyEventOneTimeBlocks();
+  // For calendar dots — kid schedule blocks
+  const kidRecurringByDay = useAllKidRecurringByDay();
+  const kidOneTimeBlocks = useAllKidOneTimeBlocks();
 
-  // Modal state
+  // Modal state — family events
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<FamilyEvent | null>(null);
+  // Modal state — kid schedule blocks
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
 
   const openAdd = () => {
     setEditingEvent(null);
@@ -132,6 +208,11 @@ export default function CalendarScreen() {
   const openEdit = (event: FamilyEvent) => {
     setEditingEvent(event);
     setModalOpen(true);
+  };
+
+  const openEditBlock = (block: ScheduleBlock) => {
+    setEditingBlock(block);
+    setBlockModalOpen(true);
   };
 
   const handleSubmit = (data: {
@@ -152,28 +233,36 @@ export default function CalendarScreen() {
     }
   };
 
+  const hasAnyItems = dayEvents.length > 0 || dayBlocks.length > 0;
+
   // Build markedDates
   const markedDates = useMemo(() => {
     const marks: Record<string, { dotColor: string }> = {};
-    // Recurring events: mark 60 days around today
+    // Recurring events + kid blocks: mark 60 days around today
     const now = new Date();
     for (let offset = -30; offset <= 30; offset++) {
       const d = new Date(now);
       d.setDate(d.getDate() + offset);
       const ymd = toYMD(d);
       const dow = d.getDay();
-      if (recurringByDay[dow]?.length > 0) {
+      if (recurringByDay[dow]?.length > 0 || kidRecurringByDay[dow]?.length > 0) {
         marks[ymd] = { dotColor: ACCENT_COLOR };
       }
     }
-    // One-time events
+    // One-time family events
     for (const e of oneTimeEvents) {
       if (e.date) {
         marks[e.date] = { dotColor: ACCENT_COLOR };
       }
     }
+    // One-time kid blocks
+    for (const b of kidOneTimeBlocks) {
+      if (b.date) {
+        marks[b.date] = { dotColor: ACCENT_COLOR };
+      }
+    }
     return marks;
-  }, [recurringByDay, oneTimeEvents]);
+  }, [recurringByDay, oneTimeEvents, kidRecurringByDay, kidOneTimeBlocks]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -200,7 +289,7 @@ export default function CalendarScreen() {
           {t("calendar.eventsForDate", { day: dayName(selectedDow) })}
         </Text>
 
-        {dayEvents.length === 0 ? (
+        {!hasAnyItems ? (
           <Text variant="bodyMedium" style={styles.emptyText}>
             {t("calendar.noEvents")}
           </Text>
@@ -213,6 +302,14 @@ export default function CalendarScreen() {
                   event={event}
                   onEdit={() => openEdit(event)}
                   onDelete={() => deleteFamilyEventRemote(event.id)}
+                />
+              ))}
+              {dayBlocks.map((block) => (
+                <KidBlockRow
+                  key={block.id}
+                  block={block}
+                  onEdit={() => openEditBlock(block)}
+                  onDelete={() => deleteScheduleBlockRemote(block.id)}
                 />
               ))}
             </Card.Content>
@@ -238,6 +335,22 @@ export default function CalendarScreen() {
         defaultDayOfWeek={selectedDow}
         defaultDate={selectedDate}
         onSubmit={handleSubmit}
+      />
+
+      <ScheduleBlockModal
+        visible={blockModalOpen}
+        onDismiss={() => {
+          setBlockModalOpen(false);
+          setEditingBlock(null);
+        }}
+        editBlock={editingBlock}
+        defaultDayOfWeek={selectedDow}
+        defaultDate={selectedDate}
+        onSubmit={(data) => {
+          if (editingBlock) {
+            updateScheduleBlockRemote(editingBlock.id, data);
+          }
+        }}
       />
     </SafeAreaView>
   );

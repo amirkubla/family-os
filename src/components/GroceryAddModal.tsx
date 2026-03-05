@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
-import { GROCERY_SUBCATEGORIES } from "@src/models/grocery";
+import { SUBCATEGORIES } from "@src/models/grocery";
 import type { ShoppingCategory } from "@src/models/grocery";
 import { addGroceryRemote } from "@src/lib/sync/remoteCrud";
 import { t, groceryCategoryLabel } from "@src/i18n";
@@ -19,20 +19,23 @@ export default function GroceryAddModal({
   onDismiss,
   defaultShoppingCategory = "grocery",
 }: Props) {
+  const subcats = SUBCATEGORIES[defaultShoppingCategory];
+  const defaultSubcat = subcats[0];
+
   const [title, setTitle] = useState("");
-  const [subcategory, setSubcategory] = useState("Produce");
+  const [subcategory, setSubcategory] = useState(defaultSubcat);
   const [qty, setQty] = useState("");
 
   // Reset subcategory when modal opens with a new default
   useEffect(() => {
     if (visible) {
-      setSubcategory("Produce");
+      setSubcategory(SUBCATEGORIES[defaultShoppingCategory][0]);
     }
-  }, [visible]);
+  }, [visible, defaultShoppingCategory]);
 
   const reset = () => {
     setTitle("");
-    setSubcategory("Produce");
+    setSubcategory(defaultSubcat);
     setQty("");
   };
 
@@ -73,7 +76,7 @@ export default function GroceryAddModal({
         {t("groceryModal.category")}
       </Text>
       <View style={styles.categoryWrap}>
-        {GROCERY_SUBCATEGORIES.map((cat) => (
+        {subcats.map((cat) => (
           <Button
             key={cat}
             mode={subcategory === cat ? "contained" : "outlined"}

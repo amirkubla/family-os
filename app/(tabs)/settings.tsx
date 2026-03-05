@@ -193,11 +193,6 @@ export default function SettingsScreen() {
               contentStyle={styles.nameInputContent}
               right={<TextInput.Icon icon="check" onPress={handleSaveName} />}
             />
-            {session?.user.familyId && (
-              <Text variant="bodySmall" style={styles.familyIdDebug}>
-                Family ID: {session.user.familyId}
-              </Text>
-            )}
           </Card.Content>
         </Card>
 
@@ -332,9 +327,6 @@ export default function SettingsScreen() {
                 <Text variant="bodyMedium" style={styles.accountText}>
                   {t("auth.loggedInAs")} {session.user.username}
                 </Text>
-                <Text variant="bodySmall" style={styles.familyIdText}>
-                  {t("auth.familyIdLabel")} {session.user.familyId}
-                </Text>
               </View>
             )}
 
@@ -418,7 +410,5 @@ const styles = StyleSheet.create({
   nameInputContent: { textAlign: "right" },
   accountInfo: { marginBottom: 12 },
   accountText: { textAlign: "right", writingDirection: "rtl", color: "#1A1A2E", marginBottom: 4 },
-  familyIdText: { textAlign: "right", writingDirection: "rtl", color: "#8E8BA8", fontSize: 11 },
-  familyIdDebug: { textAlign: "right", color: "#B0AEC8", fontSize: 10, marginTop: 6, fontFamily: "monospace" },
   logoutBtn: { borderColor: "#FF6B6B44", borderRadius: 12 },
 });

@@ -20,9 +20,9 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 const TAB_COLORS: Record<string, { active: string; bg: string; hover: string }> = {
   today:    { active: "#FFA726", bg: "#FFF3E0", hover: "#FFF8F0" },  // amber
-  calendar: { active: "#26C6DA", bg: "#E0F7FA", hover: "#F0FBFC" },  // cyan
+  calendar: { active: "#26A69A", bg: "#E0F2F1", hover: "#F0F9F8" },  // warm teal
   grocery:  { active: "#66BB6A", bg: "#E8F5E9", hover: "#F1F9F1" },  // green
-  home:     { active: "#E0BE60", bg: "#FFFAED", hover: "#FFFDF5" },  // light gold icon + cream pill
+  home:     { active: "#26C6DA", bg: "#E0F7FA", hover: "#F0FBFC" },  // cyan
   settings: { active: "#6C63FF", bg: "#EDE7F6", hover: "#F5F2FF" },  // purple
 };
 

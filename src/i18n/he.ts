@@ -206,8 +206,9 @@ const he = {
     other: "אחר",
   },
 
-  // ── Grocery categories (keys match English data model values) ──
+  // ── Subcategories (keys match English data model values) ──
   groceryCategory: {
+    // Grocery (מכולת)
     Produce: "ירקות ופירות",
     Dairy: "מוצרי חלב",
     Meat: "בשר",
@@ -215,6 +216,23 @@ const he = {
     Frozen: "קפואים",
     Snacks: "חטיפים",
     Beverages: "משקאות",
+    // Health (פארם)
+    Medications: "תרופות",
+    Vitamins: "ויטמינים",
+    PersonalCare: "טיפוח אישי",
+    BabyCare: "תינוקות",
+    FirstAid: "עזרה ראשונה",
+    Skincare: "טיפוח עור",
+    HairCare: "טיפוח שיער",
+    // Home (לבית)
+    Cleaning: "ניקיון",
+    Laundry: "כביסה",
+    Kitchen: "מטבח",
+    Bathroom: "אמבטיה",
+    PaperGoods: "מוצרי נייר",
+    Tools: "כלי עבודה",
+    Decor: "קישוט ועיצוב",
+    // Shared
     Household: "מוצרי בית",
     Other: "אחר",
   } as Record<string, string>,

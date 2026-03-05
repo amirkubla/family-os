@@ -17,14 +17,39 @@ export const SHOPPING_CATEGORIES: ShoppingCategory[] = [
   "home",
 ];
 
-export const GROCERY_SUBCATEGORIES = [
-  "Produce",
-  "Dairy",
-  "Meat",
-  "Bakery",
-  "Frozen",
-  "Snacks",
-  "Beverages",
-  "Household",
-  "Other",
-] as const;
+/** Subcategories per shopping section — keys match ShoppingCategory. */
+export const SUBCATEGORIES: Record<ShoppingCategory, readonly string[]> = {
+  grocery: [
+    "Produce",
+    "Dairy",
+    "Meat",
+    "Bakery",
+    "Frozen",
+    "Snacks",
+    "Beverages",
+    "Other",
+  ],
+  health: [
+    "Medications",
+    "Vitamins",
+    "PersonalCare",
+    "BabyCare",
+    "FirstAid",
+    "Skincare",
+    "HairCare",
+    "Other",
+  ],
+  home: [
+    "Cleaning",
+    "Laundry",
+    "Kitchen",
+    "Bathroom",
+    "PaperGoods",
+    "Tools",
+    "Decor",
+    "Other",
+  ],
+};
+
+/** @deprecated Use SUBCATEGORIES instead */
+export const GROCERY_SUBCATEGORIES = SUBCATEGORIES.grocery;
