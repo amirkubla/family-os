@@ -30,6 +30,7 @@ import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, assigneeTypeLabel } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import FamilyEventModal from "@src/components/FamilyEventModal";
@@ -263,9 +264,9 @@ const styles = StyleSheet.create({
 
   // Event row
   eventRow: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#F0EEFF",
   },
@@ -273,16 +274,17 @@ const styles = StyleSheet.create({
     width: 4,
     height: 36,
     borderRadius: 2,
-    marginEnd: 10,
+    marginEnd: 12,
+    marginStart: 4,
   },
   eventInfo: { flex: 1 },
   eventTitleRow: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     alignItems: "center",
     gap: 8,
   },
   eventTitle: { fontWeight: "600", color: "#1A1A2E", textAlign: "right" },
-  eventMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
+  eventMetaRow: { flexDirection: RTL_ROW, alignItems: "center", gap: 8, marginTop: 2 },
   eventTime: { color: "#6B6B8D", textAlign: "right" },
   assigneeBadge: {
     fontSize: 11,
