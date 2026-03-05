@@ -11,20 +11,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import type { Kid } from "@src/models/kid";
 import type { Note } from "@src/models/note";
+import type { ScheduleBlock, BlockType } from "@src/models/schedule";
+import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useKidBlocksForDate } from "@src/store/scheduleSelectors";
 import { useTodayFamilyEvents } from "@src/store/familyEventSelectors";
 import { toYMD } from "@src/utils/date";
 import { syncAll } from "@src/lib/sync/syncEngine";
-import { toggleChoreDoneRemote } from "@src/lib/sync/remoteCrud";
+import {
+  toggleChoreDoneRemote,
+  updateFamilyEventRemote,
+  updateScheduleBlockRemote,
+} from "@src/lib/sync/remoteCrud";
 import { t, LOCALE, blockTypeLabel, assigneeTypeLabel } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
 import { RTL_ROW } from "@src/ui/rtl";
-import type { BlockType } from "@src/models/schedule";
-import type { AssigneeType } from "@src/models/familyEvent";
 import FamilyBadge from "@src/components/FamilyBadge";
 import PinnedNotesCarousel from "@src/components/PinnedNotesCarousel";
 import NoteModal from "@src/components/NoteModal";
+import FamilyEventModal from "@src/components/FamilyEventModal";
+import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,7 +55,13 @@ const todayDate = toYMD(new Date());
 // KidTodayCard — shows a single kid's today schedule
 // ---------------------------------------------------------------------------
 
-function KidTodayCard({ kid }: { kid: Kid }) {
+function KidTodayCard({
+  kid,
+  onBlockPress,
+}: {
+  kid: Kid;
+  onBlockPress: (block: ScheduleBlock) => void;
+}) {
   const router = useRouter();
   const blocks = useKidBlocksForDate(kid.id, todayDate, todayDow);
 
@@ -78,7 +90,7 @@ function KidTodayCard({ kid }: { kid: Kid }) {
             const color = block.color ?? kid.color;
             const typeColor = TYPE_COLORS[block.type];
             return (
-              <View key={block.id} style={styles.blockRow}>
+              <Pressable key={block.id} style={styles.blockRow} onPress={() => onBlockPress(block)}>
                 <View style={[styles.blockStripe, { backgroundColor: color }]} />
                 <View style={styles.blockInfo}>
                   <Text variant="bodyMedium" style={styles.blockTitle}>
@@ -97,7 +109,7 @@ function KidTodayCard({ kid }: { kid: Kid }) {
                 >
                   {blockTypeLabel(block.type)}
                 </Text>
-              </View>
+              </Pressable>
             );
           })
         )}
@@ -124,6 +136,10 @@ export default function TodayScreen() {
   const [carouselOpen, setCarouselOpen] = useState(false);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<FamilyEvent | null>(null);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
   const router = useRouter();
 
   const activeKids = kids.filter((k) => k.isActive);
@@ -315,7 +331,14 @@ export default function TodayScreen() {
                     : assigneeTypeLabel("kid");
                 }
                 return (
-                  <View key={event.id} style={styles.blockRow}>
+                  <Pressable
+                    key={event.id}
+                    style={styles.blockRow}
+                    onPress={() => {
+                      setEditingEvent(event);
+                      setEventModalOpen(true);
+                    }}
+                  >
                     <View style={[styles.blockStripe, { backgroundColor: color }]} />
                     <View style={styles.blockInfo}>
                       <Text variant="bodyMedium" style={styles.blockTitle}>
@@ -337,7 +360,7 @@ export default function TodayScreen() {
                     >
                       {assigneeDisplay}
                     </Text>
-                  </View>
+                  </Pressable>
                 );
               })
             )}
@@ -349,7 +372,14 @@ export default function TodayScreen() {
           {t("today.kids")}
         </Text>
         {activeKids.map((kid) => (
-          <KidTodayCard key={kid.id} kid={kid} />
+          <KidTodayCard
+            key={kid.id}
+            kid={kid}
+            onBlockPress={(block) => {
+              setEditingBlock(block);
+              setBlockModalOpen(true);
+            }}
+          />
         ))}
 
         {/* Sync card */}
@@ -390,6 +420,38 @@ export default function TodayScreen() {
           setEditingNote(null);
         }}
         editNote={editingNote}
+      />
+
+      <FamilyEventModal
+        visible={eventModalOpen}
+        onDismiss={() => {
+          setEventModalOpen(false);
+          setEditingEvent(null);
+        }}
+        editEvent={editingEvent}
+        defaultDayOfWeek={todayDow}
+        defaultDate={todayDate}
+        onSubmit={(data) => {
+          if (editingEvent) {
+            updateFamilyEventRemote(editingEvent.id, data);
+          }
+        }}
+      />
+
+      <ScheduleBlockModal
+        visible={blockModalOpen}
+        onDismiss={() => {
+          setBlockModalOpen(false);
+          setEditingBlock(null);
+        }}
+        editBlock={editingBlock}
+        defaultDayOfWeek={todayDow}
+        defaultDate={todayDate}
+        onSubmit={(data) => {
+          if (editingBlock) {
+            updateScheduleBlockRemote(editingBlock.id, data);
+          }
+        }}
       />
     </SafeAreaView>
   );
