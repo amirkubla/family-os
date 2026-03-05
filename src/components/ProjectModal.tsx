@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
-import { Text, TextInput, Button, ProgressBar } from "react-native-paper";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { View, StyleSheet, PanResponder, LayoutChangeEvent, Platform } from "react-native";
+import { Text, TextInput, Button } from "react-native-paper";
 import type { Project, ProjectStatus } from "@src/models/project";
 import { addProjectRemote, updateProjectRemote } from "@src/lib/sync/remoteCrud";
 import { t, statusLabel } from "@src/i18n";
@@ -12,6 +12,96 @@ const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "in_progress", label: statusLabel("in_progress") },
   { value: "done", label: statusLabel("done") },
 ];
+
+// ---------------------------------------------------------------------------
+// ProgressSlider — custom 0-100 slider (no external dependency)
+// ---------------------------------------------------------------------------
+
+const THUMB_SIZE = 24;
+const TRACK_HEIGHT = 6;
+const SLIDER_COLOR = "#6C63FF";
+
+function ProgressSlider({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const trackWidth = useRef(0);
+  const progressRef = useRef(value);
+  progressRef.current = value;
+
+  const clamp = (v: number) => Math.round(Math.min(100, Math.max(0, v)));
+
+  const toProgress = useCallback(
+    (pageX: number, layoutX: number) => {
+      const ratio = (pageX - layoutX) / trackWidth.current;
+      return clamp(ratio * 100);
+    },
+    [],
+  );
+
+  const layoutX = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        onChange(toProgress(evt.nativeEvent.pageX, layoutX.current));
+      },
+      onPanResponderMove: (evt) => {
+        onChange(toProgress(evt.nativeEvent.pageX, layoutX.current));
+      },
+    }),
+  ).current;
+
+  const onTrackLayout = (e: LayoutChangeEvent) => {
+    trackWidth.current = e.nativeEvent.layout.width;
+    layoutX.current = e.nativeEvent.layout.x;
+    // Measure absolute position for accurate pageX mapping
+    (e.target as any)?.measureInWindow?.((x: number) => {
+      if (x != null) layoutX.current = x;
+    });
+  };
+
+  const pct = Math.min(100, Math.max(0, value));
+
+  return (
+    <View style={styles.sliderContainer}>
+      <View style={styles.sliderLabels}>
+        <Text style={styles.sliderEdge}>0</Text>
+        <Text style={[styles.sliderValue, { color: SLIDER_COLOR }]}>
+          {Math.round(pct)}%
+        </Text>
+        <Text style={styles.sliderEdge}>100</Text>
+      </View>
+      <View
+        style={styles.sliderTrackWrap}
+        onLayout={onTrackLayout}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.sliderTrack}>
+          <View
+            style={[
+              styles.sliderFill,
+              { width: `${pct}%` },
+            ]}
+          />
+        </View>
+        <View
+          style={[
+            styles.sliderThumb,
+            { left: `${pct}%`, marginLeft: -(THUMB_SIZE / 2) },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 interface Props {
   visible: boolean;
@@ -123,26 +213,7 @@ export default function ProjectModal({
           <Text variant="labelLarge" style={styles.label}>
             {t("projectModal.progress", { n: Math.round(progress) })}
           </Text>
-          <View style={styles.sliderRow}>
-            <Text style={styles.sliderEdge}>0</Text>
-            <TextInput
-              style={styles.progressInput}
-              mode="outlined"
-              keyboardType="numeric"
-              value={String(Math.round(progress))}
-              onChangeText={(v) => {
-                const n = parseInt(v, 10);
-                if (!isNaN(n)) setProgress(Math.min(100, Math.max(0, n)));
-              }}
-              dense
-            />
-            <Text style={styles.sliderEdge}>100</Text>
-          </View>
-          <ProgressBar
-            progress={progress / 100}
-            color="#6C63FF"
-            style={styles.progressBar}
-          />
+          <ProgressSlider value={progress} onChange={setProgress} />
         </>
       )}
 
@@ -172,15 +243,49 @@ const styles = StyleSheet.create({
   },
   statusBtn: { borderRadius: 20 },
   statusLabel: { fontSize: 12 },
-  sliderRow: {
+
+  // Slider
+  sliderContainer: { marginBottom: 16 },
+  sliderLabels: {
     flexDirection: RTL_ROW,
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   sliderEdge: { fontSize: 12, color: "#6B6B8D" },
-  progressInput: { width: 64, textAlign: "center" },
-  progressBar: { height: 6, borderRadius: 3, marginBottom: 12 },
+  sliderValue: { fontSize: 16, fontWeight: "700" },
+  sliderTrackWrap: {
+    height: THUMB_SIZE + 8,
+    justifyContent: "center",
+    position: "relative",
+    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+  },
+  sliderTrack: {
+    height: TRACK_HEIGHT,
+    borderRadius: TRACK_HEIGHT / 2,
+    backgroundColor: "#E8E6FF",
+    overflow: "hidden",
+  },
+  sliderFill: {
+    height: TRACK_HEIGHT,
+    borderRadius: TRACK_HEIGHT / 2,
+    backgroundColor: SLIDER_COLOR,
+  },
+  sliderThumb: {
+    position: "absolute",
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 3,
+    borderColor: SLIDER_COLOR,
+    top: (THUMB_SIZE + 8 - THUMB_SIZE) / 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   actions: {
     flexDirection: RTL_ROW,
     justifyContent: "flex-end",

@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import type { Kid } from "@src/models/kid";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
+import type { Project } from "@src/models/project";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -29,10 +30,12 @@ import { minutesToHHMM } from "@src/utils/time";
 import { RTL_ROW } from "@src/ui/rtl";
 import FamilyBadge from "@src/components/FamilyBadge";
 import PinnedNotesCarousel from "@src/components/PinnedNotesCarousel";
+import ActiveProjectsCarousel from "@src/components/ActiveProjectsCarousel";
 import NoteModal from "@src/components/NoteModal";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
+import ProjectModal from "@src/components/ProjectModal";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -144,15 +147,20 @@ export default function TodayScreen() {
   const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
   const [choreModalOpen, setChoreModalOpen] = useState(false);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
+  const [projectsCarouselOpen, setProjectsCarouselOpen] = useState(false);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const router = useRouter();
 
   const activeKids = kids.filter((k) => k.isActive);
 
   const unboughtCount = grocery.filter((g) => !g.isBought).length;
   const undoneChores = chores.filter((c) => !c.done).length;
-  const inProgressProjects = projects.filter(
-    (p) => p.status === "in_progress"
-  ).length;
+  const activeProjectsList = useMemo(
+    () => projects.filter((p) => p.status === "in_progress"),
+    [projects],
+  );
+  const inProgressProjects = activeProjectsList.length;
   const pinnedNotesList = useMemo(
     () => notes.filter((n) => n.pinned),
     [notes],
@@ -209,12 +217,17 @@ export default function TodayScreen() {
                 </Text>
                 <Text style={styles.statLabel}>{t("today.choresToDo")}</Text>
               </View>
-              <View style={[styles.stat, { backgroundColor: "#E8E6FF" }]}>
+              <Pressable
+                style={[styles.stat, { backgroundColor: "#E8E6FF" }]}
+                onPress={() => setProjectsCarouselOpen((v) => !v)}
+              >
                 <Text style={[styles.statNum, { color: "#6C63FF" }]}>
                   {inProgressProjects}
                 </Text>
-                <Text style={styles.statLabel}>{t("today.activeProjects")}</Text>
-              </View>
+                <Text style={styles.statLabel}>
+                  {t("today.activeProjects")} {projectsCarouselOpen ? "\u25B2" : "\u25BC"}
+                </Text>
+              </Pressable>
               <Pressable
                 style={[styles.stat, { backgroundColor: "#FFF3E0" }]}
                 onPress={() => setCarouselOpen((v) => !v)}
@@ -260,6 +273,41 @@ export default function TodayScreen() {
                 style={styles.emptyCarouselBtn}
               >
                 {t("today.addNote")}
+              </Button>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Active projects carousel */}
+        {projectsCarouselOpen && activeProjectsList.length > 0 && (
+          <ActiveProjectsCarousel
+            projects={activeProjectsList}
+            onProjectPress={(project) => {
+              setEditingProject(project);
+              setProjectModalOpen(true);
+            }}
+            onAddPress={() => {
+              setEditingProject(null);
+              setProjectModalOpen(true);
+            }}
+          />
+        )}
+        {projectsCarouselOpen && activeProjectsList.length === 0 && (
+          <Card style={styles.card} mode="elevated">
+            <Card.Content style={styles.emptyCarousel}>
+              <Text variant="bodyMedium" style={styles.emptyCarouselText}>
+                {t("today.noActiveProjects")}
+              </Text>
+              <Button
+                mode="contained"
+                compact
+                onPress={() => {
+                  setEditingProject(null);
+                  setProjectModalOpen(true);
+                }}
+                style={styles.emptyCarouselBtnPurple}
+              >
+                {t("today.addProject")}
               </Button>
             </Card.Content>
           </Card>
@@ -475,6 +523,15 @@ export default function TodayScreen() {
         }}
         editChore={editingChore}
       />
+
+      <ProjectModal
+        visible={projectModalOpen}
+        onDismiss={() => {
+          setProjectModalOpen(false);
+          setEditingProject(null);
+        }}
+        editProject={editingProject}
+      />
     </SafeAreaView>
   );
 }
@@ -531,6 +588,7 @@ const styles = StyleSheet.create({
   emptyCarousel: { alignItems: "center", paddingVertical: 16 },
   emptyCarouselText: { color: "#8E8BA8", textAlign: "center", marginBottom: 12 },
   emptyCarouselBtn: { borderRadius: 12, backgroundColor: "#FFA726" },
+  emptyCarouselBtnPurple: { borderRadius: 12, backgroundColor: "#6C63FF" },
 
   // Kid today cards
   kidCard: {

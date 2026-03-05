@@ -45,6 +45,8 @@ const he = {
     wholeFamily: "כל המשפחה",
     never: "אף פעם",
     addNote: "פתק חדש",
+    addProject: "פרויקט חדש",
+    noActiveProjects: "אין פרויקטים פעילים — התחילו משהו חדש",
   },
 
   // ── Home screen ──
