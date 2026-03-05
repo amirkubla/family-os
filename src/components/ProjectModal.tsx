@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, PanResponder, LayoutChangeEvent, Platform, I18nManager } from "react-native";
+import { View, StyleSheet, PanResponder, LayoutChangeEvent, Platform } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import type { Project, ProjectStatus } from "@src/models/project";
 import { addProjectRemote, updateProjectRemote } from "@src/lib/sync/remoteCrud";
@@ -95,10 +95,7 @@ function ProgressSlider({
         <Text style={styles.sliderEdge}>100</Text>
       </View>
       <View
-        style={[
-          styles.sliderTrackWrap,
-          Platform.OS === "web" && I18nManager.isRTL && { transform: [{ scaleX: -1 }] },
-        ]}
+        style={styles.sliderTrackWrap}
         onLayout={onTrackLayout}
         {...trackProps}
       >
@@ -114,7 +111,9 @@ function ProgressSlider({
           pointerEvents="none"
           style={[
             styles.sliderThumb,
-            { left: `${pct}%`, marginLeft: -(THUMB_SIZE / 2) },
+            Platform.OS === "web"
+              ? { right: `${pct}%`, marginRight: -(THUMB_SIZE / 2) }
+              : { left: `${pct}%`, marginLeft: -(THUMB_SIZE / 2) },
           ]}
         />
       </View>
@@ -266,9 +265,9 @@ const styles = StyleSheet.create({
   statusLabel: { fontSize: 12 },
 
   // Slider
-  sliderContainer: { marginBottom: 16 },
+  sliderContainer: { marginBottom: 16, direction: "ltr" },
   sliderLabels: {
-    flexDirection: RTL_ROW,
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,

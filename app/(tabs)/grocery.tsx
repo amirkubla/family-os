@@ -209,6 +209,6 @@ const styles = StyleSheet.create({
   boughtLabel: { color: "#8E8BA8", textAlign: "right" },
   boughtRow: { opacity: 0.5 },
   boughtText: { textDecorationLine: "line-through", color: "#8E8BA8", textAlign: "right" },
-  addButton: { borderRadius: 14, backgroundColor: "#FF6B6B" },
+  addButton: { borderRadius: 14, backgroundColor: "#5B9CF5" },
   addButtonContent: { paddingVertical: 6 },
 });
