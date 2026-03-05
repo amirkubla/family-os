@@ -32,13 +32,13 @@ function MemberRow({
 }) {
   return (
     <View style={[styles.memberRow, archived && styles.archivedRow]}>
-      <View style={styles.rowActions}>
-        <IconButton icon="pencil-outline" size={18} onPress={onEdit} />
-        {archived ? (
-          <IconButton icon="restore" size={18} onPress={onRestore} />
-        ) : (
-          <IconButton icon="archive-arrow-down-outline" size={18} onPress={onArchive} />
-        )}
+      <View
+        style={[
+          styles.emojiCircle,
+          { backgroundColor: (member.color ?? "#6C63FF") + "22" },
+        ]}
+      >
+        <Text style={styles.emoji}>{member.avatarEmoji ?? "👤"}</Text>
       </View>
       <View style={styles.memberInfo}>
         <Text
@@ -51,13 +51,13 @@ function MemberRow({
           {memberRoleLabel(member.role)}
         </Text>
       </View>
-      <View
-        style={[
-          styles.emojiCircle,
-          { backgroundColor: (member.color ?? "#6C63FF") + "22" },
-        ]}
-      >
-        <Text style={styles.emoji}>{member.avatarEmoji ?? "👤"}</Text>
+      <View style={styles.rowActions}>
+        <IconButton icon="pencil-outline" size={18} onPress={onEdit} />
+        {archived ? (
+          <IconButton icon="restore" size={18} onPress={onRestore} />
+        ) : (
+          <IconButton icon="archive-arrow-down-outline" size={18} onPress={onArchive} />
+        )}
       </View>
     </View>
   );
@@ -80,13 +80,13 @@ function KidRow({
 }) {
   return (
     <View style={[styles.memberRow, archived && styles.archivedRow]}>
-      <View style={styles.rowActions}>
-        <IconButton icon="pencil-outline" size={18} onPress={onEdit} />
-        {archived ? (
-          <IconButton icon="restore" size={18} onPress={onRestore} />
-        ) : (
-          <IconButton icon="archive-arrow-down-outline" size={18} onPress={onArchive} />
-        )}
+      <View
+        style={[
+          styles.emojiCircle,
+          { backgroundColor: (kid.color ?? "#6C63FF") + "22" },
+        ]}
+      >
+        <Text style={styles.emoji}>{kid.emoji || "👶"}</Text>
       </View>
       <View style={styles.memberInfo}>
         <Text
@@ -96,13 +96,13 @@ function KidRow({
           {kid.name}
         </Text>
       </View>
-      <View
-        style={[
-          styles.emojiCircle,
-          { backgroundColor: (kid.color ?? "#6C63FF") + "22" },
-        ]}
-      >
-        <Text style={styles.emoji}>{kid.emoji || "👶"}</Text>
+      <View style={styles.rowActions}>
+        <IconButton icon="pencil-outline" size={18} onPress={onEdit} />
+        {archived ? (
+          <IconButton icon="restore" size={18} onPress={onRestore} />
+        ) : (
+          <IconButton icon="archive-arrow-down-outline" size={18} onPress={onArchive} />
+        )}
       </View>
     </View>
   );
@@ -173,16 +173,13 @@ export default function SettingsScreen() {
         {/* ── Family Name card ── */}
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionHeader}>
-              <View style={{ width: 40 }} />
-              <View style={styles.sectionTitleWrap}>
-                <Text variant="titleMedium" style={styles.cardTitle}>
-                  {t("settings.familyName")}
-                </Text>
-                <Text variant="bodySmall" style={styles.subtitle}>
-                  {t("settings.familyNameSubtitle")}
-                </Text>
-              </View>
+            <View style={styles.sectionTitleWrap}>
+              <Text variant="titleMedium" style={styles.cardTitle}>
+                {t("settings.familyName")}
+              </Text>
+              <Text variant="bodySmall" style={styles.subtitle}>
+                {t("settings.familyNameSubtitle")}
+              </Text>
             </View>
             <TextInput
               mode="outlined"
@@ -192,6 +189,7 @@ export default function SettingsScreen() {
               onSubmitEditing={handleSaveName}
               placeholder={t("settings.familyNamePlaceholder")}
               style={styles.nameInput}
+              contentStyle={styles.nameInputContent}
               right={<TextInput.Icon icon="check" onPress={handleSaveName} />}
             />
             {session?.user.familyId && (
@@ -206,7 +204,6 @@ export default function SettingsScreen() {
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <View style={styles.sectionHeader}>
-              <IconButton icon="plus" size={20} onPress={openAdd} />
               <View style={styles.sectionTitleWrap}>
                 <Text variant="titleMedium" style={styles.cardTitle}>
                   {t("settings.familyMembers")}
@@ -215,6 +212,7 @@ export default function SettingsScreen() {
                   {t("settings.familyMembersSubtitle")}
                 </Text>
               </View>
+              <IconButton icon="plus" size={20} onPress={openAdd} />
             </View>
 
             {activeMembers.length === 0 && (
@@ -266,7 +264,6 @@ export default function SettingsScreen() {
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <View style={styles.sectionHeader}>
-              <IconButton icon="plus" size={20} onPress={openAddKid} />
               <View style={styles.sectionTitleWrap}>
                 <Text variant="titleMedium" style={styles.cardTitle}>
                   {t("settings.kids")}
@@ -275,6 +272,7 @@ export default function SettingsScreen() {
                   {t("settings.kidsSubtitle")}
                 </Text>
               </View>
+              <IconButton icon="plus" size={20} onPress={openAddKid} />
             </View>
 
             {activeKids.length === 0 && (
@@ -322,13 +320,10 @@ export default function SettingsScreen() {
         {/* ── Account card ── */}
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionHeader}>
-              <View style={{ width: 40 }} />
-              <View style={styles.sectionTitleWrap}>
-                <Text variant="titleMedium" style={styles.cardTitle}>
-                  {t("auth.account")}
-                </Text>
-              </View>
+            <View style={styles.sectionTitleWrap}>
+              <Text variant="titleMedium" style={styles.cardTitle}>
+                {t("auth.account")}
+              </Text>
             </View>
 
             {session && (
@@ -389,9 +384,10 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
-  sectionTitleWrap: { flex: 1, alignItems: "flex-end" },
+  sectionTitleWrap: { flex: 1, marginBottom: 8 },
   cardTitle: { fontWeight: "700", color: "#1A1A2E", textAlign: "right" },
   subtitle: { color: "#8E8BA8", textAlign: "right", marginTop: 2 },
   emptyText: { color: "#6B6B8D", textAlign: "right", marginVertical: 8 },
@@ -402,7 +398,7 @@ const styles = StyleSheet.create({
   },
   archivedRow: { opacity: 0.5 },
   rowActions: { flexDirection: "row" },
-  memberInfo: { flex: 1, marginHorizontal: 8, alignItems: "flex-end" },
+  memberInfo: { flex: 1, marginHorizontal: 8 },
   memberName: { fontWeight: "600", textAlign: "right", color: "#1A1A2E" },
   memberRole: { color: "#8E8BA8", textAlign: "right" },
   archivedText: { textDecorationLine: "line-through" },
@@ -418,6 +414,7 @@ const styles = StyleSheet.create({
   archivedHeaderRow: { paddingVertical: 4 },
   archivedHeader: { color: "#8E8BA8", textAlign: "right" },
   nameInput: { textAlign: "right", writingDirection: "rtl", backgroundColor: "#FFFFFF" },
+  nameInputContent: { textAlign: "right" },
   accountInfo: { marginBottom: 12 },
   accountText: { textAlign: "right", writingDirection: "rtl", color: "#1A1A2E", marginBottom: 4 },
   familyIdText: { textAlign: "right", writingDirection: "rtl", color: "#8E8BA8", fontSize: 11 },

@@ -29,6 +29,19 @@ if (!I18nManager.isRTL) {
 if (Platform.OS === "web" && typeof document !== "undefined") {
   document.documentElement.lang = "he";
   document.documentElement.dir = "rtl";
+
+  // Fix React Native Paper outlined TextInput label positioning for RTL.
+  // Paper hardcodes `left: 0` on the animated label; override to `right: 0`.
+  const style = document.createElement("style");
+  style.textContent = `
+    [dir="rtl"] [data-testid="text-input-outlined-label-active"],
+    [dir="rtl"] [data-testid="text-input-outlined-label-inactive"] {
+      left: auto !important;
+      right: 0 !important;
+      text-align: right !important;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 SplashScreen.preventAutoHideAsync();

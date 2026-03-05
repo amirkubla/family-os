@@ -48,11 +48,12 @@ export default function RegisterScreen() {
 
           <TextInput
             mode="outlined"
-            label={t("auth.username")}
+            placeholder={t("auth.username")}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
             style={styles.input}
+            contentStyle={styles.inputContent}
             right={<TextInput.Icon icon="account" />}
           />
           <HelperText type="error" visible={usernameError} style={styles.helper}>
@@ -61,11 +62,12 @@ export default function RegisterScreen() {
 
           <TextInput
             mode="outlined"
-            label={t("auth.password")}
+            placeholder={t("auth.password")}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             style={styles.input}
+            contentStyle={styles.inputContent}
             right={<TextInput.Icon icon="lock" />}
           />
           <HelperText type="error" visible={passwordError} style={styles.helper}>
@@ -114,6 +116,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   input: { backgroundColor: "#FFFFFF", textAlign: "right", writingDirection: "rtl", marginBottom: 2 },
+  inputContent: { textAlign: "right" },
   helper: { textAlign: "right" },
   btn: { borderRadius: 12, marginTop: 8 },
   btnContent: { paddingVertical: 6 },

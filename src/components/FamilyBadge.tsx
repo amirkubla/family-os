@@ -33,7 +33,7 @@ export default function FamilyBadge({ style }: FamilyBadgeProps) {
 
 const styles = StyleSheet.create({
   badge: {
-    alignSelf: "flex-end",
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#E8E6FF",

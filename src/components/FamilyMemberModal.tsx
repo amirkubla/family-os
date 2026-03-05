@@ -121,7 +121,7 @@ export default function FamilyMemberModal({
 
       {/* Name */}
       <TextInput
-        label={t("settings.memberName")}
+        placeholder={t("settings.memberName")}
         value={name}
         onChangeText={(v) => {
           setName(v);
@@ -129,6 +129,7 @@ export default function FamilyMemberModal({
         }}
         mode="outlined"
         style={styles.input}
+        contentStyle={styles.inputContent}
         autoFocus
         error={!!nameError}
       />
@@ -210,6 +211,7 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
     backgroundColor: "#fff",
   },
+  inputContent: { textAlign: "right" },
   error: {
     color: "#EF5350",
     textAlign: "right",

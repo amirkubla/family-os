@@ -65,11 +65,12 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
       </Text>
 
       <TextInput
-        label={t("choreModal.whatNeedsDoing")}
+        placeholder={t("choreModal.whatNeedsDoing")}
         value={title}
         onChangeText={setTitle}
         mode="outlined"
         style={styles.input}
+        contentStyle={styles.inputContent}
         autoFocus
       />
 
@@ -124,13 +125,14 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
   input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
+  inputContent: { textAlign: "right" },
   label: {
     textAlign: "right",
     marginBottom: 6,
     color: "#6B6B8D",
   },
   memberWrap: {
-    flexDirection: "row-reverse",
+    flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
     marginBottom: 12,

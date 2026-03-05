@@ -184,11 +184,12 @@ export default function ScheduleBlockModal({
         name="title"
         render={({ field: { onChange, value } }) => (
           <TextInput
-            label={t("blockModal.titleLabel")}
+            placeholder={t("blockModal.titleLabel")}
             value={value}
             onChangeText={onChange}
             mode="outlined"
             style={styles.rtlInput}
+            contentStyle={styles.rtlInputContent}
             error={!!errors.title}
           />
         )}
@@ -265,6 +266,7 @@ export default function ScheduleBlockModal({
                 onChangeText={onChange}
                 mode="outlined"
                 style={styles.rtlInput}
+                contentStyle={styles.rtlInputContent}
                 placeholder="2026-03-15"
                 error={!!errors.date}
               />
@@ -276,20 +278,8 @@ export default function ScheduleBlockModal({
         </>
       )}
 
-      {/* Times */}
+      {/* Times — Start on the right (RTL start), End on the left */}
       <View style={styles.timeRow}>
-        <View style={styles.timeCol}>
-          <Text variant="labelLarge" style={styles.label}>
-            {t("blockModal.endTime")}
-          </Text>
-          <Controller
-            control={control}
-            name="endTime"
-            render={({ field: { onChange, value } }) => (
-              <WheelTimePicker value={value} onChange={onChange} />
-            )}
-          />
-        </View>
         <View style={styles.timeCol}>
           <Text variant="labelLarge" style={styles.label}>
             {t("blockModal.startTime")}
@@ -297,6 +287,18 @@ export default function ScheduleBlockModal({
           <Controller
             control={control}
             name="startTime"
+            render={({ field: { onChange, value } }) => (
+              <WheelTimePicker value={value} onChange={onChange} />
+            )}
+          />
+        </View>
+        <View style={styles.timeCol}>
+          <Text variant="labelLarge" style={styles.label}>
+            {t("blockModal.endTime")}
+          </Text>
+          <Controller
+            control={control}
+            name="endTime"
             render={({ field: { onChange, value } }) => (
               <WheelTimePicker value={value} onChange={onChange} />
             )}
@@ -313,11 +315,12 @@ export default function ScheduleBlockModal({
         name="location"
         render={({ field: { onChange, value } }) => (
           <TextInput
-            label={t("blockModal.location")}
+            placeholder={t("blockModal.location")}
             value={value}
             onChangeText={onChange}
             mode="outlined"
             style={styles.rtlInput}
+            contentStyle={styles.rtlInputContent}
           />
         )}
       />
@@ -337,6 +340,7 @@ const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
   input: { marginBottom: 8 },
   rtlInput: { marginBottom: 8, textAlign: "right", writingDirection: "rtl" },
+  rtlInputContent: { textAlign: "right" },
   label: { marginBottom: 6, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
   chip: { borderRadius: 20 },

@@ -59,11 +59,12 @@ export default function GroceryAddModal({
       </Text>
 
       <TextInput
-        label={t("groceryModal.itemName")}
+        placeholder={t("groceryModal.itemName")}
         value={title}
         onChangeText={setTitle}
         mode="outlined"
         style={styles.input}
+        contentStyle={styles.inputContent}
         autoFocus
       />
 
@@ -86,11 +87,12 @@ export default function GroceryAddModal({
       </View>
 
       <TextInput
-        label={t("groceryModal.qty")}
+        placeholder={t("groceryModal.qty")}
         value={qty}
         onChangeText={setQty}
         mode="outlined"
         style={styles.input}
+        contentStyle={styles.inputContent}
       />
 
       <View style={styles.actions}>
@@ -110,6 +112,7 @@ export default function GroceryAddModal({
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
   input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
+  inputContent: { textAlign: "right" },
   label: { marginBottom: 8, color: "#6B6B8D", textAlign: "right" },
   categoryWrap: {
     flexDirection: "row",

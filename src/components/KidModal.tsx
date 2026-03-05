@@ -106,7 +106,7 @@ export default function KidModal({ visible, onDismiss, editKid }: Props) {
 
       {/* Name */}
       <TextInput
-        label={t("settings.kidName")}
+        placeholder={t("settings.kidName")}
         value={name}
         onChangeText={(v) => {
           setName(v);
@@ -114,6 +114,7 @@ export default function KidModal({ visible, onDismiss, editKid }: Props) {
         }}
         mode="outlined"
         style={styles.input}
+        contentStyle={styles.inputContent}
         autoFocus
         error={!!nameError}
       />
@@ -184,6 +185,7 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
     backgroundColor: "#fff",
   },
+  inputContent: { textAlign: "right" },
   error: {
     color: "#EF5350",
     textAlign: "right",

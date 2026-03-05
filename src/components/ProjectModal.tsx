@@ -80,21 +80,23 @@ export default function ProjectModal({
       </Text>
 
       <TextInput
-        label={t("projectModal.projectTitle")}
+        placeholder={t("projectModal.projectTitle")}
         value={title}
         onChangeText={setTitle}
         mode="outlined"
         style={styles.input}
+        contentStyle={styles.inputContent}
       />
 
       <TextInput
-        label={t("projectModal.description")}
+        placeholder={t("projectModal.description")}
         value={description}
         onChangeText={setDescription}
         mode="outlined"
         multiline
         numberOfLines={3}
         style={styles.input}
+        contentStyle={styles.inputContent}
       />
 
       {editProject && (
@@ -160,6 +162,7 @@ export default function ProjectModal({
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
   input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
+  inputContent: { textAlign: "right" },
   label: { marginBottom: 8, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
   statusRow: {
     flexDirection: "row",

@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
 
   // Kids
   kidsRow: {
-    flexDirection: "row-reverse",
+    flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
   },

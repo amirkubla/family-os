@@ -57,21 +57,23 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
       </Text>
 
       <TextInput
-        label={t("noteModal.titleLabel")}
+        placeholder={t("noteModal.titleLabel")}
         value={title}
         onChangeText={setTitle}
         mode="outlined"
         style={styles.input}
+        contentStyle={styles.inputContent}
       />
 
       <TextInput
-        label={t("noteModal.bodyLabel")}
+        placeholder={t("noteModal.bodyLabel")}
         value={body}
         onChangeText={setBody}
         mode="outlined"
         multiline
         numberOfLines={4}
         style={styles.input}
+        contentStyle={styles.inputContent}
       />
 
       <View style={styles.actions}>
@@ -91,6 +93,7 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
 const styles = StyleSheet.create({
   heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
   input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
+  inputContent: { textAlign: "right" },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
