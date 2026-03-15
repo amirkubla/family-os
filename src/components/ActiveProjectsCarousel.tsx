@@ -20,6 +20,7 @@ import {
 import { Text, ProgressBar } from "react-native-paper";
 import type { Project } from "@src/models/project";
 import { t, statusLabel } from "@src/i18n";
+import { RTL_ROW } from "@src/ui/rtl";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -133,14 +134,16 @@ function ProjectCard({
           </Text>
         ) : null}
         <View style={styles.progressRow}>
-          <ProgressBar
-            progress={project.progress / 100}
-            color={color}
-            style={styles.progressBar}
-          />
           <Text style={[styles.progressLabel, { color }]}>
             {project.progress}%
           </Text>
+          <View style={styles.progressBarWrap}>
+            <ProgressBar
+              progress={project.progress / 100}
+              color={color}
+              style={styles.progressBar}
+            />
+          </View>
         </View>
       </Pressable>
     </View>
@@ -192,7 +195,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   topRow: {
-    flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
+    flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
@@ -219,15 +222,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   progressRow: {
-    flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
+    flexDirection: RTL_ROW,
     alignItems: "center",
     gap: 8,
     marginTop: 4,
   },
+  progressBarWrap: {
+    flex: 1,
+  },
   progressBar: {
     height: 5,
     borderRadius: 3,
-    flex: 1,
   },
   progressLabel: {
     fontSize: 11,

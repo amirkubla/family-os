@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   statusLabel: { fontSize: 12 },
 
   // Slider
-  sliderContainer: { marginBottom: 16, direction: "ltr" },
+  sliderContainer: { marginBottom: 16, direction: "ltr", overflow: "visible" },
   sliderLabels: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -279,6 +279,8 @@ const styles = StyleSheet.create({
     height: THUMB_SIZE + 8,
     justifyContent: "center",
     position: "relative",
+    overflow: "visible",
+    paddingHorizontal: THUMB_SIZE / 2,
     ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
   },
   sliderTrack: {
