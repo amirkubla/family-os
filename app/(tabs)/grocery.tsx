@@ -19,8 +19,6 @@ import {
   clearAllCategoryRemote,
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
-import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
-import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
 import type { ShoppingCategory } from "@src/models/grocery";
 import { SHOPPING_CATEGORIES } from "@src/models/grocery";
@@ -36,7 +34,6 @@ export default function GroceryScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ShoppingCategory>("grocery");
-  const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   const filtered = grocery.filter((g) => g.shoppingCategory === selectedCategory);
   const unbought = filtered.filter((g) => !g.isBought);
@@ -70,7 +67,7 @@ export default function GroceryScreen() {
           {filtered.length > 0 && (
             <Button
               compact
-              onPress={() => requestDelete(() => clearAllCategoryRemote(selectedCategory))}
+              onPress={() => clearAllCategoryRemote(selectedCategory)}
               textColor="#FF6B6B"
               icon="delete-sweep-outline"
             >
@@ -111,7 +108,7 @@ export default function GroceryScreen() {
                 <IconButton
                   icon="trash-can-outline"
                   size={18}
-                  onPress={() => requestDelete(() => deleteGroceryRemote(item.id))}
+                  onPress={() => deleteGroceryRemote(item.id)}
                 />
               </View>
             ))}
@@ -125,7 +122,7 @@ export default function GroceryScreen() {
                   </Text>
                   <Button
                     compact
-                    onPress={() => requestDelete(() => clearBoughtRemote(selectedCategory))}
+                    onPress={() => clearBoughtRemote(selectedCategory)}
                     textColor="#FF6B6B"
                   >
                     {t("grocery.clear")}
@@ -148,7 +145,7 @@ export default function GroceryScreen() {
                     <IconButton
                       icon="trash-can-outline"
                       size={18}
-                      onPress={() => requestDelete(() => deleteGroceryRemote(item.id))}
+                      onPress={() => deleteGroceryRemote(item.id)}
                     />
                   </View>
                 ))}
@@ -172,11 +169,6 @@ export default function GroceryScreen() {
         visible={modalOpen}
         onDismiss={() => setModalOpen(false)}
         defaultShoppingCategory={selectedCategory}
-      />
-      <ConfirmDeleteModal
-        visible={confirmVisible}
-        onConfirm={confirmDelete}
-        onDismiss={dismissConfirm}
       />
     </SafeAreaView>
   );
