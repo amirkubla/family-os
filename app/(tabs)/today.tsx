@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import {
   Card,
   Text,
@@ -75,6 +75,7 @@ function KidTodayCard({
       <Pressable onPress={() => router.push(`/kid/${kid.id}`)}>
         <View style={[styles.kidHeader, { backgroundColor: kid.color + "18" }]}>
           <Text style={styles.kidEmoji}>{kid.emoji}</Text>
+          <View style={styles.kidEmojiSpacer} />
           <Text
             variant="titleMedium"
             style={[styles.kidName, { color: kid.color }]}
@@ -95,7 +96,7 @@ function KidTodayCard({
             const color = block.color ?? kid.color;
             const typeColor = TYPE_COLORS[block.type];
             return (
-              <Pressable key={block.id} style={styles.blockRow} onPress={() => onBlockPress(block)}>
+              <Pressable key={block.id} style={({ hovered }: any) => [styles.blockRow, hovered && styles.blockRowHover]} onPress={() => onBlockPress(block)}>
                 <View style={[styles.blockStripe, { backgroundColor: color }]} />
                 <View style={styles.blockInfo}>
                   <Text variant="bodyMedium" style={styles.blockTitle}>
@@ -147,6 +148,7 @@ export default function TodayScreen() {
   const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
   const [choreModalOpen, setChoreModalOpen] = useState(false);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
+  const [hoveredChoreId, setHoveredChoreId] = useState<string | null>(null);
   const [projectsCarouselOpen, setProjectsCarouselOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -332,7 +334,14 @@ export default function TodayScreen() {
                   ? `${member.avatarEmoji ?? ""} ${member.name}`
                   : chore.assignedTo;
                 return (
-                  <View key={chore.id} style={styles.choreRow}>
+                  <View
+                    key={chore.id}
+                    style={[styles.choreRow, hoveredChoreId === chore.id && styles.choreRowHover]}
+                    {...(Platform.OS === "web" ? {
+                      onPointerEnter: () => setHoveredChoreId(chore.id),
+                      onPointerLeave: () => setHoveredChoreId(null),
+                    } : {} as any)}
+                  >
                     <IconButton
                       icon={chore.done ? "check-circle" : "circle-outline"}
                       size={24}
@@ -388,13 +397,13 @@ export default function TodayScreen() {
                 } else if (event.assigneeType === "kid" && event.assigneeId) {
                   const kid = kids.find((k) => k.id === event.assigneeId);
                   assigneeDisplay = kid
-                    ? `${kid.emoji} ${kid.name}`
+                    ? `${kid.emoji}  ${kid.name}`
                     : assigneeTypeLabel("kid");
                 }
                 return (
                   <Pressable
                     key={event.id}
-                    style={styles.blockRow}
+                    style={({ hovered }: any) => [styles.blockRow, hovered && styles.blockRowHover]}
                     onPress={() => {
                       setEditingEvent(event);
                       setEventModalOpen(true);
@@ -576,6 +585,11 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     paddingVertical: 4,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+  },
+  choreRowHover: {
+    backgroundColor: "#DBEAFE",
   },
   choreCheck: { margin: 0 },
   choreTextWrap: { flex: 1, marginStart: 4 },
@@ -604,7 +618,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  kidEmoji: { fontSize: 22, marginEnd: 10 },
+  kidEmoji: { fontSize: 22 },
+  kidEmojiSpacer: { width: 5 },
   kidName: { flex: 1, fontWeight: "700", textAlign: "right" },
   kidArrow: { fontSize: 20, fontWeight: "700" },
   kidBody: { paddingHorizontal: 16, paddingBottom: 14 },
@@ -615,6 +630,12 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     paddingVertical: 10,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+  },
+  blockRowHover: {
+    backgroundColor: "#DBEAFE",
   },
   blockStripe: {
     width: 4,

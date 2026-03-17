@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView, Platform } from "react-native";
 import {
   Card,
   Text,
@@ -34,6 +34,7 @@ export default function GroceryScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ShoppingCategory>("grocery");
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
   const filtered = grocery.filter((g) => g.shoppingCategory === selectedCategory);
   const unbought = filtered.filter((g) => !g.isBought);
@@ -85,7 +86,14 @@ export default function GroceryScreen() {
             )}
 
             {unbought.map((item) => (
-              <View key={item.id} style={styles.row}>
+              <View
+                key={item.id}
+                style={[styles.row, hoveredItemId === item.id && styles.rowHover]}
+                {...(Platform.OS === "web" ? {
+                  onPointerEnter: () => setHoveredItemId(item.id),
+                  onPointerLeave: () => setHoveredItemId(null),
+                } : {} as any)}
+              >
                 <Checkbox
                   status="unchecked"
                   onPress={() => toggleGroceryBoughtRemote(item.id)}
@@ -129,7 +137,14 @@ export default function GroceryScreen() {
                   </Button>
                 </View>
                 {bought.map((item) => (
-                  <View key={item.id} style={[styles.row, styles.boughtRow]}>
+                  <View
+                    key={item.id}
+                    style={[styles.row, styles.boughtRow, hoveredItemId === item.id && styles.rowHover]}
+                    {...(Platform.OS === "web" ? {
+                      onPointerEnter: () => setHoveredItemId(item.id),
+                      onPointerLeave: () => setHoveredItemId(null),
+                    } : {} as any)}
+                  >
                     <Checkbox
                       status="checked"
                       onPress={() => toggleGroceryBoughtRemote(item.id)}
@@ -192,7 +207,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 4,
+    paddingHorizontal: 4,
+    borderRadius: 8,
   },
+  rowHover: { backgroundColor: "#DBEAFE" },
   rowText: { flex: 1, marginStart: 4 },
   itemTitle: { textAlign: "right" },
   meta: { flexDirection: RTL_ROW, alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" },

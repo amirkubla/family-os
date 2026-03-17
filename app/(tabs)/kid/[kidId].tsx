@@ -115,7 +115,7 @@ export default function KidScheduleScreen() {
   // Set header options once
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: kid ? `${kid.emoji} ${kid.name}` : t("kid.schedule"),
+      title: kid ? `${kid.emoji}\u2003\u2003${kid.name}` : t("kid.schedule"),
       headerTintColor: kidColor,
       headerBackTitle: t("tabs.today"),
     });
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
   },
   blockRowHover: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#DBEAFE",
   },
   blockStripe: {
     width: 4,

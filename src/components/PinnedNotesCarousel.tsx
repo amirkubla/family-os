@@ -55,21 +55,50 @@ export default function PinnedNotesCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const total = notes.length + 1; // +1 for the Add card
 
+  // On web with direction:rtl, Chrome's scroll()/scrollTo() API normalises RTL
+  // and rejects negative `left` values (clamped to 0).  Direct `scrollLeft`
+  // assignment, however, accepts negative values and works correctly.
+  // We obtain the underlying DOM node via getScrollableNode() and set scrollLeft
+  // directly, bypassing RN Web's scrollResponderScrollTo entirely.
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      if (Platform.OS === "web") {
+        // On web, Chrome's scroll()/scrollTo() API clamps RTL-negative `left`
+        // values to 0. Direct `scrollLeft` assignment works correctly for both
+        // LTR (+) and RTL (-). We check the element's computed direction because
+        // I18nManager.isRTL is always false in react-native-web (it's a stub).
+        const node = (scrollRef.current as any)?.getScrollableNode?.();
+        if (node) {
+          const isRTLEl = getComputedStyle(node).direction === "rtl";
+          node.scrollLeft = isRTLEl
+            ? -(index * SNAP_INTERVAL)
+            : index * SNAP_INTERVAL;
+        }
+      } else {
+        scrollRef.current?.scrollTo({ x: index * SNAP_INTERVAL, animated: true });
+      }
+    },
+    [SNAP_INTERVAL],
+  );
+
   const goNext = useCallback(() => {
     const next = Math.min(currentIndex + 1, total - 1);
     setCurrentIndex(next);
-    scrollRef.current?.scrollTo({ x: next * SNAP_INTERVAL, animated: true });
-  }, [currentIndex, total, SNAP_INTERVAL]);
+    // Defer scroll until after React re-render so the ScrollView doesn't
+    // reset scrollLeft when it reconciles (RTL web only).
+    setTimeout(() => scrollToIndex(next), 0);
+  }, [currentIndex, total, scrollToIndex]);
 
   const goPrev = useCallback(() => {
     const prev = Math.max(currentIndex - 1, 0);
     setCurrentIndex(prev);
-    scrollRef.current?.scrollTo({ x: prev * SNAP_INTERVAL, animated: true });
-  }, [currentIndex, SNAP_INTERVAL]);
+    setTimeout(() => scrollToIndex(prev), 0);
+  }, [currentIndex, scrollToIndex]);
 
   const handleScrollEnd = useCallback((e: any) => {
     const offset = e.nativeEvent.contentOffset.x;
-    setCurrentIndex(Math.round(offset / SNAP_INTERVAL));
+    // offset is negative in RTL/web — use absolute value
+    setCurrentIndex(Math.round(Math.abs(offset) / SNAP_INTERVAL));
   }, [SNAP_INTERVAL]);
 
   return (

@@ -91,7 +91,7 @@ function EventRow({
   } else if (event.assigneeType === "kid" && event.assigneeId) {
     const kid = kids.find((k) => k.id === event.assigneeId);
     assigneeDisplay = kid
-      ? `${kid.emoji} ${kid.name}`
+      ? `${kid.emoji}  ${kid.name}`
       : assigneeTypeLabel("kid");
   }
 
@@ -156,7 +156,7 @@ function KidBlockRow({
                 { color: "#FF6B6B", backgroundColor: "#FF6B6B22" },
               ]}
             >
-              {kid.emoji} {kid.name}
+              {kid.emoji}{"  "}{kid.name}
             </Text>
           )}
         </View>

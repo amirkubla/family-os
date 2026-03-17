@@ -278,7 +278,7 @@ export default function FamilyEventModal({
               style={styles.chip}
               labelStyle={styles.chipLabel}
             >
-              {kid.emoji} {kid.name}
+              {kid.emoji}{"  "}{kid.name}
             </Button>
           ))}
         </View>

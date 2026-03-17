@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import {
   Card,
   Text,
@@ -44,6 +44,7 @@ const STATUS_COLORS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => void; onDelete: () => void }) {
+  const [hovered, setHovered] = useState(false);
   const assignedMember = useFamilyStore((s) =>
     chore.assignedToMemberId
       ? s.familyMembers.find((m) => m.id === chore.assignedToMemberId)
@@ -54,7 +55,13 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
     : chore.assignedTo;
 
   return (
-    <View style={styles.choreRow}>
+    <View
+      style={[styles.choreRow, hovered && styles.choreRowHover]}
+      {...(Platform.OS === "web" ? {
+        onPointerEnter: () => setHovered(true),
+        onPointerLeave: () => setHovered(false),
+      } : {} as any)}
+    >
       <Checkbox
         status={chore.done ? "checked" : "unchecked"}
         onPress={() => toggleChoreDoneRemote(chore.id)}
@@ -114,8 +121,10 @@ export default function HomeScreen() {
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null);
   const [kidModalOpen, setKidModalOpen] = useState(false);
   const [editingKid, setEditingKid] = useState<Kid | null>(null);
+  const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
 
   // Notes sorted: pinned first
   const sortedNotes = [...notes].sort(
@@ -165,6 +174,7 @@ export default function HomeScreen() {
                   onPress={() => router.push(`/kid/${kid.id}`)}
                 >
                   <Text style={styles.kidEmoji}>{kid.emoji}</Text>
+                  <View style={styles.kidEmojiSpacer} />
                   <Text style={[styles.kidName, { color: kid.color }]}>{kid.name}</Text>
                   <Text style={[styles.kidArrow, { color: kid.color }]}>‹</Text>
                 </Pressable>
@@ -197,14 +207,15 @@ export default function HomeScreen() {
             )}
 
             {sortedNotes.map((note) => (
-              <View key={note.id} style={styles.noteRow}>
-                <Pressable
-                  style={styles.noteContent}
-                  onPress={() => {
-                    setEditingNote(note);
-                    setNoteModalOpen(true);
-                  }}
-                >
+              <View
+                key={note.id}
+                style={[styles.noteRow, hoveredNoteId === note.id && styles.noteRowHover]}
+                {...(Platform.OS === "web" ? {
+                  onPointerEnter: () => setHoveredNoteId(note.id),
+                  onPointerLeave: () => setHoveredNoteId(null),
+                } : {} as any)}
+              >
+                <View style={styles.noteContent}>
                   <Text variant="bodyLarge" style={styles.noteTitle}>
                     {note.pinned ? "\uD83D\uDCCC " : ""}
                     {note.title || t("home.note")}
@@ -216,7 +227,15 @@ export default function HomeScreen() {
                   >
                     {note.body}
                   </Text>
-                </Pressable>
+                </View>
+                <IconButton
+                  icon="pencil-outline"
+                  size={18}
+                  onPress={() => {
+                    setEditingNote(note);
+                    setNoteModalOpen(true);
+                  }}
+                />
                 <IconButton
                   icon={note.pinned ? "pin-off" : "pin"}
                   size={18}
@@ -328,14 +347,15 @@ export default function HomeScreen() {
             )}
 
             {projects.map((proj) => (
-              <View key={proj.id} style={styles.projectRow}>
-                <Pressable
-                  style={styles.projectContent}
-                  onPress={() => {
-                    setEditingProject(proj);
-                    setProjectModalOpen(true);
-                  }}
-                >
+              <View
+                key={proj.id}
+                style={[styles.projectRow, hoveredProjectId === proj.id && styles.projectRowHover]}
+                {...(Platform.OS === "web" ? {
+                  onPointerEnter: () => setHoveredProjectId(proj.id),
+                  onPointerLeave: () => setHoveredProjectId(null),
+                } : {} as any)}
+              >
+                <View style={styles.projectContent}>
                   <View style={styles.projectTop}>
                     <Text variant="bodyLarge" style={styles.projectTitle}>
                       {proj.title}
@@ -369,7 +389,15 @@ export default function HomeScreen() {
                   <Text variant="labelSmall" style={styles.progressLabel}>
                     {proj.progress}%
                   </Text>
-                </Pressable>
+                </View>
+                <IconButton
+                  icon="pencil-outline"
+                  size={18}
+                  onPress={() => {
+                    setEditingProject(proj);
+                    setProjectModalOpen(true);
+                  }}
+                />
                 <IconButton
                   icon="trash-can-outline"
                   size={18}
@@ -449,9 +477,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
-    gap: 8,
+    gap: 6,
   },
   kidEmoji: { fontSize: 22 },
+  kidEmojiSpacer: { width: 5 },
   kidName: { fontWeight: "700", fontSize: 15 },
   kidArrow: { fontSize: 18, fontWeight: "700", marginStart: "auto" },
 
@@ -460,10 +489,13 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#F0EEFF",
   },
-  noteContent: { flex: 1, cursor: "pointer" } as any,
+  noteRowHover: { backgroundColor: "#DBEAFE" },
+  noteContent: { flex: 1 },
   noteTitle: { fontWeight: "600", textAlign: "right" },
   noteBody: { color: "#6B6B8D", marginTop: 2, textAlign: "right" },
 
@@ -480,7 +512,10 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     paddingVertical: 2,
+    paddingHorizontal: 4,
+    borderRadius: 8,
   },
+  choreRowHover: { backgroundColor: "#DBEAFE" },
   choreText: { flex: 1, marginStart: 4 },
   choreTitle: { textAlign: "right" },
   choreDone: { textDecorationLine: "line-through", color: "#8E8BA8", textAlign: "right" },
@@ -491,10 +526,13 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "flex-start",
     paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#F0EEFF",
   },
-  projectContent: { flex: 1, cursor: "pointer" } as any,
+  projectRowHover: { backgroundColor: "#DBEAFE" },
+  projectContent: { flex: 1 },
   projectTop: {
     flexDirection: RTL_ROW,
     alignItems: "center",

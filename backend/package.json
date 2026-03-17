@@ -8,6 +8,7 @@
     "db:migrate": "tsx src/scripts/migrate.ts",
     "db:seed": "tsx src/scripts/seed.ts",
     "db:smoke": "tsx src/scripts/smokeTest.ts",
+    "db:mock": "tsx src/scripts/mockData.ts",
     "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
