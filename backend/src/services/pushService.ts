@@ -49,6 +49,16 @@ export async function checkAndSendReminders(): Promise<{
     jerusalemNow.getHours() * 60 + jerusalemNow.getMinutes();
   const todayYMD = formatYMD(jerusalemNow);
 
+  // Early exit during quiet hours (00:00–05:59 Jerusalem).
+  // No family events start before 6 am, so no reminder can ever fire.
+  // This lets Neon autosuspend overnight instead of being woken every minute.
+  if (jerusalemNow.getHours() < 6) {
+    console.log(
+      `[push] Quiet hours — skipping DB (${todayYMD} ${String(jerusalemNow.getHours()).padStart(2, "0")}:${String(jerusalemNow.getMinutes()).padStart(2, "0")} JLM)`,
+    );
+    return { sent: 0, errors: 0 };
+  }
+
   console.log(
     `[push] Checking reminders: DOW=${currentDow}, minute=${currentMinutes}, date=${todayYMD}`,
   );
@@ -154,8 +164,10 @@ export async function checkAndSendReminders(): Promise<{
     }
   }
 
-  // Periodic cleanup of old sent_notifications
-  await sentNotificationsRepo.cleanOld();
+  // Periodic cleanup of old sent_notifications — once per hour (at :00) is enough.
+  if (jerusalemNow.getMinutes() === 0) {
+    await sentNotificationsRepo.cleanOld();
+  }
 
   return { sent, errors };
 }
