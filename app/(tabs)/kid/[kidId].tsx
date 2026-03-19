@@ -39,6 +39,7 @@ import { TYPE_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
+import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
@@ -230,12 +231,10 @@ export default function KidScheduleScreen() {
                 </Card.Content>
               </Card>
 
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                {t("kid.daySchedule", { day: dayName(selectedDow) })}
-              </Text>
+              <SectionHeader label={t("kid.daySchedule", { day: dayName(selectedDow) })} />
 
               {dayBlocks.length === 0 ? (
-                <Text variant="bodyMedium" style={styles.emptyText}>
+                <Text style={styles.emptyText}>
                   {t("kid.nothingScheduled", { day: dayName(selectedDow) })}
                 </Text>
               ) : (
@@ -329,41 +328,43 @@ export default function KidScheduleScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  container: { padding: S.xl, paddingBottom: 80 },
+  container: { padding: S.lg, paddingBottom: S.xxl + S.xxl },
 
   accentBar: {
     borderRadius: R.md,
-    padding: 14,
+    padding: S.lg,
     marginBottom: S.lg,
     alignItems: "center",
   },
-  accentText: { fontSize: 18, fontWeight: "800", textAlign: "center" },
+  accentText: { fontSize: 16, fontWeight: "800", textAlign: "center" },
 
   tabs: { marginBottom: S.lg },
 
   card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
 
-  sectionTitle: { fontWeight: "700", color: C.textPrimary, marginBottom: S.sm, textAlign: "right" },
-  emptyText: { color: C.textSecondary, marginBottom: S.md, textAlign: "right" },
+  emptyText: {
+    color: C.textMuted,
+    textAlign: "right",
+    fontSize: 14,
+    paddingVertical: S.xs,
+  },
 
-  // Block row
+  // Block row — matches Today's blockRow pattern
   blockRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.border,
-    borderRadius: 10,
+    paddingVertical: S.md,
+    borderRadius: R.sm,
     paddingHorizontal: S.xs,
-    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
   },
   blockRowHover: {
     backgroundColor: C.hoverBg,
   },
   blockStripe: {
-    width: 4,
-    height: 36,
+    width: 3,
     borderRadius: 2,
+    alignSelf: "stretch",
     marginEnd: S.md,
     marginStart: S.xs,
   },
@@ -373,15 +374,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: S.sm,
   },
-  blockTitle: { fontWeight: "600", color: C.textPrimary, textAlign: "right" },
-  blockTime: { color: C.textSecondary, marginTop: 2, textAlign: "right" },
-  typeChip: { borderRadius: 10, marginStart: S.sm, marginEnd: S.xs },
+  blockTitle: { fontSize: 15, fontWeight: "600", color: C.textPrimary, textAlign: "right" },
+  blockTime: { fontSize: 12, color: C.textSecondary, marginTop: 2, textAlign: "right" },
+  typeChip: { borderRadius: R.sm, marginStart: S.sm, marginEnd: S.xs },
   oneTimeBadge: {
-    fontSize: 9,
+    fontSize: 10,
     color: C.amber,
-    backgroundColor: C.amber + "22",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: C.amber + "18",
+    paddingHorizontal: S.sm,
+    paddingVertical: 3,
     borderRadius: R.sm,
     overflow: "hidden",
     fontWeight: "600",
@@ -398,19 +399,19 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 10,
+    borderRadius: R.sm,
     paddingHorizontal: S.xs,
-    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
   },
   templateHeaderHover: {
     backgroundColor: C.hoverBg,
   },
-  templateDayName: { fontWeight: "700", color: C.textPrimary, textAlign: "right" },
+  templateDayName: { fontSize: 15, fontWeight: "700", color: C.textPrimary, textAlign: "right" },
 
   fab: {
     position: "absolute",
-    left: S.xl,
-    bottom: S.xl,
+    left: S.lg,
+    bottom: S.lg,
     borderRadius: R.lg,
   },
 });

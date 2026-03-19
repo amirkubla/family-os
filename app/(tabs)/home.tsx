@@ -31,6 +31,7 @@ import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t, statusLabel } from "@src/i18n";
 import FamilyBadge from "@src/components/FamilyBadge";
+import SectionHeader from "@src/components/SectionHeader";
 import { RTL_ROW } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 import { STATUS_COLORS } from "@src/ui/semanticColors";
@@ -134,18 +135,15 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text variant="headlineLarge" style={styles.title}>
-          {t("home.title")}
-        </Text>
+        <Text style={styles.title}>{t("home.title")}</Text>
         <FamilyBadge />
 
         {/* -- Kids -- */}
+        <SectionHeader label={t("home.kids")} />
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionHeader}>
-              <Text variant="titleMedium" style={styles.cardTitle}>
-                {t("home.kids")}
-              </Text>
+            <View style={styles.cardHeaderRow}>
+              <View style={{ flex: 1 }} />
               <IconButton
                 icon="plus"
                 size={20}
@@ -180,12 +178,11 @@ export default function HomeScreen() {
         </Card>
 
         {/* -- Notes -- */}
+        <SectionHeader label={t("home.notes")} />
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionHeader}>
-              <Text variant="titleMedium" style={styles.cardTitle}>
-                {t("home.notes")}
-              </Text>
+            <View style={styles.cardHeaderRow}>
+              <View style={{ flex: 1 }} />
               <IconButton
                 icon="plus"
                 size={20}
@@ -248,12 +245,11 @@ export default function HomeScreen() {
         </Card>
 
         {/* -- Chores -- */}
+        <SectionHeader label={t("home.chores")} />
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionHeader}>
-              <Text variant="titleMedium" style={styles.cardTitle}>
-                {t("home.chores")}
-              </Text>
+            <View style={styles.cardHeaderRow}>
+              <View style={{ flex: 1 }} />
               <IconButton
                 icon="plus"
                 size={20}
@@ -320,12 +316,11 @@ export default function HomeScreen() {
         </Card>
 
         {/* -- Projects -- */}
+        <SectionHeader label={t("home.projects")} />
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionHeader}>
-              <Text variant="titleMedium" style={styles.cardTitle}>
-                {t("home.projects")}
-              </Text>
+            <View style={styles.cardHeaderRow}>
+              <View style={{ flex: 1 }} />
               <IconButton
                 icon="plus"
                 size={20}
@@ -448,35 +443,46 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  container: { padding: S.xl, paddingBottom: 40 },
-  title: { fontWeight: "800", color: C.textPrimary, marginBottom: S.xl, textAlign: "right" },
-  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.xl },
-  cardTitle: { fontWeight: "700", color: C.textPrimary, flex: 1, textAlign: "right" },
-  sectionHeader: {
+  container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: C.textPrimary,
+    marginBottom: S.lg,
+    textAlign: "right",
+  },
+  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
+  cardHeaderRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     marginBottom: S.xs,
+    marginTop: -S.sm,
   },
-  emptyText: { color: C.textSecondary, marginBottom: S.xs, textAlign: "right" },
+  emptyText: {
+    color: C.textMuted,
+    textAlign: "right",
+    fontSize: 14,
+    paddingVertical: S.xs,
+  },
 
   // Kids
   kidsRow: {
     flexDirection: RTL_ROW,
     flexWrap: "wrap",
-    gap: 10,
+    gap: S.sm,
   },
   kidCard: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: S.md,
+    paddingHorizontal: S.lg,
     borderRadius: R.md,
     borderWidth: 1,
-    gap: 6,
+    gap: S.sm,
   },
   kidEmoji: { fontSize: 22 },
-  kidEmojiSpacer: { width: 5 },
+  kidEmojiSpacer: { width: S.xs },
   kidName: { fontWeight: "700", fontSize: 15 },
   kidArrow: { fontSize: 18, fontWeight: "700", marginStart: "auto" },
 
@@ -484,7 +490,7 @@ const styles = StyleSheet.create({
   noteRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: S.sm,
     paddingHorizontal: S.xs,
     borderRadius: R.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -492,8 +498,8 @@ const styles = StyleSheet.create({
   },
   noteRowHover: { backgroundColor: C.hoverBg },
   noteContent: { flex: 1 },
-  noteTitle: { fontWeight: "600", textAlign: "right" },
-  noteBody: { color: C.textSecondary, marginTop: 2, textAlign: "right" },
+  noteTitle: { fontSize: 15, fontWeight: "600", color: C.textPrimary, textAlign: "right" },
+  noteBody: { fontSize: 12, color: C.textSecondary, marginTop: 2, textAlign: "right" },
 
   // Chores
   subSectionLabel: {
@@ -507,21 +513,21 @@ const styles = StyleSheet.create({
   choreRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    paddingVertical: 2,
+    paddingVertical: S.xs,
     paddingHorizontal: S.xs,
     borderRadius: R.sm,
   },
   choreRowHover: { backgroundColor: C.hoverBg },
   choreText: { flex: 1, marginStart: S.xs },
-  choreTitle: { textAlign: "right" },
-  choreDone: { textDecorationLine: "line-through", color: C.textSecondary, textAlign: "right" },
-  assignee: { color: C.textSecondary, textAlign: "right" },
+  choreTitle: { fontSize: 15, color: C.textPrimary, textAlign: "right" },
+  choreDone: { fontSize: 15, textDecorationLine: "line-through", color: C.textMuted, textAlign: "right" },
+  assignee: { fontSize: 12, color: C.textSecondary, textAlign: "right", marginTop: 1 },
 
   // Projects
   projectRow: {
     flexDirection: RTL_ROW,
     alignItems: "flex-start",
-    paddingVertical: S.sm,
+    paddingVertical: S.md,
     paddingHorizontal: S.xs,
     borderRadius: R.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -534,16 +540,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: S.sm,
   },
-  projectTitle: { flex: 1, textAlign: "right" },
+  projectTitle: { flex: 1, fontSize: 15, fontWeight: "600", color: C.textPrimary, textAlign: "right" },
   statusBadge: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
-    paddingHorizontal: 10,
-    paddingVertical: S.xs,
-    borderRadius: 10,
+    paddingHorizontal: S.sm,
+    paddingVertical: 3,
+    borderRadius: R.sm,
     overflow: "hidden",
   },
-  projDesc: { color: C.textSecondary, marginTop: S.xs, textAlign: "right" },
-  progressBar: { height: 5, borderRadius: 3, marginTop: S.sm },
-  progressLabel: { color: C.textSecondary, marginTop: 2, textAlign: "right" },
+  projDesc: { fontSize: 12, color: C.textSecondary, marginTop: S.xs, textAlign: "right" },
+  progressBar: { height: 4, borderRadius: 2, marginTop: S.sm },
+  progressLabel: { fontSize: 11, color: C.textMuted, marginTop: 2, textAlign: "right" },
 });

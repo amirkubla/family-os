@@ -19,6 +19,7 @@ import {
   clearAllCategoryRemote,
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
+import FamilyBadge from "@src/components/FamilyBadge";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import { SHOPPING_CATEGORIES } from "@src/models/grocery";
@@ -50,9 +51,8 @@ export default function GroceryScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text variant="headlineLarge" style={styles.title}>
-          {t("grocery.title")}
-        </Text>
+        <Text style={styles.title}>{t("grocery.title")}</Text>
+        <FamilyBadge />
 
         {/* Category tabs */}
         <SegmentedButtons
@@ -64,7 +64,7 @@ export default function GroceryScreen() {
 
         {/* Item count + clear all */}
         <View style={styles.countRow}>
-          <Text variant="bodySmall" style={styles.itemCount}>
+          <Text style={styles.itemCount}>
             {t("grocery.itemCount", { count: unbought.length })}
           </Text>
           {filtered.length > 0 && (
@@ -82,7 +82,7 @@ export default function GroceryScreen() {
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             {filtered.length === 0 && (
-              <Text variant="bodyMedium" style={styles.cardBody}>
+              <Text style={styles.emptyText}>
                 {t(EMPTY_KEYS[selectedCategory])}
               </Text>
             )}
@@ -101,7 +101,7 @@ export default function GroceryScreen() {
                   onPress={() => toggleGroceryBoughtRemote(item.id)}
                 />
                 <View style={styles.rowText}>
-                  <Text variant="bodyLarge" style={styles.itemTitle}>{item.title}</Text>
+                  <Text style={styles.itemTitle}>{item.title}</Text>
                   <View style={styles.meta}>
                     {item.subcategory ? (
                       <Chip compact textStyle={styles.chipText} style={styles.chip}>
@@ -109,9 +109,7 @@ export default function GroceryScreen() {
                       </Chip>
                     ) : null}
                     {item.qty ? (
-                      <Text variant="bodySmall" style={styles.qty}>
-                        x{item.qty}
-                      </Text>
+                      <Text style={styles.qty}>x{item.qty}</Text>
                     ) : null}
                   </View>
                 </View>
@@ -132,7 +130,7 @@ export default function GroceryScreen() {
               <>
                 <Divider style={styles.divider} />
                 <View style={styles.boughtHeader}>
-                  <Text variant="labelLarge" style={styles.boughtLabel}>
+                  <Text style={styles.boughtLabel}>
                     {t("grocery.bought", { count: bought.length })}
                   </Text>
                   <Button
@@ -157,10 +155,7 @@ export default function GroceryScreen() {
                       onPress={() => toggleGroceryBoughtRemote(item.id)}
                     />
                     <View style={styles.rowText}>
-                      <Text
-                        variant="bodyLarge"
-                        style={[styles.itemTitle, styles.boughtText]}
-                      >
+                      <Text style={[styles.itemTitle, styles.boughtText]}>
                         {item.title}
                       </Text>
                     </View>
@@ -204,20 +199,31 @@ export default function GroceryScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  container: { padding: S.xl, paddingBottom: 40 },
-  title: { fontWeight: "800", color: C.textPrimary, marginBottom: S.lg, textAlign: "right" },
+  container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: C.textPrimary,
+    marginBottom: S.lg,
+    textAlign: "right",
+  },
   segments: { marginBottom: S.md },
   countRow: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: S.md,
+    marginBottom: S.sm,
   },
-  itemCount: { color: C.textSecondary, textAlign: "right" },
-  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.xl },
-  cardBody: { color: C.textSecondary, textAlign: "right" },
+  itemCount: { fontSize: 12, color: C.textMuted, textAlign: "right" },
+  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
+  emptyText: {
+    color: C.textMuted,
+    textAlign: "right",
+    fontSize: 14,
+    paddingVertical: S.xs,
+  },
   row: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     alignItems: "center",
     paddingVertical: S.xs,
     paddingHorizontal: S.xs,
@@ -225,21 +231,21 @@ const styles = StyleSheet.create({
   },
   rowHover: { backgroundColor: C.hoverBg },
   rowText: { flex: 1, marginStart: S.xs },
-  itemTitle: { textAlign: "right" },
-  meta: { flexDirection: RTL_ROW, alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" },
+  itemTitle: { fontSize: 15, color: C.textPrimary, textAlign: "right" },
+  meta: { flexDirection: RTL_ROW, alignItems: "center", gap: S.sm, marginTop: 2, flexWrap: "wrap" },
   chip: { backgroundColor: C.border },
-  chipText: { fontSize: 11, lineHeight: 16 },
-  qty: { color: C.textSecondary, textAlign: "right" },
+  chipText: { fontSize: 10, lineHeight: 14 },
+  qty: { fontSize: 12, color: C.textSecondary, textAlign: "right" },
   divider: { marginVertical: S.md },
   boughtHeader: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: S.xs,
   },
-  boughtLabel: { color: C.textSecondary, textAlign: "right" },
+  boughtLabel: { fontSize: 13, fontWeight: "600", color: C.textSecondary, textAlign: "right" },
   boughtRow: { opacity: 0.5 },
-  boughtText: { textDecorationLine: "line-through", color: C.textSecondary, textAlign: "right" },
-  addButton: { borderRadius: R.lg, backgroundColor: C.purple },
-  addButtonContent: { paddingVertical: 6 },
+  boughtText: { textDecorationLine: "line-through", color: C.textMuted, textAlign: "right" },
+  addButton: { borderRadius: R.md, backgroundColor: C.purple },
+  addButtonContent: { paddingVertical: S.sm },
 });

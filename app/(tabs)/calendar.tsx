@@ -48,6 +48,7 @@ import WeekCalendar from "@src/components/Calendar/WeekCalendar";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import FamilyBadge from "@src/components/FamilyBadge";
+import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
@@ -256,9 +257,7 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text variant="headlineLarge" style={styles.title}>
-          {t("calendar.title")}
-        </Text>
+        <Text style={styles.title}>{t("calendar.title")}</Text>
         <FamilyBadge />
 
         {/* Month / Week toggle */}
@@ -294,12 +293,10 @@ export default function CalendarScreen() {
         </Card>
 
         {/* Events for selected date */}
-        <Text variant="titleMedium" style={styles.sectionTitle}>
-          {t("calendar.eventsForDate", { day: dayName(selectedDow) })}
-        </Text>
+        <SectionHeader label={t("calendar.eventsForDate", { day: dayName(selectedDow) })} />
 
         {!hasAnyItems ? (
-          <Text variant="bodyMedium" style={styles.emptyText}>
+          <Text style={styles.emptyText}>
             {t("calendar.noEvents")}
           </Text>
         ) : (
@@ -372,36 +369,36 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  container: { padding: S.xl, paddingBottom: 80 },
+  container: { padding: S.lg, paddingBottom: S.xxl + S.xxl },
   title: {
+    fontSize: 28,
     fontWeight: "800",
     color: C.textPrimary,
-    marginBottom: S.xl,
+    marginBottom: S.lg,
     textAlign: "right",
   },
 
   viewToggle: { marginBottom: S.md },
   card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
-  sectionTitle: {
-    fontWeight: "700",
-    color: C.textPrimary,
-    marginBottom: S.sm,
+  emptyText: {
+    color: C.textMuted,
     textAlign: "right",
+    fontSize: 14,
+    paddingVertical: S.xs,
   },
-  emptyText: { color: C.textSecondary, marginBottom: S.md, textAlign: "right" },
 
-  // Event row
+  // Event row — matches Today's blockRow pattern
   eventRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.border,
+    paddingVertical: S.md,
+    borderRadius: R.sm,
+    paddingHorizontal: S.xs,
   },
   eventStripe: {
-    width: 4,
-    height: 36,
+    width: 3,
     borderRadius: 2,
+    alignSelf: "stretch",
     marginEnd: S.md,
     marginStart: S.xs,
   },
@@ -411,23 +408,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: S.sm,
   },
-  eventTitle: { fontWeight: "600", color: C.textPrimary, textAlign: "right" },
+  eventTitle: { fontSize: 15, fontWeight: "600", color: C.textPrimary, textAlign: "right" },
   eventMetaRow: { flexDirection: RTL_ROW, alignItems: "center", gap: S.sm, marginTop: 2 },
-  eventTime: { color: C.textSecondary, textAlign: "right" },
+  eventTime: { fontSize: 12, color: C.textSecondary, textAlign: "right" },
   assigneeBadge: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
     paddingHorizontal: S.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: R.sm,
     overflow: "hidden",
   },
   oneTimeBadge: {
-    fontSize: 9,
+    fontSize: 10,
     color: C.amber,
-    backgroundColor: C.amber + "22",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: C.amber + "18",
+    paddingHorizontal: S.sm,
+    paddingVertical: 3,
     borderRadius: R.sm,
     overflow: "hidden",
     fontWeight: "600",

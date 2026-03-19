@@ -14,6 +14,7 @@ import KidModal from "@src/components/KidModal";
 import type { FamilyMember } from "@src/models/familyMember";
 import type { Kid } from "@src/models/kid";
 import { t, memberRoleLabel } from "@src/i18n";
+import SectionHeader from "@src/components/SectionHeader";
 import { RTL_ROW } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 
@@ -168,21 +169,15 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text variant="headlineLarge" style={styles.title}>
-          {t("settings.title")}
-        </Text>
+        <Text style={styles.title}>{t("settings.title")}</Text>
 
         {/* ── Family Name card ── */}
+        <SectionHeader label={t("settings.familyName")} />
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionTitleWrap}>
-              <Text variant="titleMedium" style={styles.cardTitle}>
-                {t("settings.familyName")}
-              </Text>
-              <Text variant="bodySmall" style={styles.subtitle}>
-                {t("settings.familyNameSubtitle")}
-              </Text>
-            </View>
+            <Text style={styles.subtitle}>
+              {t("settings.familyNameSubtitle")}
+            </Text>
             <TextInput
               mode="outlined"
               value={editingName}
@@ -198,17 +193,13 @@ export default function SettingsScreen() {
         </Card>
 
         {/* ── Family Members card ── */}
+        <SectionHeader label={t("settings.familyMembers")} />
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleWrap}>
-                <Text variant="titleMedium" style={styles.cardTitle}>
-                  {t("settings.familyMembers")}
-                </Text>
-                <Text variant="bodySmall" style={styles.subtitle}>
-                  {t("settings.familyMembersSubtitle")}
-                </Text>
-              </View>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.subtitle}>
+                {t("settings.familyMembersSubtitle")}
+              </Text>
               <IconButton icon="plus" size={20} onPress={openAdd} />
             </View>
 
@@ -258,17 +249,13 @@ export default function SettingsScreen() {
         </Card>
 
         {/* ── Kids card ── */}
+        <SectionHeader label={t("settings.kids")} />
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleWrap}>
-                <Text variant="titleMedium" style={styles.cardTitle}>
-                  {t("settings.kids")}
-                </Text>
-                <Text variant="bodySmall" style={styles.subtitle}>
-                  {t("settings.kidsSubtitle")}
-                </Text>
-              </View>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.subtitle}>
+                {t("settings.kidsSubtitle")}
+              </Text>
               <IconButton icon="plus" size={20} onPress={openAddKid} />
             </View>
 
@@ -316,13 +303,9 @@ export default function SettingsScreen() {
         </Card>
 
         {/* ── Account card ── */}
+        <SectionHeader label={t("auth.account")} />
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <View style={styles.sectionTitleWrap}>
-              <Text variant="titleMedium" style={styles.cardTitle}>
-                {t("auth.account")}
-              </Text>
-            </View>
 
             {session && (
               <View style={styles.accountInfo}>
@@ -368,49 +351,55 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  container: { padding: S.xl, paddingBottom: 40 },
+  container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
   title: {
+    fontSize: 28,
     fontWeight: "800",
     color: C.textPrimary,
     marginBottom: S.lg,
     textAlign: "right",
   },
-  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.xl },
-  sectionHeader: {
+  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
+  cardHeaderRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: S.sm,
+    marginBottom: S.xs,
   },
-  sectionTitleWrap: { flex: 1, marginBottom: S.sm },
-  cardTitle: { fontWeight: "700", color: C.textPrimary, textAlign: "right" },
-  subtitle: { color: C.textSecondary, textAlign: "right", marginTop: 2 },
-  emptyText: { color: C.textSecondary, textAlign: "right", marginVertical: S.sm },
+  subtitle: { fontSize: 12, color: C.textSecondary, textAlign: "right", marginBottom: S.sm },
+  emptyText: {
+    color: C.textMuted,
+    textAlign: "right",
+    fontSize: 14,
+    paddingVertical: S.xs,
+  },
   memberRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
     paddingVertical: S.sm,
+    paddingHorizontal: S.xs,
+    borderRadius: R.sm,
   },
   archivedRow: { opacity: 0.5 },
   rowActions: { flexDirection: "row" },
   memberInfo: { flex: 1, marginHorizontal: S.sm },
-  memberName: { fontWeight: "600", textAlign: "right", color: C.textPrimary },
-  memberRole: { color: C.textSecondary, textAlign: "right" },
+  memberName: { fontSize: 15, fontWeight: "600", textAlign: "right", color: C.textPrimary },
+  memberRole: { fontSize: 12, color: C.textSecondary, textAlign: "right" },
   archivedText: { textDecorationLine: "line-through" },
   emojiCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },
-  emoji: { fontSize: 24 },
+  emoji: { fontSize: 22 },
   divider: { marginVertical: S.md },
   archivedHeaderRow: { paddingVertical: S.xs },
-  archivedHeader: { color: C.textSecondary, textAlign: "right" },
+  archivedHeader: { fontSize: 13, color: C.textMuted, textAlign: "right" },
   nameInput: { textAlign: "right", writingDirection: "rtl", backgroundColor: C.surface },
   nameInputContent: { textAlign: "right" },
   accountInfo: { marginBottom: S.md },
-  accountText: { textAlign: "right", writingDirection: "rtl", color: C.textPrimary, marginBottom: S.xs },
+  accountText: { fontSize: 14, textAlign: "right", writingDirection: "rtl", color: C.textPrimary, marginBottom: S.xs },
   logoutBtn: { borderColor: C.red + "44", borderRadius: R.md },
 });
