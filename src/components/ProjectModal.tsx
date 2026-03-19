@@ -4,6 +4,8 @@ import { Text, TextInput, Button } from "react-native-paper";
 import type { Project, ProjectStatus } from "@src/models/project";
 import { addProjectRemote, updateProjectRemote } from "@src/lib/sync/remoteCrud";
 import { t, statusLabel } from "@src/i18n";
+import { MS } from "@src/ui/modalStyles";
+import { C } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 
@@ -19,38 +21,19 @@ const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
 
 const THUMB_SIZE = 24;
 const TRACK_HEIGHT = 6;
-const SLIDER_COLOR = "#6C63FF";
 
-function ProgressSlider({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
+function ProgressSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const clamp = (v: number) => Math.round(Math.min(100, Math.max(0, v)));
   const pct = Math.min(100, Math.max(0, value));
 
-  // Width of the wrapper (measured via onLayout)
   const [wrapperW, setWrapperW] = useState(0);
-  // Usable range for thumb center (track has THUMB_SIZE/2 margin each side)
   const usable = Math.max(0, wrapperW - THUMB_SIZE);
 
-  // ── Thumb left in pixels ──
-  // On iOS RTL: `left` is auto-mirrored to `right`, so left:0 = right edge.
-  //   0% progress → right edge → left: 0
-  //   100% progress → left edge → left: usable
-  //   General: left = (pct/100) * usable
-  // On web: `left` is NOT mirrored. In RTL context:
-  //   0% progress → right edge → left: usable
-  //   100% progress → left edge → left: 0
-  //   General: left = (1 - pct/100) * usable
   const thumbLeft =
     Platform.OS === "web"
       ? (1 - pct / 100) * usable
       : (pct / 100) * usable;
 
-  // ── Shared refs for native (PanResponder) path ──
   const wrapperWRef = useRef(0);
   const layoutX = useRef(0);
   const onChangeRef = useRef(onChange);
@@ -61,7 +44,6 @@ function ProgressSlider({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
-        // In RTL: left edge = 100%, right edge = 0%
         const ratio = (evt.nativeEvent.pageX - layoutX.current) / wrapperWRef.current;
         onChangeRef.current(clamp((1 - ratio) * 100));
       },
@@ -82,18 +64,15 @@ function ProgressSlider({
     });
   };
 
-  // ── Web pointer handler (getBoundingClientRect is reliable on web) ──
   const handleWebPointer = useCallback(
     (e: any) => {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       const x = e.clientX - rect.left;
-      // In RTL: left edge = 100%, right edge = 0%
       onChange(clamp(((rect.width - x) / rect.width) * 100));
     },
     [onChange],
   );
 
-  // On web: use native pointer events; on native: use PanResponder
   const trackProps =
     Platform.OS === "web"
       ? {
@@ -109,37 +88,68 @@ function ProgressSlider({
       : panResponder.panHandlers;
 
   return (
-    <View style={styles.sliderContainer}>
-      <View style={styles.sliderLabels}>
-        <Text style={styles.sliderEdge}>0</Text>
-        <Text style={[styles.sliderValue, { color: SLIDER_COLOR }]}>
-          {Math.round(pct)}%
-        </Text>
-        <Text style={styles.sliderEdge}>100</Text>
+    <View style={sliderStyles.container}>
+      <View style={sliderStyles.labels}>
+        <Text style={sliderStyles.edge}>0</Text>
+        <Text style={[sliderStyles.value, { color: C.purple }]}>{Math.round(pct)}%</Text>
+        <Text style={sliderStyles.edge}>100</Text>
       </View>
-      <View
-        style={styles.sliderTrackWrap}
-        onLayout={onTrackLayout}
-        {...trackProps}
-      >
-        <View style={styles.sliderTrack} pointerEvents="none">
-          <View
-            style={[
-              styles.sliderFill,
-              { width: `${pct}%` },
-            ]}
-          />
+      <View style={sliderStyles.trackWrap} onLayout={onTrackLayout} {...trackProps}>
+        <View style={sliderStyles.track} pointerEvents="none">
+          <View style={[sliderStyles.fill, { width: `${pct}%` }]} />
         </View>
         {wrapperW > 0 && (
-          <View
-            pointerEvents="none"
-            style={[styles.sliderThumb, { left: thumbLeft }]}
-          />
+          <View pointerEvents="none" style={[sliderStyles.thumb, { left: thumbLeft }]} />
         )}
       </View>
     </View>
   );
 }
+
+const sliderStyles = StyleSheet.create({
+  container: { marginBottom: 16 },
+  labels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  edge: { fontSize: 12, color: C.textSecondary },
+  value: { fontSize: 16, fontWeight: "700" },
+  trackWrap: {
+    height: THUMB_SIZE + 8,
+    justifyContent: "center",
+    position: "relative",
+    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+  },
+  track: {
+    height: TRACK_HEIGHT,
+    borderRadius: TRACK_HEIGHT / 2,
+    backgroundColor: C.purple + "22",
+    overflow: "hidden",
+    marginHorizontal: THUMB_SIZE / 2,
+  },
+  fill: {
+    height: TRACK_HEIGHT,
+    borderRadius: TRACK_HEIGHT / 2,
+    backgroundColor: C.purple,
+  },
+  thumb: {
+    position: "absolute",
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    backgroundColor: C.surface,
+    borderWidth: 3,
+    borderColor: C.purple,
+    top: (THUMB_SIZE + 8 - THUMB_SIZE) / 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+});
 
 // ---------------------------------------------------------------------------
 
@@ -149,11 +159,7 @@ interface Props {
   editProject?: Project | null;
 }
 
-export default function ProjectModal({
-  visible,
-  onDismiss,
-  editProject,
-}: Props) {
+export default function ProjectModal({ visible, onDismiss, editProject }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("idea");
@@ -166,19 +172,11 @@ export default function ProjectModal({
       setStatus(editProject.status);
       setProgress(editProject.progress);
     } else {
-      setTitle("");
-      setDescription("");
-      setStatus("idea");
-      setProgress(0);
+      setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);
     }
   }, [editProject, visible]);
 
-  const reset = () => {
-    setTitle("");
-    setDescription("");
-    setStatus("idea");
-    setProgress(0);
-  };
+  const reset = () => { setTitle(""); setDescription(""); setStatus("idea"); setProgress(0); };
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -199,14 +197,11 @@ export default function ProjectModal({
     onDismiss();
   };
 
-  const handleDismiss = () => {
-    reset();
-    onDismiss();
-  };
+  const handleDismiss = () => { reset(); onDismiss(); };
 
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
-      <Text variant="titleLarge" style={styles.heading}>
+      <Text style={MS.heading}>
         {editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")}
       </Text>
 
@@ -215,8 +210,8 @@ export default function ProjectModal({
         value={title}
         onChangeText={setTitle}
         mode="outlined"
-        style={styles.input}
-        contentStyle={styles.inputContent}
+        style={MS.input}
+        contentStyle={MS.inputContent}
       />
 
       <TextInput
@@ -226,111 +221,41 @@ export default function ProjectModal({
         mode="outlined"
         multiline
         numberOfLines={3}
-        style={styles.input}
-        contentStyle={styles.inputContent}
+        style={MS.input}
+        contentStyle={MS.inputContent}
       />
 
       {editProject && (
         <>
-          <Text variant="labelLarge" style={styles.label}>
-            {t("projectModal.status")}
-          </Text>
-          <View style={styles.statusRow}>
+          <Text style={MS.label}>{t("projectModal.status")}</Text>
+          <View style={{ flexDirection: RTL_ROW, gap: 6, marginBottom: 12 }}>
             {STATUS_OPTIONS.map((opt) => (
               <Button
                 key={opt.value}
                 mode={status === opt.value ? "contained" : "outlined"}
                 compact
                 onPress={() => setStatus(opt.value)}
-                style={styles.statusBtn}
-                labelStyle={styles.statusLabel}
+                style={MS.chip}
+                labelStyle={MS.chipLabel}
               >
                 {opt.label}
               </Button>
             ))}
           </View>
 
-          <Text variant="labelLarge" style={styles.label}>
+          <Text style={MS.label}>
             {t("projectModal.progress", { n: Math.round(progress) })}
           </Text>
           <ProgressSlider value={progress} onChange={setProgress} />
         </>
       )}
 
-      <View style={styles.actions}>
+      <View style={MS.actions}>
         <Button onPress={handleDismiss}>{t("cancel")}</Button>
-        <Button
-          mode="contained"
-          onPress={handleSubmit}
-          disabled={!title.trim()}
-        >
+        <Button mode="contained" onPress={handleSubmit} disabled={!title.trim()}>
           {editProject ? t("save") : t("add")}
         </Button>
       </View>
     </ModalWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
-  input: { marginBottom: 12, textAlign: "right", writingDirection: "rtl" },
-  inputContent: { textAlign: "right" },
-  label: { marginBottom: 8, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
-  statusRow: {
-    flexDirection: RTL_ROW,
-    gap: 6,
-    marginBottom: 12,
-  },
-  statusBtn: { borderRadius: 20 },
-  statusLabel: { fontSize: 12 },
-
-  // Slider
-  sliderContainer: { marginBottom: 16 },
-  sliderLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  sliderEdge: { fontSize: 12, color: "#6B6B8D" },
-  sliderValue: { fontSize: 16, fontWeight: "700" },
-  sliderTrackWrap: {
-    height: THUMB_SIZE + 8,
-    justifyContent: "center",
-    position: "relative",
-    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
-  },
-  sliderTrack: {
-    height: TRACK_HEIGHT,
-    borderRadius: TRACK_HEIGHT / 2,
-    backgroundColor: "#E8E6FF",
-    overflow: "hidden",
-    marginHorizontal: THUMB_SIZE / 2,
-  },
-  sliderFill: {
-    height: TRACK_HEIGHT,
-    borderRadius: TRACK_HEIGHT / 2,
-    backgroundColor: SLIDER_COLOR,
-  },
-  sliderThumb: {
-    position: "absolute",
-    width: THUMB_SIZE,
-    height: THUMB_SIZE,
-    borderRadius: THUMB_SIZE / 2,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 3,
-    borderColor: SLIDER_COLOR,
-    top: (THUMB_SIZE + 8 - THUMB_SIZE) / 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actions: {
-    flexDirection: RTL_ROW,
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 12,
-  },
-});

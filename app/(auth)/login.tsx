@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "@src/auth/useAuthStore";
 import { t } from "@src/i18n";
+import { C, R, S } from "@src/ui/tokens";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -107,20 +108,20 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FAFAFE" },
+  safe: { flex: 1, backgroundColor: C.bg },
   flex: { flex: 1 },
-  container: { flex: 1, justifyContent: "center", paddingHorizontal: 28 },
+  container: { flex: 1, justifyContent: "center", paddingHorizontal: S.xl + S.sm },
   title: {
     fontWeight: "800",
-    color: "#1A1A2E",
+    color: C.textPrimary,
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: S.xxl,
   },
-  input: { backgroundColor: "#FFFFFF", textAlign: "right", writingDirection: "rtl", marginBottom: 2 },
+  input: { backgroundColor: C.surface, textAlign: "right", writingDirection: "rtl", marginBottom: 2 },
   inputContent: { textAlign: "right" },
   helper: { textAlign: "right" },
-  btn: { borderRadius: 12, marginTop: 8 },
+  btn: { borderRadius: R.md, marginTop: S.sm },
   btnContent: { paddingVertical: 6 },
   btnLabel: { fontSize: 16, fontWeight: "700" },
-  link: { marginTop: 16 },
+  link: { marginTop: S.lg },
 });

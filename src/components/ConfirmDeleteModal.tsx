@@ -8,6 +8,7 @@
 import React from "react";
 import { Dialog, Portal, Button, Text } from "react-native-paper";
 import { StyleSheet } from "react-native";
+import { C, R } from "@src/ui/tokens";
 import { t } from "@src/i18n";
 
 interface Props {
@@ -30,7 +31,7 @@ export default function ConfirmDeleteModal({ visible, onConfirm, onDismiss }: Pr
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>{t("confirmDelete.cancel")}</Button>
-          <Button onPress={onConfirm} textColor="#E53935">
+          <Button onPress={onConfirm} textColor={C.red}>
             {t("confirmDelete.confirm")}
           </Button>
         </Dialog.Actions>
@@ -41,16 +42,16 @@ export default function ConfirmDeleteModal({ visible, onConfirm, onDismiss }: Pr
 
 const styles = StyleSheet.create({
   dialog: {
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+    borderRadius: R.lg,
+    backgroundColor: C.surface,
   },
   title: {
     fontWeight: "700",
-    color: "#1A1A2E",
+    color: C.textPrimary,
     textAlign: "right",
   },
   message: {
-    color: "#6B6B8D",
+    color: C.textSecondary,
     textAlign: "right",
   },
 });

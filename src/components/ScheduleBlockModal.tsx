@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { Text, TextInput, Button, SegmentedButtons } from "react-native-paper";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +15,7 @@ import { BLOCK_TYPES } from "@src/models/schedule";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, blockTypeLabel } from "@src/i18n";
-import { RTL_ROW } from "@src/ui/rtl";
+import { MS } from "@src/ui/modalStyles";
 import ModalWrapper from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
 
@@ -62,7 +62,6 @@ const schema = z
   .refine(
     (d) => {
       if (d.isRecurring) return true;
-      // One-time event must have a valid date
       if (!d.date || !dateRegex.test(d.date)) return false;
       const [y, m, day] = d.date.split("-").map(Number);
       const dateObj = new Date(y, m - 1, day);
@@ -86,7 +85,7 @@ interface Props {
   onDismiss: () => void;
   editBlock?: ScheduleBlock | null;
   defaultDayOfWeek?: number;
-  defaultDate?: string; // "YYYY-MM-DD" — pre-fill date for one-time events from calendar
+  defaultDate?: string;
   onSubmit: (data: {
     title: string;
     type: BlockType;
@@ -135,7 +134,6 @@ export default function ScheduleBlockModal({
     },
   });
 
-  // Pre-fill when editing
   useEffect(() => {
     if (visible && editBlock) {
       reset({
@@ -189,7 +187,7 @@ export default function ScheduleBlockModal({
 
   return (
     <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text variant="titleLarge" style={styles.heading}>
+      <Text variant="titleLarge" style={MS.heading}>
         {editBlock ? t("blockModal.editTitle") : t("blockModal.addTitle")}
       </Text>
 
@@ -203,29 +201,29 @@ export default function ScheduleBlockModal({
             value={value}
             onChangeText={onChange}
             mode="outlined"
-            style={styles.rtlInput}
-            contentStyle={styles.rtlInputContent}
+            style={MS.input}
+            contentStyle={MS.inputContent}
             error={!!errors.title}
           />
         )}
       />
       {errors.title && (
-        <Text style={styles.error}>{errors.title.message}</Text>
+        <Text style={MS.error}>{errors.title.message}</Text>
       )}
 
       {/* Type */}
-      <Text variant="labelLarge" style={styles.label}>
+      <Text variant="labelLarge" style={MS.label}>
         {t("blockModal.type")}
       </Text>
-      <View style={styles.chipRow}>
+      <View style={MS.chipRow}>
         {BLOCK_TYPES.map((bt) => (
           <Button
             key={bt.value}
             mode={selectedType === bt.value ? "contained" : "outlined"}
             compact
             onPress={() => setValue("type", bt.value)}
-            style={styles.chip}
-            labelStyle={styles.chipLabel}
+            style={MS.chip}
+            labelStyle={MS.chipLabel}
           >
             {blockTypeLabel(bt.value)}
           </Button>
@@ -240,24 +238,24 @@ export default function ScheduleBlockModal({
           { value: "recurring", label: t("blockModal.recurring") },
           { value: "oneTime", label: t("blockModal.oneTime") },
         ]}
-        style={styles.segmented}
+        style={MS.segmented}
       />
 
       {/* Day of week — only for recurring */}
       {isRecurring && (
         <>
-          <Text variant="labelLarge" style={styles.label}>
+          <Text variant="labelLarge" style={MS.label}>
             {t("blockModal.day")}
           </Text>
-          <View style={styles.chipRow}>
+          <View style={MS.chipRow}>
             {Array.from({ length: 7 }, (_, idx) => (
               <Button
                 key={idx}
                 mode={selectedDay === idx ? "contained" : "outlined"}
                 compact
                 onPress={() => setValue("dayOfWeek", idx)}
-                style={styles.chip}
-                labelStyle={styles.chipLabel}
+                style={MS.chip}
+                labelStyle={MS.chipLabel}
               >
                 {dayNameShort(idx)}
               </Button>
@@ -269,7 +267,7 @@ export default function ScheduleBlockModal({
       {/* Date picker — only for one-time events */}
       {!isRecurring && (
         <>
-          <Text variant="labelLarge" style={styles.label}>
+          <Text variant="labelLarge" style={MS.label}>
             {t("blockModal.date")}
           </Text>
           <Controller
@@ -280,23 +278,23 @@ export default function ScheduleBlockModal({
                 value={value}
                 onChangeText={onChange}
                 mode="outlined"
-                style={styles.rtlInput}
-                contentStyle={styles.rtlInputContent}
+                style={MS.input}
+                contentStyle={MS.inputContent}
                 placeholder="2026-03-15"
                 error={!!errors.date}
               />
             )}
           />
           {errors.date && (
-            <Text style={styles.error}>{errors.date.message}</Text>
+            <Text style={MS.error}>{errors.date.message}</Text>
           )}
         </>
       )}
 
-      {/* Times — Start on the right (RTL start), End on the left */}
-      <View style={styles.timeRow}>
-        <View style={styles.timeCol}>
-          <Text variant="labelLarge" style={styles.label}>
+      {/* Times */}
+      <View style={MS.timeRow}>
+        <View style={MS.timeCol}>
+          <Text variant="labelLarge" style={MS.label}>
             {t("blockModal.startTime")}
           </Text>
           <Controller
@@ -307,8 +305,8 @@ export default function ScheduleBlockModal({
             )}
           />
         </View>
-        <View style={styles.timeCol}>
-          <Text variant="labelLarge" style={styles.label}>
+        <View style={MS.timeCol}>
+          <Text variant="labelLarge" style={MS.label}>
             {t("blockModal.endTime")}
           </Text>
           <Controller
@@ -321,7 +319,7 @@ export default function ScheduleBlockModal({
         </View>
       </View>
       {errors.endTime && (
-        <Text style={styles.error}>{errors.endTime.message}</Text>
+        <Text style={MS.error}>{errors.endTime.message}</Text>
       )}
 
       {/* Location */}
@@ -334,17 +332,17 @@ export default function ScheduleBlockModal({
             value={value}
             onChangeText={onChange}
             mode="outlined"
-            style={styles.rtlInput}
-            contentStyle={styles.rtlInputContent}
+            style={MS.input}
+            contentStyle={MS.inputContent}
           />
         )}
       />
 
       {/* Reminders */}
-      <Text variant="labelLarge" style={styles.label}>
+      <Text variant="labelLarge" style={MS.label}>
         {t("eventModal.reminders")}
       </Text>
-      <View style={styles.chipRow}>
+      <View style={MS.chipRow}>
         {REMINDER_PRESETS.map(({ minutes, label }) => {
           const selected = selectedReminders.includes(minutes);
           return (
@@ -361,8 +359,8 @@ export default function ScheduleBlockModal({
                   setSelectedReminders((prev) => [...prev, minutes]);
                 }
               }}
-              style={styles.chip}
-              labelStyle={styles.chipLabel}
+              style={MS.chip}
+              labelStyle={MS.chipLabel}
             >
               {label}
             </Button>
@@ -371,7 +369,7 @@ export default function ScheduleBlockModal({
       </View>
 
       {/* Actions */}
-      <View style={styles.actions}>
+      <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>
         <Button mode="contained" onPress={handleSubmit(doSubmit)}>
           {editBlock ? t("save") : t("add")}
@@ -380,24 +378,3 @@ export default function ScheduleBlockModal({
     </ModalWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 16, textAlign: "right" },
-  input: { marginBottom: 8 },
-  rtlInput: { marginBottom: 8, textAlign: "right", writingDirection: "rtl" },
-  rtlInputContent: { textAlign: "right" },
-  label: { marginBottom: 6, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
-  chipRow: { flexDirection: RTL_ROW, flexWrap: "wrap", gap: 6, marginBottom: 10 },
-  chip: { borderRadius: 20 },
-  chipLabel: { fontSize: 12 },
-  segmented: { marginBottom: 10, marginTop: 4 },
-  timeRow: { flexDirection: RTL_ROW, gap: 12, marginBottom: 24 },
-  timeCol: { flex: 1 },
-  error: { color: "#FF6B6B", fontSize: 12, marginBottom: 4, marginTop: -4 },
-  actions: {
-    flexDirection: RTL_ROW,
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 12,
-  },
-});

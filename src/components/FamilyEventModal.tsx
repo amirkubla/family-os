@@ -1,11 +1,9 @@
 /**
  * FamilyEventModal — Add / edit a family event (recurring or one-time).
- * Supports assignee: family (all), member, or kid.
- * Uses react-hook-form + zod for validation.
  */
 
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { Text, TextInput, Button, SegmentedButtons } from "react-native-paper";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,14 +14,10 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, assigneeTypeLabel } from "@src/i18n";
+import { MS } from "@src/ui/modalStyles";
 import ModalWrapper from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
 import DatePicker, { formatDateHe } from "./DatePicker";
-import { RTL_ROW } from "@src/ui/rtl";
-
-// ---------------------------------------------------------------------------
-// Zod schema
-// ---------------------------------------------------------------------------
 
 const timeRegex = /^\d{1,2}:\d{2}$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -79,10 +73,6 @@ const schema = z
 
 type FormData = z.infer<typeof schema>;
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
-
 interface Props {
   visible: boolean;
   onDismiss: () => void;
@@ -103,10 +93,6 @@ interface Props {
   }) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 export default function FamilyEventModal({
   visible,
   onDismiss,
@@ -120,7 +106,6 @@ export default function FamilyEventModal({
   const activeMembers = familyMembers.filter((m) => m.isActive);
   const activeKids = kids.filter((k) => k.isActive);
 
-  // Reminders state (managed outside react-hook-form for simplicity)
   const [selectedReminders, setSelectedReminders] = useState<number[]>([]);
 
   const {
@@ -188,8 +173,7 @@ export default function FamilyEventModal({
     onSubmit({
       title: data.title.trim(),
       assigneeType: data.assigneeType as AssigneeType,
-      assigneeId:
-        data.assigneeType === "family" ? undefined : data.assigneeId,
+      assigneeId: data.assigneeType === "family" ? undefined : data.assigneeId,
       dayOfWeek,
       startMinutes: hhmmToMinutes(data.startTime),
       endMinutes: hhmmToMinutes(data.endTime),
@@ -203,14 +187,13 @@ export default function FamilyEventModal({
 
   return (
     <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text variant="titleLarge" style={styles.heading}>
+      <Text style={MS.heading}>
         {editEvent ? t("eventModal.editTitle") : t("eventModal.addTitle")}
       </Text>
       {!editEvent && defaultDate && (
-        <Text style={styles.dateSubtitle}>{formatDateHe(defaultDate)}</Text>
+        <Text style={MS.subtitle}>{formatDateHe(defaultDate)}</Text>
       )}
 
-      {/* Title */}
       <Controller
         control={control}
         name="title"
@@ -220,20 +203,15 @@ export default function FamilyEventModal({
             value={value}
             onChangeText={onChange}
             mode="outlined"
-            style={styles.rtlInput}
-            contentStyle={styles.rtlInputContent}
+            style={MS.input}
+            contentStyle={MS.inputContent}
             error={!!errors.title}
           />
         )}
       />
-      {errors.title && (
-        <Text style={styles.error}>{errors.title.message}</Text>
-      )}
+      {errors.title && <Text style={MS.error}>{errors.title.message}</Text>}
 
-      {/* Assignee type */}
-      <Text variant="labelLarge" style={styles.label}>
-        {t("eventModal.assignee")}
-      </Text>
+      <Text style={MS.label}>{t("eventModal.assignee")}</Text>
       <SegmentedButtons
         value={assigneeType}
         onValueChange={(v) => {
@@ -245,20 +223,19 @@ export default function FamilyEventModal({
           { value: "member", label: assigneeTypeLabel("member") },
           { value: "kid", label: assigneeTypeLabel("kid") },
         ]}
-        style={styles.segmented}
+        style={MS.segmented}
       />
 
-      {/* Member picker */}
       {assigneeType === "member" && activeMembers.length > 0 && (
-        <View style={styles.chipRow}>
+        <View style={MS.chipRow}>
           {activeMembers.map((member) => (
             <Button
               key={member.id}
               mode={assigneeId === member.id ? "contained" : "outlined"}
               compact
               onPress={() => setValue("assigneeId", member.id)}
-              style={styles.chip}
-              labelStyle={styles.chipLabel}
+              style={MS.chip}
+              labelStyle={MS.chipLabel}
             >
               {member.avatarEmoji ?? ""} {member.name}
             </Button>
@@ -266,17 +243,16 @@ export default function FamilyEventModal({
         </View>
       )}
 
-      {/* Kid picker */}
       {assigneeType === "kid" && activeKids.length > 0 && (
-        <View style={styles.chipRow}>
+        <View style={MS.chipRow}>
           {activeKids.map((kid) => (
             <Button
               key={kid.id}
               mode={assigneeId === kid.id ? "contained" : "outlined"}
               compact
               onPress={() => setValue("assigneeId", kid.id)}
-              style={styles.chip}
-              labelStyle={styles.chipLabel}
+              style={MS.chip}
+              labelStyle={MS.chipLabel}
             >
               {kid.emoji}{"  "}{kid.name}
             </Button>
@@ -284,7 +260,6 @@ export default function FamilyEventModal({
         </View>
       )}
 
-      {/* Recurring / One-time toggle */}
       <SegmentedButtons
         value={isRecurring ? "recurring" : "oneTime"}
         onValueChange={(v) => setValue("isRecurring", v === "recurring")}
@@ -292,24 +267,21 @@ export default function FamilyEventModal({
           { value: "recurring", label: t("eventModal.recurring") },
           { value: "oneTime", label: t("eventModal.oneTime") },
         ]}
-        style={styles.segmented}
+        style={MS.segmented}
       />
 
-      {/* Day of week — only for recurring */}
       {isRecurring && (
         <>
-          <Text variant="labelLarge" style={styles.label}>
-            {t("eventModal.day")}
-          </Text>
-          <View style={styles.chipRow}>
+          <Text style={MS.label}>{t("eventModal.day")}</Text>
+          <View style={MS.chipRow}>
             {Array.from({ length: 7 }, (_, idx) => (
               <Button
                 key={idx}
                 mode={selectedDay === idx ? "contained" : "outlined"}
                 compact
                 onPress={() => setValue("dayOfWeek", idx)}
-                style={styles.chip}
-                labelStyle={styles.chipLabel}
+                style={MS.chip}
+                labelStyle={MS.chipLabel}
               >
                 {dayNameShort(idx)}
               </Button>
@@ -318,12 +290,9 @@ export default function FamilyEventModal({
         </>
       )}
 
-      {/* Date picker — only for one-time events */}
       {!isRecurring && (
         <>
-          <Text variant="labelLarge" style={styles.label}>
-            {t("eventModal.date")}
-          </Text>
+          <Text style={MS.label}>{t("eventModal.date")}</Text>
           <Controller
             control={control}
             name="date"
@@ -331,18 +300,13 @@ export default function FamilyEventModal({
               <DatePicker value={value ?? toYMD(new Date())} onChange={onChange} />
             )}
           />
-          {errors.date && (
-            <Text style={styles.error}>{errors.date.message}</Text>
-          )}
+          {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
         </>
       )}
 
-      {/* Times — Start on the right (RTL start), End on the left */}
-      <View style={styles.timeRow}>
-        <View style={styles.timeCol}>
-          <Text variant="labelLarge" style={styles.label}>
-            {t("eventModal.startTime")}
-          </Text>
+      <View style={MS.timeRow}>
+        <View style={MS.timeCol}>
+          <Text style={MS.label}>{t("eventModal.startTime")}</Text>
           <Controller
             control={control}
             name="startTime"
@@ -351,10 +315,8 @@ export default function FamilyEventModal({
             )}
           />
         </View>
-        <View style={styles.timeCol}>
-          <Text variant="labelLarge" style={styles.label}>
-            {t("eventModal.endTime")}
-          </Text>
+        <View style={MS.timeCol}>
+          <Text style={MS.label}>{t("eventModal.endTime")}</Text>
           <Controller
             control={control}
             name="endTime"
@@ -364,11 +326,8 @@ export default function FamilyEventModal({
           />
         </View>
       </View>
-      {errors.endTime && (
-        <Text style={styles.error}>{errors.endTime.message}</Text>
-      )}
+      {errors.endTime && <Text style={MS.error}>{errors.endTime.message}</Text>}
 
-      {/* Location */}
       <Controller
         control={control}
         name="location"
@@ -378,17 +337,14 @@ export default function FamilyEventModal({
             value={value}
             onChangeText={onChange}
             mode="outlined"
-            style={styles.rtlInput}
-            contentStyle={styles.rtlInputContent}
+            style={MS.input}
+            contentStyle={MS.inputContent}
           />
         )}
       />
 
-      {/* Reminders */}
-      <Text variant="labelLarge" style={styles.label}>
-        {t("eventModal.reminders")}
-      </Text>
-      <View style={styles.chipRow}>
+      <Text style={MS.label}>{t("eventModal.reminders")}</Text>
+      <View style={MS.chipRow}>
         {REMINDER_PRESETS.map(({ minutes, label }) => {
           const selected = selectedReminders.includes(minutes);
           return (
@@ -398,15 +354,13 @@ export default function FamilyEventModal({
               compact
               onPress={() => {
                 if (selected) {
-                  setSelectedReminders((prev) =>
-                    prev.filter((m) => m !== minutes),
-                  );
+                  setSelectedReminders((prev) => prev.filter((m) => m !== minutes));
                 } else if (selectedReminders.length < 3) {
                   setSelectedReminders((prev) => [...prev, minutes]);
                 }
               }}
-              style={styles.chip}
-              labelStyle={styles.chipLabel}
+              style={MS.chip}
+              labelStyle={MS.chipLabel}
             >
               {label}
             </Button>
@@ -414,8 +368,7 @@ export default function FamilyEventModal({
         })}
       </View>
 
-      {/* Actions */}
-      <View style={styles.actions}>
+      <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>
         <Button mode="contained" onPress={handleSubmit(doSubmit)}>
           {editEvent ? t("save") : t("add")}
@@ -424,24 +377,3 @@ export default function FamilyEventModal({
     </ModalWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  heading: { fontWeight: "700", marginBottom: 2, textAlign: "right" },
-  dateSubtitle: { fontSize: 14, color: "#6C63FF", textAlign: "right", marginBottom: 12 },
-  rtlInput: { marginBottom: 8, textAlign: "right", writingDirection: "rtl" },
-  rtlInputContent: { textAlign: "right" },
-  label: { marginBottom: 6, marginTop: 4, color: "#6B6B8D", textAlign: "right" },
-  chipRow: { flexDirection: RTL_ROW, flexWrap: "wrap", gap: 6, marginBottom: 10 },
-  chip: { borderRadius: 20 },
-  chipLabel: { fontSize: 12 },
-  segmented: { marginBottom: 10, marginTop: 4 },
-  timeRow: { flexDirection: RTL_ROW, gap: 12, marginBottom: 24 },
-  timeCol: { flex: 1 },
-  error: { color: "#FF6B6B", fontSize: 12, marginBottom: 4, marginTop: -4 },
-  actions: {
-    flexDirection: RTL_ROW,
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 12,
-  },
-});

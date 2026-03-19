@@ -40,6 +40,8 @@ import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, assigneeTypeLabel, blockTypeLabel } from "@src/i18n";
 import { RTL_ROW } from "@src/ui/rtl";
+import { C, R, S } from "@src/ui/tokens";
+import { TYPE_COLORS, ASSIGNEE_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import WeekCalendar from "@src/components/Calendar/WeekCalendar";
@@ -52,21 +54,6 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const ACCENT_COLOR = "#6C63FF";
-const KID_BLOCK_DOT_COLOR = "#FF6B6B";
-
-const ASSIGNEE_COLORS: Record<AssigneeType, string> = {
-  family: "#4ECDC4",
-  member: "#6C63FF",
-  kid: "#FF6B6B",
-};
-
-const TYPE_COLORS: Record<BlockType, string> = {
-  school: "#6C63FF",
-  hobby: "#FF6B6B",
-  other: "#4ECDC4",
-};
 
 function EventRow({
   event,
@@ -138,7 +125,7 @@ function KidBlockRow({
 }) {
   const kids = useFamilyStore((s) => s.kids);
   const kid = kids.find((k) => k.id === block.kidId);
-  const color = block.color ?? kid?.color ?? "#FF6B6B";
+  const color = block.color ?? kid?.color ?? C.red;
   const typeColor = TYPE_COLORS[block.type];
 
   return (
@@ -153,7 +140,7 @@ function KidBlockRow({
             <Text
               style={[
                 styles.assigneeBadge,
-                { color: "#FF6B6B", backgroundColor: "#FF6B6B22" },
+                { color: C.red, backgroundColor: C.red + "22" },
               ]}
             >
               {kid.emoji}{"  "}{kid.name}
@@ -247,7 +234,6 @@ export default function CalendarScreen() {
   // Build markedDates
   const markedDates = useMemo(() => {
     const marks: Record<string, { dotColor: string }> = {};
-    // Recurring events + kid blocks: mark 60 days around today
     const now = new Date();
     for (let offset = -30; offset <= 30; offset++) {
       const d = new Date(now);
@@ -255,20 +241,14 @@ export default function CalendarScreen() {
       const ymd = toYMD(d);
       const dow = d.getDay();
       if (recurringByDay[dow]?.length > 0 || kidRecurringByDay[dow]?.length > 0) {
-        marks[ymd] = { dotColor: ACCENT_COLOR };
+        marks[ymd] = { dotColor: C.purple };
       }
     }
-    // One-time family events
     for (const e of oneTimeEvents) {
-      if (e.date) {
-        marks[e.date] = { dotColor: ACCENT_COLOR };
-      }
+      if (e.date) marks[e.date] = { dotColor: C.purple };
     }
-    // One-time kid blocks
     for (const b of kidOneTimeBlocks) {
-      if (b.date) {
-        marks[b.date] = { dotColor: ACCENT_COLOR };
-      }
+      if (b.date) marks[b.date] = { dotColor: C.purple };
     }
     return marks;
   }, [recurringByDay, oneTimeEvents, kidRecurringByDay, kidOneTimeBlocks]);
@@ -300,14 +280,14 @@ export default function CalendarScreen() {
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
                 markedDates={markedDates}
-                accentColor={ACCENT_COLOR}
+                accentColor={C.purple}
               />
             ) : (
               <WeekCalendar
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
                 markedDates={markedDates}
-                accentColor={ACCENT_COLOR}
+                accentColor={C.purple}
               />
             )}
           </Card.Content>
@@ -391,24 +371,24 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FAFAFE" },
-  container: { padding: 20, paddingBottom: 80 },
+  safe: { flex: 1, backgroundColor: C.bg },
+  container: { padding: S.xl, paddingBottom: 80 },
   title: {
     fontWeight: "800",
-    color: "#1A1A2E",
-    marginBottom: 20,
+    color: C.textPrimary,
+    marginBottom: S.xl,
     textAlign: "right",
   },
 
-  viewToggle: { marginBottom: 12 },
-  card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 16 },
+  viewToggle: { marginBottom: S.md },
+  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
   sectionTitle: {
     fontWeight: "700",
-    color: "#1A1A2E",
-    marginBottom: 8,
+    color: C.textPrimary,
+    marginBottom: S.sm,
     textAlign: "right",
   },
-  emptyText: { color: "#8E8BA8", marginBottom: 12, textAlign: "right" },
+  emptyText: { color: C.textSecondary, marginBottom: S.md, textAlign: "right" },
 
   // Event row
   eventRow: {
@@ -416,48 +396,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#F0EEFF",
+    borderBottomColor: C.border,
   },
   eventStripe: {
     width: 4,
     height: 36,
     borderRadius: 2,
-    marginEnd: 12,
-    marginStart: 4,
+    marginEnd: S.md,
+    marginStart: S.xs,
   },
   eventInfo: { flex: 1 },
   eventTitleRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    gap: 8,
+    gap: S.sm,
   },
-  eventTitle: { fontWeight: "600", color: "#1A1A2E", textAlign: "right" },
-  eventMetaRow: { flexDirection: RTL_ROW, alignItems: "center", gap: 8, marginTop: 2 },
-  eventTime: { color: "#6B6B8D", textAlign: "right" },
+  eventTitle: { fontWeight: "600", color: C.textPrimary, textAlign: "right" },
+  eventMetaRow: { flexDirection: RTL_ROW, alignItems: "center", gap: S.sm, marginTop: 2 },
+  eventTime: { color: C.textSecondary, textAlign: "right" },
   assigneeBadge: {
     fontSize: 11,
     fontWeight: "600",
-    paddingHorizontal: 8,
+    paddingHorizontal: S.sm,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: R.sm,
     overflow: "hidden",
   },
   oneTimeBadge: {
     fontSize: 9,
-    color: "#FFA726",
-    backgroundColor: "#FFA72622",
+    color: C.amber,
+    backgroundColor: C.amber + "22",
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: R.sm,
     overflow: "hidden",
     fontWeight: "600",
   },
 
   fab: {
     position: "absolute",
-    left: 20,
-    bottom: 24,
-    borderRadius: 16,
-    backgroundColor: "#6C63FF",
+    left: S.xl,
+    bottom: S.xl,
+    borderRadius: R.lg,
+    backgroundColor: C.purple,
   },
 });

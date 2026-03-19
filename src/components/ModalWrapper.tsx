@@ -7,6 +7,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import { C, R, S, SHADOW } from "@src/ui/tokens";
 
 interface Props {
   visible: boolean;
@@ -21,7 +22,6 @@ export default function ModalWrapper({ visible, onDismiss, children }: Props) {
     <View
       style={[
         styles.overlay,
-        // "fixed" isn't a valid RN value but works on web via react-native-web
         Platform.OS === "web" && ({ position: "fixed" } as any),
       ]}
     >
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.36)",
   },
   center: {
     width: "100%",
@@ -67,16 +67,12 @@ const styles = StyleSheet.create({
     pointerEvents: "box-none",
   },
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: C.surface,
     width: "90%",
     maxWidth: 480,
     maxHeight: "85%",
-    padding: 24,
-    borderRadius: 16,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    padding: S.xl,
+    borderRadius: R.lg,
+    ...SHADOW.lg,
   },
 });

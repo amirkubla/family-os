@@ -34,6 +34,8 @@ import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, blockTypeLabel } from "@src/i18n";
 import { RTL_ROW } from "@src/ui/rtl";
+import { C, R, S } from "@src/ui/tokens";
+import { TYPE_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
@@ -43,12 +45,6 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const TYPE_COLORS: Record<BlockType, string> = {
-  school: "#6C63FF",
-  hobby: "#FF6B6B",
-  other: "#4ECDC4",
-};
 
 function BlockRow({
   block,
@@ -110,7 +106,7 @@ export default function KidScheduleScreen() {
 
   const navigation = useNavigation();
   const kid = storeKids.find((k) => k.id === kidId);
-  const kidColor = kid?.color ?? "#6C63FF";
+  const kidColor = kid?.color ?? C.purple;
 
   // Set header options once
   useLayoutEffect(() => {
@@ -127,7 +123,6 @@ export default function KidScheduleScreen() {
   // Calendar state
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
   const selectedDow = dayOfWeekFromYMD(selectedDate);
-  // Shows both recurring blocks for this DOW and one-time events on this exact date
   const dayBlocks = useKidBlocksForDate(kidId!, selectedDate, selectedDow);
 
   // Template — all recurring blocks grouped by day
@@ -184,7 +179,6 @@ export default function KidScheduleScreen() {
   // Build markedDates for calendar
   const markedDates = useMemo(() => {
     const marks: Record<string, { dotColor: string }> = {};
-    // Recurring blocks: mark 60 days around today for days-of-week that have blocks
     const now = new Date();
     for (let offset = -30; offset <= 30; offset++) {
       const d = new Date(now);
@@ -195,11 +189,8 @@ export default function KidScheduleScreen() {
         marks[ymd] = { dotColor: kidColor };
       }
     }
-    // One-time events: mark their specific dates
     for (const b of oneTimeBlocks) {
-      if (b.date) {
-        marks[b.date] = { dotColor: kidColor };
-      }
+      if (b.date) marks[b.date] = { dotColor: kidColor };
     }
     return marks;
   }, [blocksByDay, oneTimeBlocks, kidColor]);
@@ -337,23 +328,23 @@ export default function KidScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FAFAFE" },
-  container: { padding: 20, paddingBottom: 80 },
+  safe: { flex: 1, backgroundColor: C.bg },
+  container: { padding: S.xl, paddingBottom: 80 },
 
   accentBar: {
-    borderRadius: 12,
+    borderRadius: R.md,
     padding: 14,
-    marginBottom: 16,
+    marginBottom: S.lg,
     alignItems: "center",
   },
   accentText: { fontSize: 18, fontWeight: "800", textAlign: "center" },
 
-  tabs: { marginBottom: 16 },
+  tabs: { marginBottom: S.lg },
 
-  card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 16 },
+  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
 
-  sectionTitle: { fontWeight: "700", color: "#1A1A2E", marginBottom: 8, textAlign: "right" },
-  emptyText: { color: "#8E8BA8", marginBottom: 12, textAlign: "right" },
+  sectionTitle: { fontWeight: "700", color: C.textPrimary, marginBottom: S.sm, textAlign: "right" },
+  emptyText: { color: C.textSecondary, marginBottom: S.md, textAlign: "right" },
 
   // Block row
   blockRow: {
@@ -361,65 +352,65 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#F0EEFF",
+    borderBottomColor: C.border,
     borderRadius: 10,
-    paddingHorizontal: 4,
+    paddingHorizontal: S.xs,
     ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
   },
   blockRowHover: {
-    backgroundColor: "#DBEAFE",
+    backgroundColor: C.hoverBg,
   },
   blockStripe: {
     width: 4,
     height: 36,
     borderRadius: 2,
-    marginEnd: 12,
-    marginStart: 4,
+    marginEnd: S.md,
+    marginStart: S.xs,
   },
   blockInfo: { flex: 1 },
   blockTitleRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    gap: 8,
+    gap: S.sm,
   },
-  blockTitle: { fontWeight: "600", color: "#1A1A2E", textAlign: "right" },
-  blockTime: { color: "#6B6B8D", marginTop: 2, textAlign: "right" },
-  typeChip: { borderRadius: 10, marginStart: 8, marginEnd: 4 },
+  blockTitle: { fontWeight: "600", color: C.textPrimary, textAlign: "right" },
+  blockTime: { color: C.textSecondary, marginTop: 2, textAlign: "right" },
+  typeChip: { borderRadius: 10, marginStart: S.sm, marginEnd: S.xs },
   oneTimeBadge: {
     fontSize: 9,
-    color: "#FFA726",
-    backgroundColor: "#FFA72622",
+    color: C.amber,
+    backgroundColor: C.amber + "22",
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: R.sm,
     overflow: "hidden",
     fontWeight: "600",
   },
 
   // Template
   templateDay: {
-    marginBottom: 12,
+    marginBottom: S.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E0DFF5",
-    paddingBottom: 8,
+    borderBottomColor: C.border,
+    paddingBottom: S.sm,
   },
   templateHeader: {
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
     borderRadius: 10,
-    paddingHorizontal: 4,
+    paddingHorizontal: S.xs,
     ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
   },
   templateHeaderHover: {
-    backgroundColor: "#F0EEFF",
+    backgroundColor: C.hoverBg,
   },
-  templateDayName: { fontWeight: "700", color: "#1A1A2E", textAlign: "right" },
+  templateDayName: { fontWeight: "700", color: C.textPrimary, textAlign: "right" },
 
   fab: {
     position: "absolute",
-    left: 20,
-    bottom: 24,
-    borderRadius: 16,
+    left: S.xl,
+    bottom: S.xl,
+    borderRadius: R.lg,
   },
 });

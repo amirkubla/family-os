@@ -32,12 +32,8 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t, statusLabel } from "@src/i18n";
 import FamilyBadge from "@src/components/FamilyBadge";
 import { RTL_ROW } from "@src/ui/rtl";
-
-const STATUS_COLORS: Record<string, string> = {
-  idea: "#8E8BA8",
-  in_progress: "#6C63FF",
-  done: "#4ECDC4",
-};
+import { C, R, S } from "@src/ui/tokens";
+import { STATUS_COLORS } from "@src/ui/semanticColors";
 
 // ---------------------------------------------------------------------------
 // ChoreRow — reusable row for both sections
@@ -87,7 +83,7 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
       <IconButton
         icon={chore.selectedForToday ? "white-balance-sunny" : "white-balance-sunny"}
         size={18}
-        iconColor={chore.selectedForToday ? "#FFA726" : "#D0D0D0"}
+        iconColor={chore.selectedForToday ? C.amber : C.border}
         onPress={() => toggleChoreSelectedForTodayRemote(chore.id)}
       />
       <IconButton
@@ -451,18 +447,18 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FAFAFE" },
-  container: { padding: 20, paddingBottom: 40 },
-  title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 20, textAlign: "right" },
-  card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 20 },
-  cardTitle: { fontWeight: "700", color: "#1A1A2E", flex: 1, textAlign: "right" },
+  safe: { flex: 1, backgroundColor: C.bg },
+  container: { padding: S.xl, paddingBottom: 40 },
+  title: { fontWeight: "800", color: C.textPrimary, marginBottom: S.xl, textAlign: "right" },
+  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.xl },
+  cardTitle: { fontWeight: "700", color: C.textPrimary, flex: 1, textAlign: "right" },
   sectionHeader: {
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 4,
+    marginBottom: S.xs,
   },
-  emptyText: { color: "#6B6B8D", marginBottom: 4, textAlign: "right" },
+  emptyText: { color: C.textSecondary, marginBottom: S.xs, textAlign: "right" },
 
   // Kids
   kidsRow: {
@@ -475,7 +471,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 12,
+    borderRadius: R.md,
     borderWidth: 1,
     gap: 6,
   },
@@ -489,65 +485,65 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    paddingHorizontal: S.xs,
+    borderRadius: R.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#F0EEFF",
+    borderBottomColor: C.border,
   },
-  noteRowHover: { backgroundColor: "#DBEAFE" },
+  noteRowHover: { backgroundColor: C.hoverBg },
   noteContent: { flex: 1 },
   noteTitle: { fontWeight: "600", textAlign: "right" },
-  noteBody: { color: "#6B6B8D", marginTop: 2, textAlign: "right" },
+  noteBody: { color: C.textSecondary, marginTop: 2, textAlign: "right" },
 
   // Chores
   subSectionLabel: {
-    color: "#6B6B8D",
+    color: C.textSecondary,
     fontWeight: "600",
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: S.sm,
+    marginBottom: S.xs,
     textAlign: "right",
   },
-  choreDivider: { marginVertical: 8 },
+  choreDivider: { marginVertical: S.sm },
   choreRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
     paddingVertical: 2,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    paddingHorizontal: S.xs,
+    borderRadius: R.sm,
   },
-  choreRowHover: { backgroundColor: "#DBEAFE" },
-  choreText: { flex: 1, marginStart: 4 },
+  choreRowHover: { backgroundColor: C.hoverBg },
+  choreText: { flex: 1, marginStart: S.xs },
   choreTitle: { textAlign: "right" },
-  choreDone: { textDecorationLine: "line-through", color: "#8E8BA8", textAlign: "right" },
-  assignee: { color: "#6B6B8D", textAlign: "right" },
+  choreDone: { textDecorationLine: "line-through", color: C.textSecondary, textAlign: "right" },
+  assignee: { color: C.textSecondary, textAlign: "right" },
 
   // Projects
   projectRow: {
     flexDirection: RTL_ROW,
     alignItems: "flex-start",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    paddingVertical: S.sm,
+    paddingHorizontal: S.xs,
+    borderRadius: R.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#F0EEFF",
+    borderBottomColor: C.border,
   },
-  projectRowHover: { backgroundColor: "#DBEAFE" },
+  projectRowHover: { backgroundColor: C.hoverBg },
   projectContent: { flex: 1 },
   projectTop: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    gap: 8,
+    gap: S.sm,
   },
   projectTitle: { flex: 1, textAlign: "right" },
   statusBadge: {
     fontSize: 11,
     fontWeight: "600",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: S.xs,
     borderRadius: 10,
     overflow: "hidden",
   },
-  projDesc: { color: "#6B6B8D", marginTop: 4, textAlign: "right" },
-  progressBar: { height: 5, borderRadius: 3, marginTop: 8 },
-  progressLabel: { color: "#8E8BA8", marginTop: 2, textAlign: "right" },
+  projDesc: { color: C.textSecondary, marginTop: S.xs, textAlign: "right" },
+  progressBar: { height: 5, borderRadius: 3, marginTop: S.sm },
+  progressLabel: { color: C.textSecondary, marginTop: 2, textAlign: "right" },
 });

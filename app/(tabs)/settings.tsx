@@ -15,6 +15,7 @@ import type { FamilyMember } from "@src/models/familyMember";
 import type { Kid } from "@src/models/kid";
 import { t, memberRoleLabel } from "@src/i18n";
 import { RTL_ROW } from "@src/ui/rtl";
+import { C, R, S } from "@src/ui/tokens";
 
 // ── Member row ──
 
@@ -36,7 +37,7 @@ function MemberRow({
       <View
         style={[
           styles.emojiCircle,
-          { backgroundColor: (member.color ?? "#6C63FF") + "22" },
+          { backgroundColor: (member.color ?? C.purple) + "22" },
         ]}
       >
         <Text style={styles.emoji}>{member.avatarEmoji ?? "👤"}</Text>
@@ -84,7 +85,7 @@ function KidRow({
       <View
         style={[
           styles.emojiCircle,
-          { backgroundColor: (kid.color ?? "#6C63FF") + "22" },
+          { backgroundColor: (kid.color ?? C.purple) + "22" },
         ]}
       >
         <Text style={styles.emoji}>{kid.emoji || "👶"}</Text>
@@ -313,6 +314,7 @@ export default function SettingsScreen() {
             )}
           </Card.Content>
         </Card>
+
         {/* ── Account card ── */}
         <Card style={styles.card} mode="elevated">
           <Card.Content>
@@ -334,7 +336,7 @@ export default function SettingsScreen() {
               mode="outlined"
               onPress={logout}
               icon="logout"
-              textColor="#FF6B6B"
+              textColor={C.red}
               style={styles.logoutBtn}
             >
               {t("auth.logout")}
@@ -365,35 +367,35 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FAFAFE" },
-  container: { padding: 20, paddingBottom: 40 },
+  safe: { flex: 1, backgroundColor: C.bg },
+  container: { padding: S.xl, paddingBottom: 40 },
   title: {
     fontWeight: "800",
-    color: "#1A1A2E",
-    marginBottom: 16,
+    color: C.textPrimary,
+    marginBottom: S.lg,
     textAlign: "right",
   },
-  card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 24 },
+  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.xl },
   sectionHeader: {
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: S.sm,
   },
-  sectionTitleWrap: { flex: 1, marginBottom: 8 },
-  cardTitle: { fontWeight: "700", color: "#1A1A2E", textAlign: "right" },
-  subtitle: { color: "#8E8BA8", textAlign: "right", marginTop: 2 },
-  emptyText: { color: "#6B6B8D", textAlign: "right", marginVertical: 8 },
+  sectionTitleWrap: { flex: 1, marginBottom: S.sm },
+  cardTitle: { fontWeight: "700", color: C.textPrimary, textAlign: "right" },
+  subtitle: { color: C.textSecondary, textAlign: "right", marginTop: 2 },
+  emptyText: { color: C.textSecondary, textAlign: "right", marginVertical: S.sm },
   memberRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: S.sm,
   },
   archivedRow: { opacity: 0.5 },
   rowActions: { flexDirection: "row" },
-  memberInfo: { flex: 1, marginHorizontal: 8 },
-  memberName: { fontWeight: "600", textAlign: "right", color: "#1A1A2E" },
-  memberRole: { color: "#8E8BA8", textAlign: "right" },
+  memberInfo: { flex: 1, marginHorizontal: S.sm },
+  memberName: { fontWeight: "600", textAlign: "right", color: C.textPrimary },
+  memberRole: { color: C.textSecondary, textAlign: "right" },
   archivedText: { textDecorationLine: "line-through" },
   emojiCircle: {
     width: 44,
@@ -403,12 +405,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emoji: { fontSize: 24 },
-  divider: { marginVertical: 12 },
-  archivedHeaderRow: { paddingVertical: 4 },
-  archivedHeader: { color: "#8E8BA8", textAlign: "right" },
-  nameInput: { textAlign: "right", writingDirection: "rtl", backgroundColor: "#FFFFFF" },
+  divider: { marginVertical: S.md },
+  archivedHeaderRow: { paddingVertical: S.xs },
+  archivedHeader: { color: C.textSecondary, textAlign: "right" },
+  nameInput: { textAlign: "right", writingDirection: "rtl", backgroundColor: C.surface },
   nameInputContent: { textAlign: "right" },
-  accountInfo: { marginBottom: 12 },
-  accountText: { textAlign: "right", writingDirection: "rtl", color: "#1A1A2E", marginBottom: 4 },
-  logoutBtn: { borderColor: "#FF6B6B44", borderRadius: 12 },
+  accountInfo: { marginBottom: S.md },
+  accountText: { textAlign: "right", writingDirection: "rtl", color: C.textPrimary, marginBottom: S.xs },
+  logoutBtn: { borderColor: C.red + "44", borderRadius: R.md },
 });

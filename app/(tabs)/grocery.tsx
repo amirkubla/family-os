@@ -20,9 +20,10 @@ import {
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
-import type { ShoppingCategory } from "@src/models/grocery";
+import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import { SHOPPING_CATEGORIES } from "@src/models/grocery";
 import { RTL_ROW } from "@src/ui/rtl";
+import { C, R, S } from "@src/ui/tokens";
 
 const EMPTY_KEYS: Record<ShoppingCategory, string> = {
   grocery: "grocery.emptyGrocery",
@@ -33,6 +34,7 @@ const EMPTY_KEYS: Record<ShoppingCategory, string> = {
 export default function GroceryScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ShoppingCategory>("grocery");
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
@@ -69,7 +71,7 @@ export default function GroceryScreen() {
             <Button
               compact
               onPress={() => clearAllCategoryRemote(selectedCategory)}
-              textColor="#FF6B6B"
+              textColor={C.red}
               icon="delete-sweep-outline"
             >
               {t("grocery.clearAll")}
@@ -114,6 +116,11 @@ export default function GroceryScreen() {
                   </View>
                 </View>
                 <IconButton
+                  icon="pencil-outline"
+                  size={18}
+                  onPress={() => setEditingItem(item)}
+                />
+                <IconButton
                   icon="trash-can-outline"
                   size={18}
                   onPress={() => deleteGroceryRemote(item.id)}
@@ -131,7 +138,7 @@ export default function GroceryScreen() {
                   <Button
                     compact
                     onPress={() => clearBoughtRemote(selectedCategory)}
-                    textColor="#FF6B6B"
+                    textColor={C.red}
                   >
                     {t("grocery.clear")}
                   </Button>
@@ -158,6 +165,11 @@ export default function GroceryScreen() {
                       </Text>
                     </View>
                     <IconButton
+                      icon="pencil-outline"
+                      size={18}
+                      onPress={() => setEditingItem(item)}
+                    />
+                    <IconButton
                       icon="trash-can-outline"
                       size={18}
                       onPress={() => deleteGroceryRemote(item.id)}
@@ -181,52 +193,53 @@ export default function GroceryScreen() {
       </ScrollView>
 
       <GroceryAddModal
-        visible={modalOpen}
-        onDismiss={() => setModalOpen(false)}
+        visible={modalOpen || !!editingItem}
+        onDismiss={() => { setModalOpen(false); setEditingItem(null); }}
         defaultShoppingCategory={selectedCategory}
+        editItem={editingItem}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FAFAFE" },
-  container: { padding: 20, paddingBottom: 40 },
-  title: { fontWeight: "800", color: "#1A1A2E", marginBottom: 16, textAlign: "right" },
-  segments: { marginBottom: 12 },
+  safe: { flex: 1, backgroundColor: C.bg },
+  container: { padding: S.xl, paddingBottom: 40 },
+  title: { fontWeight: "800", color: C.textPrimary, marginBottom: S.lg, textAlign: "right" },
+  segments: { marginBottom: S.md },
   countRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: S.md,
   },
-  itemCount: { color: "#8E8BA8", textAlign: "right" },
-  card: { borderRadius: 16, backgroundColor: "#FFFFFF", marginBottom: 24 },
-  cardBody: { color: "#6B6B8D", textAlign: "right" },
+  itemCount: { color: C.textSecondary, textAlign: "right" },
+  card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.xl },
+  cardBody: { color: C.textSecondary, textAlign: "right" },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    paddingVertical: S.xs,
+    paddingHorizontal: S.xs,
+    borderRadius: R.sm,
   },
-  rowHover: { backgroundColor: "#DBEAFE" },
-  rowText: { flex: 1, marginStart: 4 },
+  rowHover: { backgroundColor: C.hoverBg },
+  rowText: { flex: 1, marginStart: S.xs },
   itemTitle: { textAlign: "right" },
   meta: { flexDirection: RTL_ROW, alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" },
-  chip: { backgroundColor: "#F0EEFF" },
+  chip: { backgroundColor: C.border },
   chipText: { fontSize: 11, lineHeight: 16 },
-  qty: { color: "#6B6B8D", textAlign: "right" },
-  divider: { marginVertical: 12 },
+  qty: { color: C.textSecondary, textAlign: "right" },
+  divider: { marginVertical: S.md },
   boughtHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: S.xs,
   },
-  boughtLabel: { color: "#8E8BA8", textAlign: "right" },
+  boughtLabel: { color: C.textSecondary, textAlign: "right" },
   boughtRow: { opacity: 0.5 },
-  boughtText: { textDecorationLine: "line-through", color: "#8E8BA8", textAlign: "right" },
-  addButton: { borderRadius: 14, backgroundColor: "#5B9CF5" },
+  boughtText: { textDecorationLine: "line-through", color: C.textSecondary, textAlign: "right" },
+  addButton: { borderRadius: R.lg, backgroundColor: C.purple },
   addButtonContent: { paddingVertical: 6 },
 });
