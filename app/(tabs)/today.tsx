@@ -164,7 +164,7 @@ export default function TodayScreen() {
   const activeKids = kids.filter((k) => k.isActive);
 
   const unboughtCount = grocery.filter((g) => !g.isBought).length;
-  const undoneChores = chores.filter((c) => !c.done).length;
+  const undoneChores = chores.filter((c) => c.selectedForToday && !c.done).length;
   const activeProjectsList = useMemo(
     () => projects.filter((p) => p.status === "in_progress"),
     [projects],

@@ -59,6 +59,7 @@ function BlockRow({
   onDelete: () => void;
 }) {
   const color = block.color ?? kidColor;
+  const typeColor = TYPE_COLORS[block.type] ?? C.purple;
   return (
     <Pressable
       style={({ hovered }: any) => [
@@ -84,10 +85,10 @@ function BlockRow({
       </View>
       <Chip
         compact
-        textStyle={{ fontSize: 10, color: TYPE_COLORS[block.type] }}
+        textStyle={{ fontSize: 10, color: typeColor }}
         style={[
           styles.typeChip,
-          { backgroundColor: TYPE_COLORS[block.type] + "22" },
+          { backgroundColor: typeColor + "22" },
         ]}
       >
         {blockTypeLabel(block.type)}
