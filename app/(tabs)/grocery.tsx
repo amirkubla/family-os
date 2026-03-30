@@ -26,6 +26,35 @@ import { SHOPPING_CATEGORIES } from "@src/models/grocery";
 import { RTL_ROW } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 
+/** Emoji per subcategory — keyed by English key AND Hebrew label for compat with legacy data. */
+const SUBCATEGORY_EMOJI: Record<string, string> = {
+  // Grocery — English keys
+  Produce: "🥬", Dairy: "🧀", Meat: "🥩", Bakery: "🥖",
+  Frozen: "🧊", Snacks: "🍿", Beverages: "🥤",
+  Canned: "🥫", Spices: "🌶️", Fish: "🐟",
+  // Grocery — Hebrew labels (legacy seed data)
+  "ירקות ופירות": "🥬", "ירקות": "🥬", "פירות": "🥬",
+  "מוצרי חלב": "🧀", "בשר": "🥩", "בשר ועוף": "🥩",
+  "מאפים": "🥖", "קפואים": "🧊", "חטיפים": "🍿",
+  "משקאות": "🥤", "שימורים": "🥫", "תבלינים ורטבים": "🌶️",
+  "שמנים": "🌶️", "דגים": "🐟", "קטניות ודגנים": "🥫",
+  // Health — English keys
+  Medications: "💊", Vitamins: "💪", PersonalCare: "🧴", BabyCare: "🍼",
+  FirstAid: "🩹", Skincare: "✨", HairCare: "💇",
+  // Health — Hebrew labels
+  "תרופות": "💊", "ויטמינים": "💪", "טיפוח אישי": "🧴",
+  "תינוקות": "🍼", "עזרה ראשונה": "🩹", "טיפוח עור": "✨", "טיפוח שיער": "💇",
+  // Home — English keys
+  Cleaning: "🧹", Laundry: "👕", Kitchen: "🍳", Bathroom: "🚿",
+  PaperGoods: "🧻", Tools: "🔧", Decor: "🖼️",
+  // Home — Hebrew labels
+  "ניקיון": "🧹", "כביסה": "👕", "מטבח": "🍳", "אמבטיה": "🚿",
+  "מוצרי נייר": "🧻", "כלי עבודה": "🔧", "קישוט ועיצוב": "🖼️",
+  // Shared
+  Household: "🏠", Other: "📦", "מוצרי בית": "🏠", "אחר": "📦",
+  "ארוחת בוקר": "🥣",
+};
+
 const EMPTY_KEYS: Record<ShoppingCategory, string> = {
   grocery: "grocery.emptyGrocery",
   health: "grocery.emptyHealth",
@@ -108,7 +137,7 @@ export default function GroceryScreen() {
                   <View style={styles.meta}>
                     {item.subcategory ? (
                       <Chip compact textStyle={styles.chipText} style={styles.chip}>
-                        {groceryCategoryLabel(item.subcategory)}
+                        {SUBCATEGORY_EMOJI[item.subcategory] ?? ""} {groceryCategoryLabel(item.subcategory)}
                       </Chip>
                     ) : null}
                     {item.qty ? (

@@ -27,6 +27,9 @@ export const SUBCATEGORIES: Record<ShoppingCategory, readonly string[]> = {
     "Frozen",
     "Snacks",
     "Beverages",
+    "Canned",
+    "Spices",
+    "Fish",
     "Other",
   ],
   health: [

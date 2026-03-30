@@ -232,6 +232,9 @@ const he = {
     Frozen: "קפואים",
     Snacks: "חטיפים",
     Beverages: "משקאות",
+    Canned: "שימורים",
+    Spices: "תבלינים ורטבים",
+    Fish: "דגים",
     // Health (פארם)
     Medications: "תרופות",
     Vitamins: "ויטמינים",

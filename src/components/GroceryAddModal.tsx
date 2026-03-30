@@ -7,6 +7,7 @@ import { addGroceryRemote, updateGroceryRemote } from "@src/lib/sync/remoteCrud"
 import type { GroceryItem } from "@src/models/grocery";
 import { t, groceryCategoryLabel } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
+import { C, S } from "@src/ui/tokens";
 import ModalWrapper from "./ModalWrapper";
 
 interface Props {
@@ -16,6 +17,12 @@ interface Props {
   editItem?: GroceryItem | null;
 }
 
+const CATEGORY_ICON: Record<ShoppingCategory, string> = {
+  grocery: "🛒",
+  health: "💊",
+  home: "🏠",
+};
+
 export default function GroceryAddModal({
   visible,
   onDismiss,
@@ -23,7 +30,8 @@ export default function GroceryAddModal({
   editItem,
 }: Props) {
   const isEditing = !!editItem;
-  const subcats = SUBCATEGORIES[isEditing ? editItem.shoppingCategory : defaultShoppingCategory];
+  const shoppingCat = isEditing ? editItem.shoppingCategory : defaultShoppingCategory;
+  const subcats = SUBCATEGORIES[shoppingCat];
 
   const [title, setTitle] = useState("");
   const [subcategory, setSubcategory] = useState(subcats[0]);
@@ -68,48 +76,90 @@ export default function GroceryAddModal({
 
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
-      <Text style={MS.heading}>
-        {isEditing ? t("groceryModal.editTitle") : t("groceryModal.title")}
-      </Text>
-
-      <TextInput
-        placeholder={t("groceryModal.itemName")}
-        value={title}
-        onChangeText={setTitle}
-        mode="outlined"
-        style={MS.input}
-        contentStyle={MS.inputContent}
-        autoFocus
-      />
-
-      <Text style={MS.label}>{t("groceryModal.category")}</Text>
-      <View style={MS.chipRow}>
-        {subcats.map((cat) => (
-          <Button
-            key={cat}
-            mode={subcategory === cat ? "contained" : "outlined"}
-            compact
-            onPress={() => setSubcategory(cat)}
-            style={MS.chip}
-            labelStyle={MS.chipLabel}
-          >
-            {groceryCategoryLabel(cat)}
-          </Button>
-        ))}
+      {/* ── Header ── */}
+      <View style={[MS.headerBar, { marginTop: S.sm, marginBottom: S.md }]}>
+        <View style={MS.headerIconWrap}>
+          <Text style={MS.headerIcon}>{CATEGORY_ICON[shoppingCat]}</Text>
+        </View>
+        <Text style={MS.heading}>
+          {isEditing ? t("groceryModal.editTitle") : t("groceryModal.title")}
+        </Text>
       </View>
 
-      <TextInput
-        placeholder={t("groceryModal.qty")}
-        value={qty}
-        onChangeText={setQty}
-        mode="outlined"
-        style={MS.input}
-        contentStyle={MS.inputContent}
-      />
+      {/* ── Product details ── */}
+      <View style={MS.section}>
+        <View style={MS.sectionHeader}>
+          <Text style={MS.sectionIcon}>✏️</Text>
+          <Text style={MS.sectionLabel}>{t("groceryModal.itemName")}</Text>
+        </View>
+        <TextInput
+          placeholder={t("groceryModal.itemName")}
+          value={title}
+          onChangeText={setTitle}
+          mode="outlined"
+          style={MS.input}
+          contentStyle={MS.inputContent}
+          autoFocus
+        />
 
-      <View style={MS.actions}>
-        <Button onPress={handleDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" onPress={handleSubmit} disabled={!title.trim()}>
+        <View style={MS.sectionHeader}>
+          <Text style={MS.sectionIcon}>📦</Text>
+          <Text style={MS.sectionLabel}>{t("groceryModal.qty")}</Text>
+        </View>
+        <TextInput
+          placeholder={t("groceryModal.qty")}
+          value={qty}
+          onChangeText={setQty}
+          mode="outlined"
+          style={[MS.input, { marginBottom: 0 }]}
+          contentStyle={MS.inputContent}
+        />
+      </View>
+
+      {/* ── Category ── */}
+      <View style={MS.section}>
+        <View style={MS.sectionHeader}>
+          <Text style={MS.sectionIcon}>🏷️</Text>
+          <Text style={MS.sectionLabel}>{t("groceryModal.category")}</Text>
+        </View>
+        <View style={[MS.chipRow, { marginBottom: 0 }]}>
+          {subcats.map((cat) => {
+            const sel = subcategory === cat;
+            return (
+              <Button
+                key={cat}
+                mode={sel ? "contained" : "outlined"}
+                compact
+                onPress={() => setSubcategory(cat)}
+                style={MS.chip}
+                labelStyle={MS.chipLabel}
+                buttonColor={sel ? C.selectBg : undefined}
+                textColor={sel ? C.selectText : C.textSecondary}
+              >
+                {groceryCategoryLabel(cat)}
+              </Button>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* ── Actions ── */}
+      <View style={[MS.actions, { marginTop: S.md }]}>
+        <Button
+          mode="outlined"
+          onPress={handleDismiss}
+          style={MS.cancelBtn}
+          labelStyle={MS.cancelLabel}
+        >
+          {t("cancel")}
+        </Button>
+        <Button
+          mode="contained"
+          onPress={handleSubmit}
+          disabled={!title.trim()}
+          style={MS.saveBtn}
+          labelStyle={MS.saveBtnLabel}
+        >
           {isEditing ? t("save") : t("add")}
         </Button>
       </View>
