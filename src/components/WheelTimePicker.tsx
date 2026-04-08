@@ -90,6 +90,11 @@ export default function WheelTimePicker({
     onChange(`${hh}:${mm}`);
   }, [onChange, minutes]);
 
+  // On web, onMomentumScrollEnd never fires and onScrollEndDrag fires before
+  // snapToInterval settles, so we debounce onScroll to capture the final position.
+  const hourDebounce = useRef<ReturnType<typeof setTimeout>>();
+  const minuteDebounce = useRef<ReturnType<typeof setTimeout>>();
+
   const onHourScroll = useCallback(
     (e: { nativeEvent: { contentOffset: { y: number } } }) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
@@ -114,6 +119,22 @@ export default function WheelTimePicker({
     [emitChange, minutes.length],
   );
 
+  const onHourScrollDebounced = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      clearTimeout(hourDebounce.current);
+      hourDebounce.current = setTimeout(() => onHourScroll(e), 100);
+    },
+    [onHourScroll],
+  );
+
+  const onMinuteScrollDebounced = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      clearTimeout(minuteDebounce.current);
+      minuteDebounce.current = setTimeout(() => onMinuteScroll(e), 100);
+    },
+    [onMinuteScroll],
+  );
+
   return (
     <View style={styles.container}>
       {/* Highlight band — sits behind the center row */}
@@ -125,6 +146,7 @@ export default function WheelTimePicker({
         data={HOURS}
         initialIndex={hourIndex}
         onScrollEnd={onHourScroll}
+        onScroll={Platform.OS === "web" ? onHourScrollDebounced : undefined}
         formatItem={(v) => String(v).padStart(2, "0")}
       />
 
@@ -137,6 +159,7 @@ export default function WheelTimePicker({
         data={minutes}
         initialIndex={minuteIndex}
         onScrollEnd={onMinuteScroll}
+        onScroll={Platform.OS === "web" ? onMinuteScrollDebounced : undefined}
         formatItem={(v) => String(v).padStart(2, "0")}
       />
     </View>
@@ -151,11 +174,12 @@ interface WheelColumnProps {
   data: number[];
   initialIndex: number;
   onScrollEnd: (e: { nativeEvent: { contentOffset: { y: number } } }) => void;
+  onScroll?: (e: { nativeEvent: { contentOffset: { y: number } } }) => void;
   formatItem: (value: number) => string;
 }
 
 const WheelColumn = React.forwardRef<FlatList, WheelColumnProps>(
-  ({ data, initialIndex, onScrollEnd, formatItem }, ref) => {
+  ({ data, initialIndex, onScrollEnd, onScroll, formatItem }, ref) => {
     const getItemLayout = useCallback(
       (_: unknown, index: number) => ({
         length: ITEM_HEIGHT,
@@ -188,6 +212,7 @@ const WheelColumn = React.forwardRef<FlatList, WheelColumnProps>(
         nestedScrollEnabled
         onMomentumScrollEnd={onScrollEnd}
         onScrollEndDrag={onScrollEnd}
+        {...(onScroll && { onScroll, scrollEventThrottle: 16 })}
         style={styles.column}
         contentContainerStyle={{
           paddingTop: PAD_ITEMS * ITEM_HEIGHT,

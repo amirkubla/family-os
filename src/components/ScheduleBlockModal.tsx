@@ -14,6 +14,7 @@ import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import { BLOCK_TYPES } from "@src/models/schedule";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S } from "@src/ui/tokens";
+import { RTL_ROW } from "@src/ui/rtl";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, blockTypeLabel } from "@src/i18n";
@@ -99,6 +100,7 @@ interface Props {
     date?: string;
     reminders?: number[];
   }) => void;
+  onDelete?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,6 +114,7 @@ export default function ScheduleBlockModal({
   defaultDaysOfWeek = [1],
   defaultDate,
   onSubmit,
+  onDelete,
 }: Props) {
   const kids = useFamilyStore((s) => s.kids);
   const editKid = editBlock ? kids.find((k) => k.id === editBlock.kidId) : undefined;
@@ -421,6 +424,23 @@ export default function ScheduleBlockModal({
           })}
         </View>
       </View>
+
+      {/* ── Delete ── */}
+      {editBlock && onDelete && (
+        <Button
+          mode="outlined"
+          onPress={() => {
+            onDelete();
+            onDismiss();
+          }}
+          textColor={C.red}
+          icon="delete-outline"
+          style={{ borderColor: C.red + "44", borderRadius: 12, marginTop: S.md }}
+          contentStyle={{ flexDirection: RTL_ROW }}
+        >
+          {t("eventModal.delete")}
+        </Button>
+      )}
 
       {/* ── Actions ── */}
       <View style={MS.actions}>

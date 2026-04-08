@@ -394,6 +394,7 @@ export default function CalendarScreen() {
         defaultStartTime={slotStartTime}
         defaultEndTime={slotEndTime}
         onSubmit={handleSubmit}
+        onDelete={editingEvent ? () => requestDelete(() => deleteFamilyEventRemote(editingEvent.id)) : undefined}
       />
 
       <ScheduleBlockModal
@@ -410,6 +411,7 @@ export default function CalendarScreen() {
             updateScheduleBlockRemote(editingBlock.id, data);
           }
         }}
+        onDelete={editingBlock ? () => requestDelete(() => deleteScheduleBlockRemote(editingBlock.id)) : undefined}
       />
       <ConfirmDeleteModal
         visible={confirmVisible}

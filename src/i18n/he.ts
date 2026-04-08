@@ -180,6 +180,7 @@ const he = {
     dateRequired: "תאריך הוא שדה חובה",
     invalidDate: "תאריך לא תקין (YYYY-MM-DD)",
     reminders: "תזכורות",
+    delete: "מחיקת אירוע",
   },
 
   // ── Assignee type labels ──

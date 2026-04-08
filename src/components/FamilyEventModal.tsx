@@ -16,7 +16,8 @@ import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, assigneeTypeLabel } from "@src/i18n";
 import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
-import { C, S } from "@src/ui/tokens";
+import { C, S, R } from "@src/ui/tokens";
+import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
 import DatePicker, { formatDateHe } from "./DatePicker";
@@ -95,6 +96,7 @@ interface Props {
     date?: string;
     reminders?: number[];
   }) => void;
+  onDelete?: () => void;
 }
 
 export default function FamilyEventModal({
@@ -106,6 +108,7 @@ export default function FamilyEventModal({
   defaultStartTime,
   defaultEndTime,
   onSubmit,
+  onDelete,
 }: Props) {
   const familyMembers = useFamilyStore((s) => s.familyMembers);
   const kids = useFamilyStore((s) => s.kids);
@@ -452,7 +455,22 @@ export default function FamilyEventModal({
         </View>
       </View>
 
-      {/* ── Actions ── */}
+      {/* ── Delete ── */}
+      {editEvent && onDelete && (
+        <Button
+          mode="outlined"
+          onPress={() => {
+            onDelete();
+            onDismiss();
+          }}
+          textColor={C.red}
+          icon="delete-outline"
+          style={{ borderColor: C.red + "44", borderRadius: 12, marginTop: S.md }}
+          contentStyle={{ flexDirection: RTL_ROW }}
+        >
+          {t("eventModal.delete")}
+        </Button>
+      )}
       <View style={MS.actions}>
         <Button
           mode="outlined"
