@@ -219,6 +219,7 @@ export function apiToLocalFamilyMember(a: ApiFamilyMember): FamilyMember {
     role: (a.role ?? "other") as MemberRole,
     color: a.color ?? undefined,
     avatarEmoji: a.avatarEmoji ?? undefined,
+    userId: a.userId ?? undefined,
     isActive: a.isActive,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
@@ -232,6 +233,7 @@ export function localToApiFamilyMember(item: FamilyMember) {
     role: item.role,
     color: item.color ?? null,
     avatarEmoji: item.avatarEmoji ?? null,
+    userId: item.userId ?? null,
     isActive: item.isActive,
   };
 }

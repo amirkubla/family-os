@@ -31,6 +31,7 @@ import {
   localToApiScheduleBlock,
   localToApiFamilyMember,
   localToApiFamilyEvent,
+  apiToLocalFamilyMember,
 } from "../api/mappers";
 import type { GroceryItem } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
@@ -445,6 +446,17 @@ export function setFamilyMemberActiveRemote(id: string, isActive: boolean) {
     ),
     "Toggle family member active",
   );
+}
+
+/** Link the current user to a family member (claim "who am I"). */
+export async function claimFamilyMemberRemote(memberId: string): Promise<void> {
+  const fid = await getFamilyId();
+  const apiMember = await familyMembersApi.claim(fid, memberId);
+  // Update local store with the returned member (which now has userId set)
+  const local = apiToLocalFamilyMember(apiMember);
+  useFamilyStore.getState().updateFamilyMember(memberId, {
+    ...local,
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@ export interface FamilyMember {
   role: MemberRole;
   color?: string;
   avatarEmoji?: string;
+  userId?: string;
   isActive: boolean;
   createdAt: number;
   updatedAt: number;

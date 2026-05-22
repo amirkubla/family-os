@@ -22,6 +22,8 @@ export type AuthSession = {
 export type RegisterInput = {
   username: string;
   password: string;
+  /** Family surname for new families (ignored when joining via invite). */
+  familyName?: string;
   /** Optional code to join an existing family. */
   familyCode?: string;
   /** Optional family member ID to link this user to. */

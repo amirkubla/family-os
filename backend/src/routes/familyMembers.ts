@@ -36,6 +36,24 @@ familyMembersRoutes.patch("/:id", async (c) => {
   return c.json(row);
 });
 
+// POST /v1/family/:familyId/members/:id/claim — link current user to this member
+familyMembersRoutes.post("/:id/claim", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const memberId = c.req.param("id");
+  const user = c.get("user");
+
+  const member = await familyMembersRepo.getById(memberId);
+  if (!member || member.familyId !== familyId) {
+    return c.json({ error: "Not found" }, 404);
+  }
+  if (member.userId && member.userId !== user.sub) {
+    return c.json({ error: "Member already claimed by another user" }, 409);
+  }
+
+  const updated = await familyMembersRepo.update(memberId, { userId: user.sub });
+  return c.json(updated);
+});
+
 // DELETE /v1/family/:familyId/members/:id
 familyMembersRoutes.delete("/:id", async (c) => {
   const id = c.req.param("id");

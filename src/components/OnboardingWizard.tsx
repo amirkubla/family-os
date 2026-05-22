@@ -11,12 +11,14 @@ import {
 } from "react-native";
 import { Text, TextInput, Button, SegmentedButtons } from "react-native-paper";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useAuthStore } from "@src/auth/useAuthStore";
 import {
   addFamilyMemberRemote,
   addKidRemote,
   updateFamilyNameRemote,
   setFamilyMemberActiveRemote,
   setKidActiveRemote,
+  claimFamilyMemberRemote,
 } from "@src/lib/sync/remoteCrud";
 import { telegramApi } from "@src/lib/api/endpoints";
 import { getFamilyId } from "@src/lib/familyContext";
@@ -48,8 +50,19 @@ const KID_EMOJIS = [
 const TOTAL_STEPS = 4;
 
 export default function OnboardingWizard() {
-  const [step, setStep] = useState(1);
+  const familyName = useFamilyStore((s) => s.familyName);
   const setOnboardingComplete = useFamilyStore((s) => s.setOnboardingComplete);
+
+  // Skip step 1 if family name was already set during registration
+  // (i.e., it's not the username default — user explicitly provided a surname)
+  const hasRealFamilyName = familyName.length >= 2;
+  const firstStep = hasRealFamilyName ? 2 : 1;
+  const totalSteps = hasRealFamilyName ? TOTAL_STEPS - 1 : TOTAL_STEPS;
+
+  const [step, setStep] = useState(firstStep);
+
+  // Map visual dot position (1-based) from actual step
+  const dotPosition = hasRealFamilyName ? step - 1 : step;
 
   return (
     <View
@@ -65,14 +78,14 @@ export default function OnboardingWizard() {
         pointerEvents="box-none"
       >
         <View style={styles.container}>
-          <ProgressDots current={step} total={TOTAL_STEPS} />
+          <ProgressDots current={dotPosition} total={totalSteps} />
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             {step === 1 && <Step1FamilyName onNext={() => setStep(2)} />}
             {step === 2 && (
-              <Step2Members onNext={() => setStep(3)} onBack={() => setStep(1)} />
+              <Step2Members onNext={() => setStep(3)} onBack={() => setStep(firstStep === 2 ? 2 : 1)} />
             )}
             {step === 3 && (
               <Step3Kids onNext={() => setStep(4)} onBack={() => setStep(2)} />
@@ -163,6 +176,12 @@ function Step2Members({
   onBack: () => void;
 }) {
   const members = useFamilyStore((s) => s.familyMembers).filter((m) => m.isActive);
+  const currentUserId = useAuthStore((s) => s.session?.user.id);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(
+    // Pre-select if already linked
+    members.find((m) => m.userId === currentUserId)?.id ?? null,
+  );
+  const [claiming, setClaiming] = useState(false);
   const [showForm, setShowForm] = useState(members.length === 0);
   const [error, setError] = useState("");
 
@@ -191,10 +210,21 @@ function Step2Members({
     setError("");
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (members.length === 0) {
       setError(t("onboarding.atLeastOneMember"));
       return;
+    }
+    // Claim the selected member before proceeding
+    if (selectedMemberId) {
+      setClaiming(true);
+      try {
+        await claimFamilyMemberRemote(selectedMemberId);
+      } catch {
+        // Non-fatal — user can fix later in settings
+      } finally {
+        setClaiming(false);
+      }
     }
     onNext();
   };
@@ -296,9 +326,45 @@ function Step2Members({
 
       {error ? <Text style={[MS.error, { marginTop: S.sm }]}>{error}</Text> : null}
 
+      {/* "Who are you?" picker — shown once members exist */}
+      {members.length > 0 && (
+        <View style={styles.claimSection}>
+          <Text style={styles.claimTitle}>{t("auth.whoAreYou")}</Text>
+          <Text style={styles.claimSubtitle}>{t("auth.pickMember")}</Text>
+          <View style={styles.claimRow}>
+            {members.map((m) => {
+              const selected = selectedMemberId === m.id;
+              const memberColor = m.color ?? C.purple;
+              return (
+                <Pressable
+                  key={m.id}
+                  style={[
+                    styles.claimChip,
+                    {
+                      backgroundColor: selected ? memberColor + "20" : C.surface,
+                      borderColor: selected ? memberColor : C.border,
+                      borderWidth: selected ? 2 : 1,
+                    },
+                  ]}
+                  onPress={() => setSelectedMemberId(selected ? null : m.id)}
+                >
+                  <View style={[styles.claimEmoji, { backgroundColor: memberColor + "18" }]}>
+                    <Text style={{ fontSize: 20 }}>{m.avatarEmoji ?? "👤"}</Text>
+                  </View>
+                  <Text style={[styles.claimName, selected && { color: memberColor, fontWeight: "800" }]}>
+                    {m.name}
+                  </Text>
+                  {selected && <Text style={{ fontSize: 14 }}>✓</Text>}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
       <View style={styles.navRow}>
         <Button onPress={onBack}>{t("onboarding.back")}</Button>
-        <Button mode="contained" onPress={handleNext} buttonColor="#6C63FF">
+        <Button mode="contained" onPress={handleNext} loading={claiming} buttonColor="#6C63FF">
           {t("onboarding.next")}
         </Button>
       </View>
@@ -653,5 +719,52 @@ const styles = StyleSheet.create({
   telegramBtn: {
     borderRadius: R.md,
     marginTop: S.md,
+  },
+  // "Who are you?" claim section
+  claimSection: {
+    marginTop: S.xl,
+    paddingTop: S.lg,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    gap: S.xs,
+  },
+  claimTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+  },
+  claimSubtitle: {
+    fontSize: 12,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    marginBottom: S.sm,
+  },
+  claimRow: {
+    flexDirection: RTL_ROW,
+    flexWrap: "wrap",
+    gap: S.sm,
+  },
+  claimChip: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.sm,
+    paddingVertical: S.sm + 2,
+    paddingHorizontal: S.md,
+    borderRadius: R.lg,
+    minWidth: 100,
+  },
+  claimEmoji: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  claimName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: C.textPrimary,
+    flex: 1,
   },
 });

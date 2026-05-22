@@ -26,9 +26,10 @@ export const authRoutes = new Hono();
 // ---------------------------------------------------------------------------
 
 authRoutes.post("/register", async (c) => {
-  const { username, password, inviteCode, memberId } = await c.req.json<{
+  const { username, password, familyName, inviteCode, memberId } = await c.req.json<{
     username: string;
     password: string;
+    familyName?: string;
     inviteCode?: string;
     memberId?: string;
   }>();
@@ -132,9 +133,10 @@ authRoutes.post("/register", async (c) => {
   }
 
   // ── Create new family (default flow) ──
+  const displayName = familyName?.trim() || trimmedUsername;
   const [family] = await db
     .insert(families)
-    .values({ name: trimmedUsername })
+    .values({ name: displayName })
     .returning();
   familyId = family.id;
 

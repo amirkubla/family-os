@@ -25,8 +25,9 @@ export default function RegisterScreen() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [newFamilyName, setNewFamilyName] = useState(""); // surname for new families
   const [inviteCode, setInviteCode] = useState(params.invite ?? "");
-  const [familyName, setFamilyName] = useState("");
+  const [inviteFamilyName, setInviteFamilyName] = useState(""); // from invite validation
   const [members, setMembers] = useState<InviteMember[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [validatingInvite, setValidatingInvite] = useState(false);
@@ -40,7 +41,7 @@ export default function RegisterScreen() {
   // Validate invite code when it reaches 6 chars
   const validateInvite = useCallback(async (code: string) => {
     if (code.length < 6) {
-      setFamilyName("");
+      setInviteFamilyName("");
       setMembers([]);
       setSelectedMemberId(null);
       setInviteError("");
@@ -54,17 +55,17 @@ export default function RegisterScreen() {
       );
       if (res.ok) {
         const data = await res.json();
-        setFamilyName(data.familyName);
+        setInviteFamilyName(data.familyName);
         setMembers(data.members ?? []);
         setSelectedMemberId(null);
       } else {
-        setFamilyName("");
+        setInviteFamilyName("");
         setMembers([]);
         setSelectedMemberId(null);
         setInviteError(t("auth.invalidFamilyCode"));
       }
     } catch {
-      setFamilyName("");
+      setInviteFamilyName("");
       setMembers([]);
       setSelectedMemberId(null);
       setInviteError(t("auth.genericError"));
@@ -77,7 +78,7 @@ export default function RegisterScreen() {
     if (inviteCode.length >= 6) {
       validateInvite(inviteCode);
     } else {
-      setFamilyName("");
+      setInviteFamilyName("");
       setMembers([]);
       setSelectedMemberId(null);
       setInviteError("");
@@ -88,12 +89,14 @@ export default function RegisterScreen() {
     setError("");
     if (username.length < 3 || password.length < 4) return;
     if (inviteCode && inviteCode.length < 6) return;
+    if (!joiningFamily && newFamilyName.trim().length < 2) return;
 
     setLoading(true);
     try {
       await register({
         username,
         password,
+        familyName: joiningFamily ? undefined : newFamilyName.trim(),
         familyCode: inviteCode || undefined,
         memberId: selectedMemberId ?? undefined,
       });
@@ -108,7 +111,8 @@ export default function RegisterScreen() {
     }
   };
 
-  const joiningFamily = !!familyName;
+  const joiningFamily = !!inviteFamilyName;
+  const familyNameError = !joiningFamily && newFamilyName.length > 0 && newFamilyName.length < 2;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -134,7 +138,7 @@ export default function RegisterScreen() {
             right={
               validatingInvite ? (
                 <TextInput.Icon icon="loading" />
-              ) : inviteCode.length >= 6 && familyName ? (
+              ) : inviteCode.length >= 6 && inviteFamilyName ? (
                 <TextInput.Icon icon="check-circle" color={C.teal} />
               ) : (
                 <TextInput.Icon icon="account-group" />
@@ -149,7 +153,7 @@ export default function RegisterScreen() {
           {joiningFamily ? (
             <View style={styles.familyBadge}>
               <Text style={styles.familyBadgeText}>
-                {t("auth.joiningFamily")} {familyName} ✨
+                {t("auth.joiningFamily")} {inviteFamilyName} ✨
               </Text>
             </View>
           ) : (
@@ -218,6 +222,24 @@ export default function RegisterScreen() {
             </View>
           )}
 
+          {/* Family name — only for new families (not invite join) */}
+          {!joiningFamily && (
+            <>
+              <TextInput
+                mode="outlined"
+                placeholder={t("auth.familyNamePlaceholder")}
+                value={newFamilyName}
+                onChangeText={setNewFamilyName}
+                style={styles.input}
+                contentStyle={styles.inputContent}
+                right={<TextInput.Icon icon="home-heart" />}
+              />
+              <HelperText type="error" visible={familyNameError} style={styles.helper}>
+                {t("settings.nameMinLength")}
+              </HelperText>
+            </>
+          )}
+
           <TextInput
             mode="outlined"
             placeholder={t("auth.username")}
@@ -256,7 +278,7 @@ export default function RegisterScreen() {
             mode="contained"
             onPress={handleRegister}
             loading={loading}
-            disabled={loading || username.length < 3 || password.length < 4}
+            disabled={loading || username.length < 3 || password.length < 4 || (!joiningFamily && newFamilyName.trim().length < 2)}
             style={styles.btn}
             contentStyle={styles.btnContent}
             labelStyle={styles.btnLabel}

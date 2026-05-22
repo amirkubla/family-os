@@ -182,6 +182,10 @@ export const familyMembersApi = {
 
   delete: (fid: string, id: string) =>
     http.delete<{ deleted: boolean }>(`${fam(fid)}/members/${id}`),
+
+  /** Link the current user to a family member. */
+  claim: (fid: string, memberId: string) =>
+    http.post<ApiFamilyMember>(`${fam(fid)}/members/${memberId}/claim`, {}),
 };
 
 // ---------------------------------------------------------------------------

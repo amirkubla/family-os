@@ -317,6 +317,7 @@ const he = {
     inviteHint: "יש לכם קוד הזמנה? הזינו אותו כדי להצטרף למשפחה קיימת",
     whoAreYou: "?מי את/ה",
     pickMember: "בחרו את הפרופיל שלכם במשפחה",
+    familyNamePlaceholder: "שם משפחה (למשל: כהן)",
     genericError: "שגיאה — נסו שנית",
     loading: "טוען…",
     logout: "התנתק",
