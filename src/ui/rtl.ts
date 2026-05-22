@@ -39,10 +39,27 @@ export const RTL_ALIGN_RIGHT: "flex-start" | "flex-end" = isRTLActive
   ? "flex-start"
   : "flex-end";
 
+/**
+ * textAlign value for right-aligned text.
+ *  - Web: "right" (dir="rtl" on <html> does NOT auto-align Text components).
+ *  - Native with RTL active: the engine auto-mirrors "right" → "left",
+ *    so we omit it (undefined) and let the RTL default handle it.
+ */
+export const TEXT_RIGHT: "right" | undefined =
+  Platform.OS === "web" ? "right" : undefined;
+
+/**
+ * textAlign value for left-aligned text (e.g. numbers, progress labels).
+ *  - Web: "left" works as-is.
+ *  - Native RTL: "left" gets mirrored to "right", so we use "right"
+ *    to get physical left.
+ */
+export const TEXT_LEFT: "left" | "right" =
+  isRTLActive && Platform.OS !== "web" ? "right" : "left";
+
 export const rtl = StyleSheet.create({
   /** Right-aligned text with RTL writing direction (use on TextInputs). */
   text: {
-    textAlign: "right",
     writingDirection: "rtl",
   },
   /** Semantic RTL row — items flow right-to-left in all modes. */

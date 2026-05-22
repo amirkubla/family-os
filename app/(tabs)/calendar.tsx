@@ -39,7 +39,7 @@ import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, assigneeTypeLabel, blockTypeLabel } from "@src/i18n";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 import { TYPE_COLORS, ASSIGNEE_COLORS } from "@src/ui/semanticColors";
 
@@ -430,14 +430,14 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: C.textPrimary,
     marginBottom: S.lg,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
 
   viewToggle: { marginBottom: S.md },
   card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
   emptyText: {
     color: C.textMuted,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     fontSize: 14,
     paddingVertical: S.xs,
   },
@@ -463,9 +463,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: S.sm,
   },
-  eventTitle: { fontSize: 15, fontWeight: "600", color: C.textPrimary, textAlign: "right" },
+  eventTitle: { fontSize: 15, fontWeight: "600", color: C.textPrimary, textAlign: TEXT_RIGHT },
   eventMetaRow: { flexDirection: RTL_ROW, alignItems: "center", gap: S.sm, marginTop: 2 },
-  eventTime: { fontSize: 12, color: C.textSecondary, textAlign: "right" },
+  eventTime: { fontSize: 12, color: C.textSecondary, textAlign: TEXT_RIGHT },
   assigneeBadge: {
     fontSize: 10,
     fontWeight: "600",

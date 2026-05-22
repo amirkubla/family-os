@@ -18,6 +18,7 @@ import { useFamilyEventsForDate } from "@src/store/familyEventSelectors";
 import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S, R } from "@src/ui/tokens";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -418,12 +419,12 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 13,
     fontWeight: "700",
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   eventTime: {
     fontSize: 11,
     color: C.textSecondary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginTop: 1,
   },
 });

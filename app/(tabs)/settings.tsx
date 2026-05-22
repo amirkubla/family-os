@@ -17,7 +17,7 @@ import type { FamilyMember } from "@src/models/familyMember";
 import type { Kid } from "@src/models/kid";
 import { t, memberRoleLabel } from "@src/i18n";
 import SectionHeader from "@src/components/SectionHeader";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 
 // ── Member row ──
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: C.textPrimary,
     marginBottom: S.lg,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
   cardHeaderRow: {
@@ -408,10 +408,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: S.xs,
   },
-  subtitle: { fontSize: 12, color: C.textSecondary, textAlign: "right", marginBottom: S.sm },
+  subtitle: { fontSize: 12, color: C.textSecondary, textAlign: TEXT_RIGHT, marginBottom: S.sm },
   emptyText: {
     color: C.textMuted,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     fontSize: 14,
     paddingVertical: S.xs,
   },
@@ -425,8 +425,8 @@ const styles = StyleSheet.create({
   archivedRow: { opacity: 0.5 },
   rowActions: { flexDirection: "row" },
   memberInfo: { flex: 1, marginHorizontal: S.sm },
-  memberName: { fontSize: 15, fontWeight: "600", textAlign: "right", color: C.textPrimary },
-  memberRole: { fontSize: 12, color: C.textSecondary, textAlign: "right" },
+  memberName: { fontSize: 15, fontWeight: "600", textAlign: TEXT_RIGHT, color: C.textPrimary },
+  memberRole: { fontSize: 12, color: C.textSecondary, textAlign: TEXT_RIGHT },
   archivedText: { textDecorationLine: "line-through" },
   emojiCircle: {
     width: 40,
@@ -438,17 +438,17 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 22 },
   divider: { marginVertical: S.md },
   archivedHeaderRow: { paddingVertical: S.xs },
-  archivedHeader: { fontSize: 13, color: C.textMuted, textAlign: "right" },
-  nameInput: { textAlign: "right", writingDirection: "rtl", backgroundColor: C.surface },
-  nameInputContent: { textAlign: "right" },
+  archivedHeader: { fontSize: 13, color: C.textMuted, textAlign: TEXT_RIGHT },
+  nameInput: { textAlign: TEXT_RIGHT, writingDirection: "rtl", backgroundColor: C.surface },
+  nameInputContent: { textAlign: TEXT_RIGHT },
   accountInfo: { marginBottom: S.md },
-  accountText: { fontSize: 14, textAlign: "right", writingDirection: "rtl", color: C.textPrimary, marginBottom: S.xs },
+  accountText: { fontSize: 14, textAlign: TEXT_RIGHT, writingDirection: "rtl", color: C.textPrimary, marginBottom: S.xs },
   logoutBtn: { borderColor: C.red + "44", borderRadius: R.md },
   telegramTitle: {
     fontSize: 16,
     fontWeight: "700",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginBottom: S.sm,
   },
   telegramBtn: { borderRadius: R.md, marginTop: S.md },

@@ -23,7 +23,7 @@ import FamilyBadge from "@src/components/FamilyBadge";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import { SHOPPING_CATEGORIES } from "@src/models/grocery";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 
 /** Emoji per subcategory — keyed by English key AND Hebrew label for compat with legacy data. */
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: C.textPrimary,
     marginBottom: S.lg,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   segments: { marginBottom: S.md },
   countRow: {
@@ -249,11 +249,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: S.sm,
   },
-  itemCount: { fontSize: 12, color: C.textMuted, textAlign: "right" },
+  itemCount: { fontSize: 12, color: C.textMuted, textAlign: TEXT_RIGHT },
   card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
   emptyText: {
     color: C.textMuted,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     fontSize: 14,
     paddingVertical: S.xs,
   },
@@ -266,11 +266,11 @@ const styles = StyleSheet.create({
   },
   rowHover: { backgroundColor: C.hoverBg },
   rowText: { flex: 1, marginStart: S.xs },
-  itemTitle: { fontSize: 15, color: C.textPrimary, textAlign: "right" },
+  itemTitle: { fontSize: 15, color: C.textPrimary, textAlign: TEXT_RIGHT },
   meta: { flexDirection: RTL_ROW, alignItems: "center", gap: S.sm, marginTop: 2, flexWrap: "wrap" },
   chip: { backgroundColor: C.border },
   chipText: { fontSize: 10, lineHeight: 14 },
-  qty: { fontSize: 12, color: C.textSecondary, textAlign: "right" },
+  qty: { fontSize: 12, color: C.textSecondary, textAlign: TEXT_RIGHT },
   divider: { marginVertical: S.md },
   boughtHeader: {
     flexDirection: RTL_ROW,
@@ -278,9 +278,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: S.xs,
   },
-  boughtLabel: { fontSize: 13, fontWeight: "600", color: C.textSecondary, textAlign: "right" },
+  boughtLabel: { fontSize: 13, fontWeight: "600", color: C.textSecondary, textAlign: TEXT_RIGHT },
   boughtRow: { opacity: 0.5 },
-  boughtText: { textDecorationLine: "line-through", color: C.textMuted, textAlign: "right" },
+  boughtText: { textDecorationLine: "line-through", color: C.textMuted, textAlign: TEXT_RIGHT },
   addButton: {
     flexDirection: "row",
     alignItems: "center",

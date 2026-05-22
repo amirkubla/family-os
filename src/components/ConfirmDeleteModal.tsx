@@ -9,6 +9,7 @@ import React from "react";
 import { Dialog, Portal, Button, Text } from "react-native-paper";
 import { StyleSheet } from "react-native";
 import { C, R } from "@src/ui/tokens";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 
 interface Props {
@@ -48,10 +49,10 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: "700",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   message: {
     color: C.textSecondary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
 });

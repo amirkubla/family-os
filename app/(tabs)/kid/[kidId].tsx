@@ -33,7 +33,7 @@ import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, blockTypeLabel } from "@src/i18n";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 import { TYPE_COLORS } from "@src/ui/semanticColors";
 
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
 
   emptyText: {
     color: C.textMuted,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     fontSize: 14,
     paddingVertical: S.xs,
   },
@@ -377,8 +377,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: S.sm,
   },
-  blockTitle: { fontSize: 15, fontWeight: "600", color: C.textPrimary, textAlign: "right" },
-  blockTime: { fontSize: 12, color: C.textSecondary, marginTop: 2, textAlign: "right" },
+  blockTitle: { fontSize: 15, fontWeight: "600", color: C.textPrimary, textAlign: TEXT_RIGHT },
+  blockTime: { fontSize: 12, color: C.textSecondary, marginTop: 2, textAlign: TEXT_RIGHT },
   typeChip: { borderRadius: R.sm, marginStart: S.sm, marginEnd: S.xs },
   oneTimeBadge: {
     fontSize: 10,
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   templateHeaderHover: {
     backgroundColor: C.hoverBg,
   },
-  templateDayName: { fontSize: 15, fontWeight: "700", color: C.textPrimary, textAlign: "right" },
+  templateDayName: { fontSize: 15, fontWeight: "700", color: C.textPrimary, textAlign: TEXT_RIGHT },
 
   fab: {
     position: "absolute",

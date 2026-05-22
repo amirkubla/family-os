@@ -4,20 +4,40 @@
  */
 
 import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { http } from "../api/http";
 
-// Configure how notifications appear when the app is in the foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Lazy-load expo-notifications to avoid crash in Expo Go on Android (SDK 53+)
+let Notifications: typeof import("expo-notifications") | null = null;
+
+async function getNotifications() {
+  if (!Notifications) {
+    Notifications = await import("expo-notifications");
+  }
+  return Notifications;
+}
+
+// Configure how notifications appear when the app is in the foreground.
+// Deferred to avoid top-level crash in Expo Go on Android.
+let handlerConfigured = false;
+async function ensureNotificationHandler() {
+  if (handlerConfigured || Platform.OS === "web") return;
+  try {
+    const N = await getNotifications();
+    N.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    handlerConfigured = true;
+  } catch {
+    console.warn("[push] Failed to configure notification handler");
+  }
+}
 
 /**
  * Request notification permissions, retrieve the Expo push token,
@@ -31,13 +51,17 @@ export async function registerForPushNotifications(
   // Web doesn't support Expo push tokens
   if (Platform.OS === "web") return null;
 
+  const N = await getNotifications();
+  if (!N) return null;
+
+  await ensureNotificationHandler();
+
   // 1. Check / request permission
-  const { status: existingStatus } =
-    await Notifications.getPermissionsAsync();
+  const { status: existingStatus } = await N.getPermissionsAsync();
   let finalStatus = existingStatus;
 
   if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await N.requestPermissionsAsync();
     finalStatus = status;
   }
 
@@ -56,15 +80,15 @@ export async function registerForPushNotifications(
     return null;
   }
 
-  const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+  const tokenData = await N.getExpoPushTokenAsync({ projectId });
   const token = tokenData.data;
   console.log("[push] Expo push token:", token);
 
   // 3. Set up Android notification channel
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("reminders", {
+    await N.setNotificationChannelAsync("reminders", {
       name: "תזכורות אירועים",
-      importance: Notifications.AndroidImportance.HIGH,
+      importance: N.AndroidImportance.HIGH,
       sound: "default",
       vibrationPattern: [0, 250, 250, 250],
     });

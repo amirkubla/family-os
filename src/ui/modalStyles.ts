@@ -5,7 +5,7 @@
 
 import { StyleSheet } from "react-native";
 import { C, S, R } from "./tokens";
-import { RTL_ROW } from "./rtl";
+import { RTL_ROW, TEXT_RIGHT } from "./rtl";
 
 /** Blue theme for SegmentedButtons — pass as `theme` prop */
 export const SEGMENT_THEME = {
@@ -55,7 +55,7 @@ export const MS = StyleSheet.create({
     fontSize: 20,
     letterSpacing: -0.3,
     flex: 1,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
 
   // ---------------------------------------------------------------------------
@@ -93,7 +93,7 @@ export const MS = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     color: MODAL_ACCENT,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginTop: -S.lg,
     marginBottom: S.lg,
   },
@@ -114,7 +114,7 @@ export const MS = StyleSheet.create({
   // Form elements
   // ---------------------------------------------------------------------------
   label: {
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginTop: S.sm,
     marginBottom: S.xs + 2,
     color: C.textSecondary,
@@ -123,19 +123,19 @@ export const MS = StyleSheet.create({
   },
   input: {
     marginBottom: S.md,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
     backgroundColor: "#FFFFFF",
   },
   inputContent: {
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   error: {
     color: C.red,
     fontSize: 12,
     marginBottom: S.xs,
     marginTop: -(S.xs),
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
 
   // ---------------------------------------------------------------------------

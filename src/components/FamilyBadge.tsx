@@ -11,7 +11,7 @@ import type { ViewStyle } from "react-native";
 import { Text } from "react-native-paper";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { t } from "@src/i18n";
-import { RTL_ROW, RTL_ALIGN_RIGHT } from "@src/ui/rtl";
+import { RTL_ROW, RTL_ALIGN_RIGHT, TEXT_RIGHT } from "@src/ui/rtl";
 
 interface FamilyBadgeProps {
   style?: ViewStyle;
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: "#6C63FF",
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   sparkle: {
     fontSize: 12,

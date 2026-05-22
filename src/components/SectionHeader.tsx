@@ -9,6 +9,7 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 import { C, S } from "@src/ui/tokens";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 
 interface Props {
   label: string;
@@ -31,6 +32,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
 });

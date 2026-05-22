@@ -19,6 +19,7 @@ import { Text } from "react-native-paper";
 import type { Note } from "@src/models/note";
 import { t } from "@src/i18n";
 import { S } from "@src/ui/tokens";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -262,13 +263,13 @@ const styles = StyleSheet.create({
   noteTitle: {
     fontWeight: "700",
     color: "#1A1A2E",
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginBottom: 6,
     marginTop: 4,
   },
   noteBody: {
     color: "#6B6B8D",
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     lineHeight: 18,
   },
 

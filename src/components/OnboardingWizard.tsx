@@ -25,7 +25,7 @@ import type { MemberRole } from "@src/models/familyMember";
 import { t, memberRoleLabel } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 
 const COLOR_SWATCHES = [
   "#FF6B6B", "#4ECDC4", "#6C63FF", "#FFA726", "#AB47BC", "#42A5F5",
@@ -550,13 +550,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginBottom: S.xs,
   },
   stepSubtitle: {
     fontSize: 13,
     color: C.textSecondary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginBottom: S.xl,
     lineHeight: 20,
   },
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     flex: 1,
   },
   addedRole: {

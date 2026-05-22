@@ -29,7 +29,7 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t, statusLabel } from "@src/i18n";
 import FamilyBadge from "@src/components/FamilyBadge";
 import SectionHeader from "@src/components/SectionHeader";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { STATUS_COLORS } from "@src/ui/semanticColors";
 
@@ -208,7 +208,7 @@ export default function HomeScreen() {
           </View>
 
           {activeKids.length === 0 && (
-            <Text variant="bodyMedium" style={{ color: C.textMuted, textAlign: "right", fontSize: 14, paddingVertical: S.xs }}>
+            <Text variant="bodyMedium" style={{ color: C.textMuted, textAlign: TEXT_RIGHT, fontSize: 14, paddingVertical: S.xs }}>
               {t("home.noKids")}
             </Text>
           )}
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: C.textPrimary,
     marginBottom: S.lg,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   // Kids
   kidsContainer: {
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   },
   notesEmpty: {
     color: C.textMuted,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     fontSize: 14,
     paddingVertical: S.lg,
   },
@@ -708,13 +708,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginBottom: 4,
   },
   noteBody: {
     fontSize: 13,
     color: C.textSecondary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     lineHeight: 19,
   },
   noteAccentBar: {
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     flex: 1,
   },
   choreTitleDone: {
@@ -886,7 +886,7 @@ const styles = StyleSheet.create({
   choreAssignee: {
     fontSize: 12,
     color: C.textSecondary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginTop: 1,
   },
   choreActions: {
@@ -987,12 +987,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   projDesc: {
     fontSize: 13,
     color: C.textSecondary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     lineHeight: 19,
   },
   projectProgressRow: {

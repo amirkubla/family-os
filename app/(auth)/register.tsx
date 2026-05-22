@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useAuthStore } from "@src/auth/useAuthStore";
 import { t } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -116,9 +117,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: S.xxl,
   },
-  input: { backgroundColor: C.surface, textAlign: "right", writingDirection: "rtl", marginBottom: 2 },
-  inputContent: { textAlign: "right" },
-  helper: { textAlign: "right" },
+  input: { backgroundColor: C.surface, textAlign: TEXT_RIGHT, writingDirection: "rtl", marginBottom: 2 },
+  inputContent: { textAlign: TEXT_RIGHT },
+  helper: { textAlign: TEXT_RIGHT },
   btn: { borderRadius: R.md, marginTop: S.sm },
   btnContent: { paddingVertical: 6 },
   btnLabel: { fontSize: 16, fontWeight: "700" },

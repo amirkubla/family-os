@@ -20,7 +20,7 @@ import {
 import { Text, ProgressBar } from "react-native-paper";
 import type { Project } from "@src/models/project";
 import { t, statusLabel } from "@src/i18n";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { S } from "@src/ui/tokens";
 
 // ---------------------------------------------------------------------------
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   projectTitle: {
     fontWeight: "700",
     color: "#1A1A2E",
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     flex: 1,
   },
   statusBadge: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   projectDesc: {
     color: "#6B6B8D",
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     lineHeight: 18,
     marginBottom: 4,
   },

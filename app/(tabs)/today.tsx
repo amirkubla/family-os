@@ -26,7 +26,7 @@ import {
 } from "@src/lib/sync/remoteCrud";
 import { t, LOCALE, blockTypeLabel, assigneeTypeLabel } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, S, R } from "@src/ui/tokens";
 import { formatDateHe } from "@src/components/DatePicker";
 import FamilyBadge from "@src/components/FamilyBadge";
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: C.textPrimary,
     marginBottom: S.lg,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
 
   // ── Unified Today card ────────────────────────────────────────────────────
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
 
   // ── Item list ─────────────────────────────────────────────────────────────
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: C.textMuted,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     fontSize: 14,
     paddingVertical: S.md,
   },
@@ -530,13 +530,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   itemTime: {
     fontSize: 12,
     color: C.textSecondary,
     marginTop: 2,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   badge: {
     fontSize: 10,
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: C.textPrimary,
     letterSpacing: 0.3,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginHorizontal: S.md,
   },
   premiumLine: {
@@ -609,18 +609,18 @@ const styles = StyleSheet.create({
   choreTitle: {
     fontSize: 15,
     color: C.textPrimary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   choreDone: {
     fontSize: 15,
     textDecorationLine: "line-through",
     color: C.textMuted,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
   choreAssignee: {
     fontSize: 12,
     color: C.textSecondary,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
     marginTop: 1,
   },
 
@@ -636,6 +636,6 @@ const styles = StyleSheet.create({
   syncMeta: {
     fontSize: 12,
     color: C.textMuted,
-    textAlign: "right",
+    textAlign: TEXT_RIGHT,
   },
 });
