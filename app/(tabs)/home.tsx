@@ -611,11 +611,9 @@ const styles = StyleSheet.create({
     borderRadius: R.lg,
     borderWidth: 1,
     gap: S.md,
-    minWidth: 160,
-    flex: 1,
-    backgroundColor: C.surface,
-    ...SHADOW.sm,
-    ...(Platform.OS === "web" ? { cursor: "pointer" as any, transition: "all 0.2s ease" } : {}),
+    ...(Platform.OS === "web"
+      ? { minWidth: 160, flex: 1, cursor: "pointer" as any, transition: "all 0.2s ease", ...SHADOW.sm }
+      : { width: "100%" as any }),
   },
   kidAvatarCircle: {
     width: 44,
