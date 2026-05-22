@@ -14,6 +14,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 import { authRoutes } from "./routes/auth.js";
+import { inviteRoutes, inviteValidateRoute } from "./routes/invites.js";
 import { familyRoutes } from "./routes/family.js";
 import { groceryRoutes } from "./routes/grocery.js";
 import { notesRoutes } from "./routes/notes.js";
@@ -48,6 +49,7 @@ app.get("/health", (c) => c.json({ status: "ok", service: "family-os-api" }));
 
 // Auth routes (unauthenticated)
 app.route("/v1/auth", authRoutes);
+app.route("/v1/auth", inviteValidateRoute);
 
 // Auth middleware for all family-scoped routes
 app.use("/v1/family/*", jwtAuth);
@@ -64,6 +66,7 @@ app.route("/v1/family/:familyId/schedule-blocks", scheduleBlocksRoutes);
 app.route("/v1/family/:familyId/members", familyMembersRoutes);
 app.route("/v1/family/:familyId/family-events", familyEventsRoutes);
 app.route("/v1/family/:familyId/push-tokens", pushTokenRoutes);
+app.route("/v1/family/:familyId/invites", inviteRoutes);
 app.route("/v1/notifications", notificationRoutes);
 
 // ---------------------------------------------------------------------------

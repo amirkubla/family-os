@@ -60,6 +60,7 @@ export const familyMembers = pgTable(
     familyId: uuid("family_id")
       .notNull()
       .references(() => families.id, { onDelete: "cascade" }),
+    userId: uuid("user_id"),
     displayName: text("display_name").notNull(),
     role: text("role"),
     color: text("color"),
@@ -356,6 +357,36 @@ export const pushTokens = pgTable(
 export const pushTokensRelations = relations(pushTokens, ({ one }) => ({
   family: one(families, {
     fields: [pushTokens.familyId],
+    references: [families.id],
+  }),
+}));
+
+// ---------------------------------------------------------------------------
+// invites
+// ---------------------------------------------------------------------------
+
+export const invites = pgTable(
+  "invites",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    createdByUserId: uuid("created_by_user_id").notNull(),
+    usedByUserId: uuid("used_by_user_id"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("invites_code_uniq").on(t.code),
+    index("invites_family_id_idx").on(t.familyId),
+  ],
+);
+
+export const invitesRelations = relations(invites, ({ one }) => ({
+  family: one(families, {
+    fields: [invites.familyId],
     references: [families.id],
   }),
 }));

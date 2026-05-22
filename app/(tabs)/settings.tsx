@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Linking, Alert } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Linking, Alert, Share, Platform } from "react-native";
 import { Card, Text, IconButton, Divider, TextInput, Button } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Clipboard from "expo-clipboard";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useAuthStore } from "@src/auth/useAuthStore";
 import {
@@ -9,7 +10,7 @@ import {
   setKidActiveRemote,
   updateFamilyNameRemote,
 } from "@src/lib/sync/remoteCrud";
-import { telegramApi } from "@src/lib/api/endpoints";
+import { telegramApi, invitesApi } from "@src/lib/api/endpoints";
 import { getFamilyId } from "@src/lib/familyContext";
 import FamilyMemberModal from "@src/components/FamilyMemberModal";
 import KidModal from "@src/components/KidModal";
@@ -141,6 +142,41 @@ export default function SettingsScreen() {
   const [kidModalOpen, setKidModalOpen] = useState(false);
   const [editingKid, setEditingKid] = useState<Kid | null>(null);
   const [showArchivedKids, setShowArchivedKids] = useState(false);
+
+  // Invite state
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const generateInvite = async () => {
+    setGeneratingInvite(true);
+    try {
+      const familyId = await getFamilyId();
+      const result = await invitesApi.create(familyId);
+      setInviteCode(result.code);
+    } catch {
+      Alert.alert(t("auth.genericError"));
+    } finally {
+      setGeneratingInvite(false);
+    }
+  };
+
+  const copyInviteCode = async () => {
+    if (!inviteCode) return;
+    await Clipboard.setStringAsync(inviteCode);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  };
+
+  const shareInvite = async () => {
+    if (!inviteCode) return;
+    const message = `הצטרפו למשפחת ${familyName} באפליקציית Family OS!\nקוד ההזמנה: ${inviteCode}`;
+    try {
+      await Share.share({ message });
+    } catch {
+      // User cancelled share
+    }
+  };
 
   const [connectingTelegram, setConnectingTelegram] = useState(false);
 
@@ -320,6 +356,59 @@ export default function SettingsScreen() {
           </Card.Content>
         </Card>
 
+        {/* ── Invite Partner card ── */}
+        <SectionHeader label={t("settings.invite")} />
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            <Text style={styles.subtitle}>
+              {t("settings.inviteSubtitle")}
+            </Text>
+
+            {inviteCode ? (
+              <View style={styles.inviteCodeContainer}>
+                <View style={styles.inviteCodeBox}>
+                  <Text style={styles.inviteCodeText}>{inviteCode}</Text>
+                </View>
+                <View style={styles.inviteActions}>
+                  <Button
+                    mode="outlined"
+                    onPress={copyInviteCode}
+                    icon={codeCopied ? "check" : "content-copy"}
+                    style={styles.inviteBtn}
+                    textColor={C.teal}
+                  >
+                    {codeCopied ? t("settings.codeCopied") : t("settings.copyCode")}
+                  </Button>
+                  <Button
+                    mode="contained"
+                    onPress={shareInvite}
+                    icon="share-variant"
+                    style={styles.inviteBtn}
+                    buttonColor={C.teal}
+                  >
+                    {t("settings.shareInvite")}
+                  </Button>
+                </View>
+                <Text style={styles.inviteExpiry}>
+                  {t("settings.inviteExpires", { days: "7" })}
+                </Text>
+              </View>
+            ) : (
+              <Button
+                mode="contained"
+                onPress={generateInvite}
+                loading={generatingInvite}
+                disabled={generatingInvite}
+                icon="account-plus"
+                style={styles.inviteGenerateBtn}
+                buttonColor={C.teal}
+              >
+                {t("settings.generateInvite")}
+              </Button>
+            )}
+          </Card.Content>
+        </Card>
+
         {/* ── Telegram Assistant card ── */}
         <SectionHeader label={t("settings.telegram")} />
         <Card style={styles.card} mode="elevated">
@@ -444,6 +533,44 @@ const styles = StyleSheet.create({
   accountInfo: { marginBottom: S.md },
   accountText: { fontSize: 14, textAlign: TEXT_RIGHT, writingDirection: "rtl", color: C.textPrimary, marginBottom: S.xs },
   logoutBtn: { borderColor: C.red + "44", borderRadius: R.md },
+  inviteCodeContainer: {
+    gap: S.md,
+    alignItems: "center" as const,
+    paddingVertical: S.sm,
+  },
+  inviteCodeBox: {
+    backgroundColor: C.teal + "10",
+    borderWidth: 2,
+    borderColor: C.teal + "30",
+    borderRadius: R.lg,
+    paddingVertical: S.lg,
+    paddingHorizontal: S.xxl,
+    borderStyle: "dashed" as const,
+  },
+  inviteCodeText: {
+    fontSize: 28,
+    fontWeight: "800" as const,
+    color: C.teal,
+    letterSpacing: 4,
+    textAlign: "center" as const,
+  },
+  inviteActions: {
+    flexDirection: "row" as const,
+    gap: S.sm,
+  },
+  inviteBtn: {
+    borderRadius: R.md,
+    borderColor: C.teal + "44",
+  },
+  inviteExpiry: {
+    fontSize: 12,
+    color: C.textMuted,
+    textAlign: "center" as const,
+  },
+  inviteGenerateBtn: {
+    borderRadius: R.md,
+    marginTop: S.sm,
+  },
   telegramTitle: {
     fontSize: 16,
     fontWeight: "700",

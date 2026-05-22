@@ -185,8 +185,16 @@ export const familyMembersApi = {
 };
 
 // ---------------------------------------------------------------------------
-// Family Events
+// Invites
 // ---------------------------------------------------------------------------
+
+export const invitesApi = {
+  create: (fid: string) =>
+    http.post<{ id: string; code: string; expiresAt: number }>(
+      `${fam(fid)}/invites`,
+      {},
+    ),
+};
 
 // ---------------------------------------------------------------------------
 // Telegram (calls the Assistant service, not the family-os backend)

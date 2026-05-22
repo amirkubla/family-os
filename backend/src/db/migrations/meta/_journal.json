@@ -85,6 +85,20 @@
       "when": 1773290000000,
       "tag": "0011_schedule_block_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1773380000000,
+      "tag": "0012_days_of_week_array",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1773470000000,
+      "tag": "0013_invites_and_member_userid",
+      "breakpoints": true
     }
   ]
 }

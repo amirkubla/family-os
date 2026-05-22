@@ -53,6 +53,7 @@ async function main() {
     "family_events",
     "push_tokens",
     "users",
+    "invites",
   ];
 
   for (const table of tables) {
