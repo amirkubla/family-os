@@ -220,9 +220,9 @@ export default function ProjectModal({ visible, onDismiss, editProject }: Props)
         onChangeText={setDescription}
         mode="outlined"
         multiline
-        numberOfLines={3}
-        style={MS.input}
-        contentStyle={MS.inputContent}
+        numberOfLines={6}
+        style={[MS.input, { minHeight: 120 }]}
+        contentStyle={[MS.inputContent, { minHeight: 110 }]}
       />
 
       {editProject && (
