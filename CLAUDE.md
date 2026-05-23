@@ -8,6 +8,8 @@ Family OS — a Hebrew RTL family management app (React Native / Expo) targeting
 
 **Language:** Hebrew-only, full RTL. No English UI strings.
 
+**Project status:** Solo developer (the maintainer), no real end users yet. Test data only. This means: breaking changes, JWT rotations, DB resets, and feature pivots are cheap. Don't over-engineer for backwards compatibility or zero-downtime migrations until there are real users.
+
 ## Commands
 
 ### Frontend (root)
@@ -111,6 +113,14 @@ Web dev credentials: username `כהן`, password `123456`.
 Push to `master` → GitHub Actions builds Docker image → deploys to Cloud Run at `https://family-os-4ilvxexrha-zf.a.run.app`.
 
 The Dockerfile builds the Expo web bundle (`expo export`) and copies it to `/public` inside the image, then serves it as static files from the same Hono server.
+
+**Google Cloud account:** This project runs under the **personal** `amirkubla@gmail.com` account, not the work `amirk@ai21.com` account. Before running any `gcloud` command targeting this project, switch configs:
+```bash
+~/google-cloud-sdk/bin/gcloud config configurations activate personal
+```
+Available configs: `default` (work, algo-agents-ai21), `work` (algo-platform-ai21), **`personal`** (family-os-489209) ← the right one.
+
+The deployed service is at project `family-os-489209`, region `me-west1`. Cloud Scheduler job (`check-event-reminders`) is at region `europe-west1` (me-west1 doesn't have Scheduler).
 
 ## Architecture
 
@@ -240,6 +250,57 @@ Before considering any change done:
 
 ### Session Logging
 Use the `/session-log` skill to append progress entries to the Session Log section below. Invoke it roughly every 10 significant tool uses (edits, writes, investigations) or when a meaningful milestone is reached. This preserves context across sessions so the next agent can pick up where you left off.
+
+## Security Standards
+
+These rules exist because we leaked the Neon DB password, JWT_SECRET, and SCHEDULER_SECRET into the public GitHub repo on 2026-04-08 via `.claude/settings.local.json` and didn't catch it until 2026-05-23 (~6 weeks of public exposure). All three were rotated, but the lesson stands: **the cost of a leak is rotation downtime + reputational risk; the cost of preventing one is a 10-second habit change.** Treat every command as a potential leak vector.
+
+### Secret handling
+
+- **Never put secrets inline in shell commands.** Anything you type as a literal in a command can end up in: shell history, `.claude/settings.local.json` permission allowlist, Docker build logs, CI logs, screen recordings. Use shell variables and `unset` after:
+  ```bash
+  # WRONG — secret literal ends up in 5+ places
+  gcloud run services update family-os --update-env-vars 'DATABASE_URL=postgresql://...:npg_realsecret@...'
+
+  # RIGHT — secret is in one shell var, gone after unset
+  read -s NEW_DB_URL    # paste at prompt, no echo
+  gcloud run services update family-os --update-env-vars "DATABASE_URL=$NEW_DB_URL"
+  unset NEW_DB_URL
+  history -d $(history 1)
+  ```
+- **Never paste secrets into chat with Claude.** Conversation transcripts are stored; treat them as semi-public. If you do paste one, rotate it after the task is done.
+- **Backend secrets live in Cloud Run env vars** (`gcloud run services update --update-env-vars`), never in the repo. The list right now: `DATABASE_URL`, `JWT_SECRET`, `SCHEDULER_SECRET`. Inspect with `gcloud run services describe family-os --format="value(spec.template.spec.containers[0].env)"`.
+- **Frontend `EXPO_PUBLIC_*` are NOT secret** — they're baked into the JS bundle and inspectable in DevTools. Anything truly sensitive must NEVER use this prefix.
+
+### Files that must never be committed
+
+- `.claude/settings.local.json` — Claude Code records every approved Bash command verbatim into a permission allowlist. If a command has an inline secret, the secret is now in this file. Gitignored as of 2026-05-23.
+- `.env`, `.env.local`, `.env.development`, `.env.staging` — gitignored. Only `.env.example` and `.env.production` (which contains empty values; relies on same-origin) are committed.
+- `backend/.env` — gitignored. Holds the local copy of `DATABASE_URL`. Update locally after every rotation.
+- Anything matching `*.pem`, `*-key.json`, `*-credentials.json`, `*.p12`.
+
+### Pre-commit hygiene
+
+Before every `git commit`, run:
+```bash
+git diff --cached | grep -iE 'password|secret|api[_-]?key|token|bearer|npg_|sk_live|sk_test' && echo "⚠️  STOP — possible secret in diff"
+```
+This is mechanical, takes one second, and catches the common patterns. The 2026-04-08 leak would have been caught by `grep npg_`.
+
+### If a secret leaks
+
+The drill, in order:
+1. **Rotate the secret.** Generate new value, update wherever it's used (Cloud Run env, third-party dashboards, etc.). This is what actually secures things — history rewrite doesn't.
+2. **Stop the bleeding.** Find the source (file? log? CI artifact?) and remove it so it doesn't keep leaking.
+3. **Audit similar exposures.** `git log -p --all -S "<value>"` to find every commit that ever touched it.
+4. **(Optional) Rewrite git history** with `git filter-branch` or `git-filter-repo`. Useful for hygiene, but doesn't help against anyone who already scraped — and orphan SHAs stay reachable on GitHub until their GC runs (no SLA).
+5. **Don't panic-delete the repo.** It usually causes more problems than it solves.
+
+### Public surface
+
+- Repo `github.com/amirai21/family-os` is **public**. Default to "anything I commit is on the internet permanently."
+- Cloud Run service URLs (`*.run.app`) are public by design. `EXPO_PUBLIC_API_URL` being committed is fine — it's just the hostname.
+- The deployed service has `--allow-unauthenticated` (public access to the API); auth is enforced at the application layer via JWT. If JWT_SECRET leaks → game over until rotation.
 
 ## Session Log
 
