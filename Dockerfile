@@ -16,9 +16,12 @@ COPY src/ ./src/
 COPY assets/ ./assets/
 COPY constants/ ./constants/
 
+# Copy production env file — Expo auto-loads .env.production when NODE_ENV=production
+# (the default for `expo export`). All values are empty → frontend uses relative URLs
+# (same-origin pattern), so the same image works on any Cloud Run service.
+COPY .env.production ./
+
 # Build the static web bundle (output → dist/)
-# EXPO_PUBLIC_API_URL is empty so all API calls are relative (same-origin)
-ENV EXPO_PUBLIC_API_URL=""
 RUN npx expo export --platform web \
     && sed -i 's/<script src="\/_expo/<script type="module" src="\/_expo/g' dist/index.html
 

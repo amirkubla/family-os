@@ -30,9 +30,13 @@ android/
 *.pem
 
 # Env files
+# .env.development and .env.local stay gitignored (per-developer / secrets).
+# .env.production is committed because EXPO_PUBLIC_* vars are baked into the
+# frontend bundle and are inherently public — same pattern as Next.js NEXT_PUBLIC_*.
 .env
 .env.*
 !.env.example
+!.env.production
 
 # Editor / IDE
 .vscode/

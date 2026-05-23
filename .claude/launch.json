@@ -4,7 +4,7 @@
     {
       "name": "family-os-web",
       "runtimeExecutable": "/bin/bash",
-      "runtimeArgs": ["-c", "export PATH=/opt/homebrew/bin:$PATH && EXPO_PUBLIC_API_URL=http://localhost:3000 npx expo start --web --port $PORT"],
+      "runtimeArgs": ["-c", "export PATH=/opt/homebrew/bin:$PATH && npx expo start --web --port $PORT"],
       "port": 8083,
       "autoPort": true
     },
