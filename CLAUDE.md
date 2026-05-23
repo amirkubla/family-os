@@ -236,6 +236,13 @@ t("key", { count: 3 })     // {{count}} interpolation
 7. Add to `pullAll()` in `syncEngine.ts`
 
 ### Cross-Platform Gotchas
+
+**Non-negotiable principle:** every change must work on **both web and native (Android primarily, iOS secondarily)**. A fix that lands on web cannot break the APK and vice versa. The app ships to all three from a single codebase, and we don't have a separate web-only or native-only branch.
+
+When you change anything that could be platform-sensitive — layout, gestures, modals, navigation, storage, networking, anything touching `Platform.OS`, anything using DOM APIs (`window`, `document`, `localStorage`) or native APIs (`SecureStore`, `Linking`) — verify on **both** before considering it done. The checklist in "Testing Changes" below is the minimum bar.
+
+Common gotchas that have already bitten us:
+
 - **Android elevation shadows** don't match iOS `shadowX` props — test both. Avoid `elevation` on transparent/overlapping views.
 - **Keyboard avoiding:** iOS uses `behavior="padding"`, Android uses `behavior="height"` or `undefined`.
 - **Web `position: "fixed"`** needs casting: `Platform.OS === "web" && ({ position: "fixed" } as any)`.
@@ -247,8 +254,24 @@ t("key", { count: 3 })     // {{count}} interpolation
 Before considering any change done:
 1. `node_modules/.bin/tsc --noEmit` — type check
 2. `npx expo lint` — lint
-3. Visually verify on web (`npx expo start --web`)
-4. If touching layout/RTL: verify on Android emulator too (RTL behavior differs)
+3. Visually verify on **web** (`npx expo start --web` → http://localhost:8083)
+4. Visually verify on **Android** — emulator (`npx expo start --android`) for most changes, or a real device APK (`eas build --profile preview --platform android`) for anything platform-sensitive (layout, safe-area, gestures, deep links, storage, push, share sheet, etc.)
+5. iOS is best-effort — verify on simulator when touching gestures, animations, or anything iOS-specific
+
+**Web-only verification is not enough** for changes that touch:
+- Layout, padding, or anything using `Platform.OS` / `useSafeAreaInsets()`
+- Modals, overlays, scroll behavior, keyboard avoidance
+- `Linking`, `Share`, `Clipboard`, `SecureStore`, `AsyncStorage`
+- Anything inside `if (Platform.OS === "web")` or `if (Platform.OS === "android")` branches
+- Anything reading from `window`, `document`, `navigator`, or `localStorage`
+
+**Android-only verification is not enough** for changes that touch:
+- Any visible UI (RTL, fonts, and `react-native-paper` render differently on RN Web)
+- Anything using `Platform.OS === "web"` casts (e.g. `position: "fixed"` for sticky elements)
+- API URL handling (`EXPO_PUBLIC_API_URL` is empty on web prod → same-origin; populated on native builds → explicit URL — easy to forget when adding a new env-driven feature)
+- Deep links (web uses URL paths, native uses URL schemes like `familyos://`)
+
+If you can't test on both right now, **say so explicitly** in the commit/PR message — don't pretend the change is verified when only one platform was checked.
 
 ### Two-Member QA Flow
 Quick end-to-end smoke test for the multi-member sync after any auth/onboarding/sharing change. Solo dev, so it's manual but reproducible. Runs against the local stack (dev backend → prod Neon).
