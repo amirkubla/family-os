@@ -159,6 +159,10 @@ export default function HomeScreen() {
   const kids = useFamilyStore((s) => s.kids);
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
 
+  // Collapse/expand state for home sections (persisted in the store).
+  const homeSections = useFamilyStore((s) => s.homeSections);
+  const toggleHomeSection = useFamilyStore((s) => s.toggleHomeSection);
+
   // Modals
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
@@ -252,7 +256,14 @@ export default function HomeScreen() {
         </View>
 
         {/* -- Notes -- */}
-        <SectionHeader label={t("home.notes")} />
+        <SectionHeader
+          label={t("home.notes")}
+          collapsible
+          expanded={homeSections.notes}
+          onToggle={() => toggleHomeSection("notes")}
+          testID="home-section-notes"
+        />
+        {homeSections.notes && (
         <View style={styles.notesContainer}>
           <View style={styles.notesHeaderRow}>
             <View style={{ flex: 1 }} />
@@ -341,9 +352,17 @@ export default function HomeScreen() {
             </Pressable>
           )}
         </View>
+        )}
 
         {/* -- Chores -- */}
-        <SectionHeader label={t("home.chores")} />
+        <SectionHeader
+          label={t("home.chores")}
+          collapsible
+          expanded={homeSections.chores}
+          onToggle={() => toggleHomeSection("chores")}
+          testID="home-section-chores"
+        />
+        {homeSections.chores && (
         <View style={styles.choresContainer}>
           <View style={styles.choresHeaderRow}>
             {/* Stats pill */}
@@ -431,9 +450,17 @@ export default function HomeScreen() {
             </>
           )}
         </View>
+        )}
 
         {/* -- Projects -- */}
-        <SectionHeader label={t("home.projects")} />
+        <SectionHeader
+          label={t("home.projects")}
+          collapsible
+          expanded={homeSections.projects}
+          onToggle={() => toggleHomeSection("projects")}
+          testID="home-section-projects"
+        />
+        {homeSections.projects && (
         <View style={styles.projectsContainer}>
           <View style={styles.projectsHeaderRow}>
             {projects.length > 0 && (
@@ -533,6 +560,7 @@ export default function HomeScreen() {
             );
           })}
         </View>
+        )}
       </ScrollView>
 
       <NoteModal

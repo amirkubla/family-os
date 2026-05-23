@@ -18,6 +18,15 @@ export type SyncStatus = "idle" | "syncing" | "error";
 
 /* ─── State shape ─── */
 
+/** Which home-screen sections are expanded. Persisted; defaults to all expanded. */
+export interface HomeSectionsState {
+  notes: boolean;
+  chores: boolean;
+  projects: boolean;
+}
+
+export type HomeSectionKey = keyof HomeSectionsState;
+
 interface FamilyState {
   familyName: string;
   grocery: GroceryItem[];
@@ -32,6 +41,9 @@ interface FamilyState {
   // Onboarding
   onboardingComplete: boolean;
 
+  // Home screen UI state — which sections are expanded
+  homeSections: HomeSectionsState;
+
   // Sync metadata
   syncStatus: SyncStatus;
   syncError: string | null;
@@ -39,6 +51,9 @@ interface FamilyState {
 
   // Onboarding
   setOnboardingComplete: (val: boolean) => void;
+
+  // Home sections (collapse/expand)
+  toggleHomeSection: (key: HomeSectionKey) => void;
 
   // Family name
   setFamilyName: (name: string) => void;
@@ -178,6 +193,10 @@ export const useFamilyStore = create<FamilyState>()(
 
       onboardingComplete: false,
 
+      // Home sections start expanded — matches pre-feature behavior, users
+      // can collapse what they don't want to see.
+      homeSections: { notes: true, chores: true, projects: true },
+
       syncStatus: "idle" as SyncStatus,
       syncError: null,
       lastSyncedAt: null,
@@ -185,6 +204,13 @@ export const useFamilyStore = create<FamilyState>()(
       /* ── Onboarding ── */
 
       setOnboardingComplete: (val) => set({ onboardingComplete: val }),
+
+      /* ── Home sections ── */
+
+      toggleHomeSection: (key) =>
+        set((state) => ({
+          homeSections: { ...state.homeSections, [key]: !state.homeSections[key] },
+        })),
 
       /* ── Family name ── */
 
@@ -502,7 +528,7 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 10,
+      version: 11,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         familyName: state.familyName,
@@ -516,6 +542,7 @@ export const useFamilyStore = create<FamilyState>()(
         familyEvents: state.familyEvents,
         lastSyncedAt: state.lastSyncedAt,
         onboardingComplete: state.onboardingComplete,
+        homeSections: state.homeSections,
       }),
       migrate: (persisted: any, version: number) => {
         if (version < 2) {
@@ -586,6 +613,14 @@ export const useFamilyStore = create<FamilyState>()(
         if (version < 10) {
           // Add onboardingComplete flag
           persisted.onboardingComplete = persisted.onboardingComplete ?? false;
+        }
+        if (version < 11) {
+          // Add homeSections collapse/expand state — default all expanded.
+          persisted.homeSections = persisted.homeSections ?? {
+            notes: true,
+            chores: true,
+            projects: true,
+          };
         }
         return persisted;
       },
