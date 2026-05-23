@@ -38,6 +38,10 @@ android/
 !.env.example
 !.env.production
 
+# Claude Code local settings — contains permission allowlist with verbatim Bash commands,
+# which can capture secrets passed inline via env vars. NEVER commit.
+.claude/settings.local.json
+
 # Editor / IDE
 .vscode/
 .idea/
