@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -54,12 +54,23 @@ export default function OnboardingWizard() {
   const familyName = useFamilyStore((s) => s.familyName);
   const setOnboardingComplete = useFamilyStore((s) => s.setOnboardingComplete);
 
-  // Skip step 1 if family name was already set during registration
+  // Skip step 1 if family name was already set during registration.
+  // hasRealFamilyName is reactive (subscribes to the store), so when pullAll
+  // loads the family name after registration, the wizard auto-advances below.
   const hasRealFamilyName = familyName.length >= 2;
   const firstStep = hasRealFamilyName ? 2 : 1;
   const totalSteps = hasRealFamilyName ? TOTAL_STEPS - 1 : TOTAL_STEPS;
 
   const [step, setStep] = useState(firstStep);
+
+  // Auto-advance past step 1 if family name loads from the server after mount.
+  // This is the common case post-registration: the wizard mounts immediately
+  // (before pullAll completes), so familyName starts empty even though the user
+  // already supplied it during /register. Without this effect, the user would
+  // be stuck on step 1 asking for the family name a second time.
+  useEffect(() => {
+    if (hasRealFamilyName && step === 1) setStep(2);
+  }, [hasRealFamilyName, step]);
 
   // Map visual dot position (1-based) from actual step
   const dotPosition = hasRealFamilyName ? step - 1 : step;
@@ -134,6 +145,13 @@ function Step1FamilyName({ onNext }: { onNext: () => void }) {
   const familyName = useFamilyStore((s) => s.familyName);
   const [name, setName] = useState(familyName || "");
   const [error, setError] = useState("");
+
+  // Prefill the input if familyName loads from the server after mount and the
+  // user hasn't typed yet. (Parent normally auto-skips this step when familyName
+  // loads — this is the belt-and-suspenders for the brief window before that.)
+  useEffect(() => {
+    if (familyName && !name) setName(familyName);
+  }, [familyName, name]);
 
   const handleNext = () => {
     const trimmed = name.trim();
@@ -784,8 +802,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   backdrop: {
+    // Opaque app-background so the wizard reads as its own screen, not a
+    // floating modal over /today. Bottom tab bar still pokes through the
+    // overlay's stacking, but the content area is fully covered.
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15,15,30,0.55)",
+    backgroundColor: C.bg,
   },
   center: {
     width: "100%",

@@ -4,6 +4,7 @@ import { Text, TextInput, Button } from "react-native-paper";
 import { SUBCATEGORIES } from "@src/models/grocery";
 import type { ShoppingCategory } from "@src/models/grocery";
 import { addGroceryRemote, updateGroceryRemote } from "@src/lib/sync/remoteCrud";
+import { inferGrocerySubcategory } from "@src/lib/groceryCategoryInfer";
 import type { GroceryItem } from "@src/models/grocery";
 import { t, groceryCategoryLabel } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
@@ -34,23 +35,43 @@ export default function GroceryAddModal({
   const subcats = SUBCATEGORIES[shoppingCat];
 
   const [title, setTitle] = useState("");
-  const [subcategory, setSubcategory] = useState(subcats[0]);
+  const [subcategory, setSubcategory] = useState("Other");
   const [qty, setQty] = useState("");
+  // Whether the user has manually picked a category — stops auto-inference
+  // from overriding their choice when they keep typing.
+  const [categoryTouched, setCategoryTouched] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
     if (editItem) {
       setTitle(editItem.title);
-      setSubcategory(editItem.subcategory ?? subcats[0]);
+      setSubcategory(editItem.subcategory ?? "Other");
       setQty(editItem.qty ?? "");
+      setCategoryTouched(true); // keep existing category when editing
     } else {
       setTitle("");
-      setSubcategory(SUBCATEGORIES[defaultShoppingCategory][0]);
+      setSubcategory("Other");
       setQty("");
+      setCategoryTouched(false);
     }
   }, [visible, editItem, defaultShoppingCategory]);
 
-  const reset = () => { setTitle(""); setSubcategory(subcats[0]); setQty(""); };
+  // Infer subcategory from the title as the user types — but only on add (not
+  // edit) and only until the user manually picks a category. Without this the
+  // default was "first option in the list" (Produce), so milk landed under
+  // vegetables. See src/lib/groceryCategoryInfer.ts for the keyword map.
+  useEffect(() => {
+    if (!visible || isEditing || categoryTouched) return;
+    const inferred = inferGrocerySubcategory(title, defaultShoppingCategory);
+    setSubcategory(inferred);
+  }, [title, visible, isEditing, categoryTouched, defaultShoppingCategory]);
+
+  const reset = () => {
+    setTitle("");
+    setSubcategory("Other");
+    setQty("");
+    setCategoryTouched(false);
+  };
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -130,7 +151,7 @@ export default function GroceryAddModal({
                 key={cat}
                 mode={sel ? "contained" : "outlined"}
                 compact
-                onPress={() => setSubcategory(cat)}
+                onPress={() => { setSubcategory(cat); setCategoryTouched(true); }}
                 style={MS.chip}
                 labelStyle={MS.chipLabel}
                 buttonColor={sel ? C.selectBg : undefined}

@@ -117,6 +117,10 @@ function TabItem({ label, iconName, isFocused, palette, onPress }: TabItemProps)
     <Pressable
       onPress={onPress}
       style={styles.tabWrapper}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: isFocused }}
+      testID={`tab-${label}`}
       {...webHover}
     >
       <View

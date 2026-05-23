@@ -53,11 +53,19 @@ export function setSyncErrorHandler(handler: (msg: string) => void) {
 }
 
 function fireAndForget(promise: Promise<unknown>, label: string) {
-  promise.catch((err) => {
-    const msg = `${label}: ${err instanceof Error ? err.message : "unknown error"}`;
-    console.warn("[sync]", msg);
-    _onSyncError?.(msg);
-  });
+  promise
+    .then(() => {
+      // Server accepted the mutation — bump the "last sync" timestamp so the
+      // Today screen reflects that local state is current. Without this, the
+      // displayed "אחרון: HH:MM" only updated on full pullAll(), making
+      // recent edits look unsynced even when they were already persisted.
+      useFamilyStore.getState().setLastSyncedAt(Date.now());
+    })
+    .catch((err) => {
+      const msg = `${label}: ${err instanceof Error ? err.message : "unknown error"}`;
+      console.warn("[sync]", msg);
+      _onSyncError?.(msg);
+    });
 }
 
 // ---------------------------------------------------------------------------

@@ -456,6 +456,7 @@ export default function SettingsScreen() {
               icon="logout"
               textColor={C.red}
               style={styles.logoutBtn}
+              testID="logout-button"
             >
               {t("auth.logout")}
             </Button>

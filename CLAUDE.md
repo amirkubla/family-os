@@ -240,6 +240,7 @@ t("key", { count: 3 })     // {{count}} interpolation
 - **Keyboard avoiding:** iOS uses `behavior="padding"`, Android uses `behavior="height"` or `undefined`.
 - **Web `position: "fixed"`** needs casting: `Platform.OS === "web" && ({ position: "fixed" } as any)`.
 - **ScrollView vs FlatList:** FlatList has issues in some modal/nested contexts — prefer ScrollView for short, bounded lists.
+- **Accessibility on Pressable:** RN Web doesn't promote raw `<Pressable>` to a clickable role unless you set `accessibilityRole="button"` + `accessibilityLabel`. Plain `.click()` from a test/script will be ignored. For any new interactive Pressable, add these props plus a stable `testID` so the element is reachable from automation and screen readers. The bottom tab bar and the logout button are wired this way as the reference pattern.
 
 ### Testing Changes
 Before considering any change done:
@@ -247,6 +248,42 @@ Before considering any change done:
 2. `npx expo lint` — lint
 3. Visually verify on web (`npx expo start --web`)
 4. If touching layout/RTL: verify on Android emulator too (RTL behavior differs)
+
+### Two-Member QA Flow
+Quick end-to-end smoke test for the multi-member sync after any auth/onboarding/sharing change. Solo dev, so it's manual but reproducible. Runs against the local stack (dev backend → prod Neon).
+
+**Setup (two terminals):**
+```bash
+cd backend && npm run dev                    # backend on :3000
+npx expo start --web --port 8083             # frontend on :8083
+```
+Open `http://localhost:8083` in a private/incognito window.
+
+**Phase 1 — Member 1 (creates family):**
+1. `/register`: family name `בדיקות`, username `qatest1`, password `qa123456`, leave invite blank → create
+2. Onboarding wizard 5 steps: family name (re-confirm), self `אבא טסט`, add partner `אמא טסט`, kid `דני`, generate invite code, skip telegram
+3. Add content: grocery `חלב` x2; kid schedule block `חוג כדורגל` for דני; family event `ארוחת ערב משפחתית` for tomorrow
+4. Note the invite code from the wizard's Step 4
+
+**Phase 2 — Member 2 (joins via deep link):**
+1. Clear session — fastest way:
+   ```js
+   localStorage.removeItem('familyos_auth_session');
+   localStorage.removeItem('family-os-store-v2');
+   ```
+2. Navigate to `/register?invite=<CODE>` — invite auto-fills, family is validated, partner placeholder is the only claimable member
+3. Pick `אמא טסט`, username `qatest2`, password `qa123456` → join
+4. Verify all Member 1 data is visible (grocery, kid event, family event)
+5. Add a new family event `פגישת רופא` for the same day
+6. Edit an existing grocery item (change `חלב` quantity to 3)
+
+**Phase 3 — Back to Member 1:**
+1. Clear session, navigate to `/login`, sign in as `qatest1`
+2. Verify Member 2's changes propagated: `חלב x3`, both events visible
+
+**Cleanup:** delete the family from Settings, or leave it — solo dev, prod has no real users yet.
+
+The web preview tool's `click()` doesn't reliably fire React Native Web `Pressable`s — when scripting, dispatch a full `mousedown/mouseup/click` sequence via `dispatchEvent` instead.
 
 ### Session Logging
 Use the `/session-log` skill to append progress entries to the Session Log section below. Invoke it roughly every 10 significant tool uses (edits, writes, investigations) or when a meaningful milestone is reached. This preserves context across sessions so the next agent can pick up where you left off.
@@ -315,3 +352,14 @@ The drill, in order:
 - Changed `_layout.tsx` auto-complete logic to only skip onboarding for users who already claimed a member
 - Added test login credentials to CLAUDE.md (כהן / 123456)
 - Added new i18n keys for wizard steps in `he.ts`
+- Documented Android emulator workflow (SDK at `~/Library/Android/sdk`, AVD `Pixel_7`, ADB/port troubleshooting) in CLAUDE.md + memory
+- Converted invite share from plain text to deep link (`/register?invite=CODE`) in `OnboardingWizard.tsx` and `(tabs)/settings.tsx`; falls back to `window.location.origin` on web
+- Restructured env config: `.env.development` (gitignored) + `.env.production` (committed, empty values for same-origin pattern); Dockerfile now `COPY`s `.env.production` instead of inline `ENV` directives
+- Added `eas.json` `env` blocks per profile so native builds get explicit Cloud Run URLs (web's same-origin doesn't work on Android/iOS)
+- Documented Android EAS build commands (`eas build --profile preview --platform android` etc.) in CLAUDE.md + memory
+- **Security incident:** `.claude/settings.local.json` had been logging Bash commands with inline secrets since 2026-04-08 — Neon DB password, JWT_SECRET, and SCHEDULER_SECRET were public on GitHub for ~6 weeks until Neon's scanner alerted us
+- Rotated all 3 leaked secrets (Neon password via console, JWT/Scheduler via `openssl rand` + `gcloud run services update`); Cloud Run revisions 75 and 76 hold the new values
+- Untracked `.claude/settings.local.json` and added to `.gitignore`; rewrote git history with `filter-branch` to purge the file from all 6 commits that touched it; force-pushed to master
+- Added "Security Standards" section to CLAUDE.md codifying lessons learned (never inline secrets in commands, pre-commit grep heuristic, incident response drill)
+- Noted gcloud `personal` configuration (`amirkubla@gmail.com` / `family-os-489209`) is the one to use; work account has no access
+- GitHub Actions deploy from earlier push (commit `e0baf4e`) failed at the Checkout step (transient infra issue, not our code) — needs manual re-run or push triggers a fresh build
