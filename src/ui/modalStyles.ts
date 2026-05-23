@@ -83,8 +83,18 @@ export const MS = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: C.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+    // RTL hardening — these three lines force the label to render right-to-left
+    // even when I18nManager.isRTL hasn't kicked in yet (which happens on the
+    // first launch after install on Android — forceRTL only takes effect after
+    // an app restart). Without them, on Android the label was rendering with
+    // LTR alignment, making the icon→label row look like an LTR layout.
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    // Dropped `textTransform: "uppercase"` + large `letterSpacing: 0.8`. Hebrew
+    // has no uppercase, and the combo trips up Android's text shaper on RTL
+    // glyphs — the transform step + wide tracking can break the bidi pass and
+    // visually mirror the text.
+    letterSpacing: 0.2,
   },
 
   // ---------------------------------------------------------------------------
