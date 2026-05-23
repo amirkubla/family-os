@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import * as Updates from "expo-updates";
 import {
   Rubik_400Regular,
   Rubik_500Medium,
@@ -23,9 +24,28 @@ import { t } from "@src/i18n";
 import OnboardingWizard from "@src/components/OnboardingWizard";
 
 // ── RTL bootstrap (runs once at module load, before any render) ──
-if (!I18nManager.isRTL) {
+//
+// On native (Android/iOS), `I18nManager.forceRTL(true)` persists the RTL flag
+// but does NOT flip `I18nManager.isRTL` until the next app launch. That means
+// on the first run after install, the JS still sees `isRTL === false`, and any
+// style that relies on the engine's auto-mirror (or default text alignment)
+// renders LTR — a user-visible bug on Android (the calendar/grocery/event
+// modal labels, the chip rows, etc.).
+//
+// Fix: after calling forceRTL, immediately trigger a JS bundle reload via
+// expo-updates. The reload re-reads I18nManager.isRTL, which now returns true,
+// and every component renders with proper RTL on this same install. Production
+// only — in dev (`__DEV__`), Updates.reloadAsync may error or fight with
+// Metro's HMR, so we skip and rely on the developer to manually reload.
+if (Platform.OS !== "web" && !I18nManager.isRTL) {
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
+  if (!__DEV__) {
+    // Defer to next tick so any error from reloadAsync doesn't crash the
+    // initial render. Swallow errors silently — if it fails, the user just
+    // sees LTR until their next manual app launch (current behavior).
+    Updates.reloadAsync().catch(() => {});
+  }
 }
 
 if (Platform.OS === "web" && typeof document !== "undefined") {

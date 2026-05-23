@@ -189,6 +189,10 @@ import { RTL_ROW, RTL_ALIGN_RIGHT, rtl, TEXT_RIGHT, TEXT_LEFT } from "@src/ui/rt
 - On web, `left`/`right` CSS properties are **not** auto-mirrored by RN Web — but `flexDirection` is. `position: absolute` with `left: X` stays as physical left.
 - On iOS, `left: X` **is** auto-mirrored to `right: X` by I18nManager.
 
+**Android first-launch RTL gotcha:** `I18nManager.forceRTL(true)` persists the flag but does NOT flip `I18nManager.isRTL` in the running JS until the next launch. To avoid users seeing LTR on first install, `_layout.tsx` calls `Updates.reloadAsync()` (from `expo-updates`) immediately after `forceRTL` in production builds. Dev builds skip the reload (would fight with Metro HMR).
+
+**Defense-in-depth for Hebrew text:** even with RTL active, **always include `writingDirection: "rtl"`** on text styles that render Hebrew, plus `textAlign: TEXT_RIGHT` where appropriate. This stays correct even in edge cases where the engine state hasn't flipped (in-flight rebuilds, OTA updates, etc.). Avoid combining `textTransform: "uppercase"` with large `letterSpacing` on Hebrew — that combination breaks Android's text shaper. See `src/ui/modalStyles.ts` for the reference styling.
+
 ### Backend (`backend/`)
 Hono REST API with Drizzle ORM on Neon Postgres. Routes follow pattern `/v1/family/:familyId/<resource>`. All routes under `/v1/family/*` are protected by JWT middleware (`jwtAuth` + `familyGuard` ensures the JWT's familyId matches the URL param).
 

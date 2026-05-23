@@ -56,6 +56,7 @@ export const MS = StyleSheet.create({
     letterSpacing: -0.3,
     flex: 1,
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
 
   // ---------------------------------------------------------------------------
@@ -104,6 +105,7 @@ export const MS = StyleSheet.create({
     fontSize: 13,
     color: MODAL_ACCENT,
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
     marginTop: -S.lg,
     marginBottom: S.lg,
   },
@@ -125,6 +127,7 @@ export const MS = StyleSheet.create({
   // ---------------------------------------------------------------------------
   label: {
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
     marginTop: S.sm,
     marginBottom: S.xs + 2,
     color: C.textSecondary,
@@ -139,6 +142,7 @@ export const MS = StyleSheet.create({
   },
   inputContent: {
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
   error: {
     color: C.red,
@@ -146,6 +150,7 @@ export const MS = StyleSheet.create({
     marginBottom: S.xs,
     marginTop: -(S.xs),
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
 
   // ---------------------------------------------------------------------------
@@ -162,6 +167,7 @@ export const MS = StyleSheet.create({
   },
   chipLabel: {
     fontSize: 12,
+    writingDirection: "rtl",
   },
   segmented: {
     marginBottom: S.sm + 2,
@@ -184,6 +190,7 @@ export const MS = StyleSheet.create({
     fontWeight: "700",
     color: MODAL_ACCENT,
     textAlign: "center",
+    writingDirection: "rtl",
     marginBottom: S.xs + 2,
   },
 
