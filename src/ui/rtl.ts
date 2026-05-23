@@ -25,19 +25,28 @@ export const isRTL = I18nManager.isRTL;
 
 /**
  * FlexDirection for a row that should flow right-to-left (Hebrew reading order).
- *  - When RTL is active: "row" (the engine reverses it for us).
- *  - When RTL is NOT active: "row-reverse" (manual simulation).
+ *
+ * **Always "row"** — we rely on the layout engine to mirror it when RTL is
+ * active (both RN Web with `dir="rtl"` and native with `I18nManager.isRTL`).
+ *
+ * History: this used to evaluate to `"row-reverse"` as a manual fallback when
+ * `isRTLActive === false` at module load. That backfired on Android: if the
+ * native engine had already flipped to RTL by render time (a race between
+ * forceRTL persistence and JS module loading), the engine would mirror
+ * `"row-reverse"` again, producing an effectively LTR layout. The MonthCalendar
+ * week-row using plain `"row"` rendered correctly while modal section headers
+ * using `RTL_ROW` rendered backwards. See `Updates.reloadAsync()` in
+ * `app/_layout.tsx` for the first-launch handling that ensures the engine is
+ * in RTL mode before anything renders.
  */
-export const RTL_ROW: "row" | "row-reverse" = isRTLActive ? "row" : "row-reverse";
+export const RTL_ROW: "row" = "row";
 
 /**
  * alignSelf value that places an item on the RIGHT side of a column.
- *  - When RTL is active: "flex-start" (start = right in RTL).
- *  - When RTL is NOT active: "flex-end" (end = right in LTR).
+ * Always `"flex-start"` — the engine maps `start` to the physical right edge
+ * when in RTL mode. Same rationale as `RTL_ROW`: let the engine handle it.
  */
-export const RTL_ALIGN_RIGHT: "flex-start" | "flex-end" = isRTLActive
-  ? "flex-start"
-  : "flex-end";
+export const RTL_ALIGN_RIGHT: "flex-start" = "flex-start";
 
 /**
  * textAlign value for right-aligned text.

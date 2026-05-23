@@ -391,3 +391,13 @@ The drill, in order:
 - Added "Security Standards" section to CLAUDE.md codifying lessons learned (never inline secrets in commands, pre-commit grep heuristic, incident response drill)
 - Noted gcloud `personal` configuration (`amirkubla@gmail.com` / `family-os-489209`) is the one to use; work account has no access
 - GitHub Actions deploy from earlier push (commit `e0baf4e`) failed at the Checkout step (transient infra issue, not our code) — needs manual re-run or push triggers a fresh build
+- Force-push from history rewrite auto-triggered fresh GH Actions runs; commits `3309e1d` and `8cf7955` deployed successfully — prod web is up-to-date with master
+- Ran comprehensive two-member QA against local dev: register, 5-step wizard, add grocery/kid event/family event, deep-link invite to Member 2, bidirectional sync verification — all passed
+- Documented the QA flow in CLAUDE.md "Two-Member QA Flow" section + memory `reference_qa_flow.md` for future iterations
+- Fixed 5 polish issues from QA: wizard step 1 redundancy (auto-advance on familyName load), wizard backdrop opacity, grocery default category (`inferGrocerySubcategory()` Hebrew keyword map at `src/lib/groceryCategoryInfer.ts`), `fireAndForget()` now updates `lastSyncedAt` on mutation success, added testID/accessibilityRole to `CustomTabBar` + logout button
+- Fixed Xiaomi nav-bar overlapping bottom tab bar: added `SafeAreaProvider` to `_layout.tsx` and `useSafeAreaInsets()` to `CustomTabBar` paddingBottom (`edgeToEdgeEnabled: true` requires inset compensation)
+- Codified cross-platform parity principle in CLAUDE.md: every change must work on both web AND Android; expanded "Testing Changes" with explicit lists of when web-only or Android-only verification is insufficient
+- Fixed Android RTL bugs (calendar event modal + grocery modal section labels appearing LTR): added `textAlign: TEXT_RIGHT` + `writingDirection: "rtl"` to `MS.sectionLabel`, dropped `textTransform: "uppercase"` + reduced `letterSpacing` (Android text-shaper bug with Hebrew)
+- Root-cause Android RTL fix: `_layout.tsx` now triggers `Updates.reloadAsync()` after `forceRTL` in production builds so the in-memory `isRTL` flag flips on first install (was previously stuck false until manual app restart)
+- Defense-in-depth: added `writingDirection: "rtl"` to all shared `MS.*` text styles (heading, subtitle, label, inputContent, error, chipLabel, timeLabel)
+- Verified RTL fixes on Pixel 7 emulator via Expo Go: today/calendar screens render correctly; grocery add modal section labels (שם הפריט, כמות, קטגוריה) all right-aligned with icons on the right — calendar event modal uses same shared style so transitively verified
