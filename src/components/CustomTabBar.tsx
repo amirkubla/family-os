@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 // ── Per-tab accent colours ──
@@ -46,8 +47,17 @@ export default function CustomTabBar({
   descriptors,
   navigation,
 }: BottomTabBarProps) {
+  // Bottom inset = height of the system navigation area (3-button bar on
+  // Xiaomi/Redmi/Pixel-button-mode, or gesture handle in gesture mode, or the
+  // home indicator on iOS). Without adding it to paddingBottom, the tab bar
+  // visually overlaps with the system buttons when edgeToEdgeEnabled is true.
+  const insets = useSafeAreaInsets();
+  // Keep a small floor so the tab bar still has some breathing room on
+  // devices that report 0 insets (e.g. older Androids without a system nav
+  // bar, or web).
+  const bottomPad = Math.max(insets.bottom, Platform.OS === "ios" ? 16 : 6);
   return (
-    <View style={styles.barOuter}>
+    <View style={[styles.barOuter, { paddingBottom: bottomPad }]}>
       <View style={styles.bar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -156,7 +166,8 @@ const styles = StyleSheet.create({
   barOuter: {
     backgroundColor: "transparent",
     paddingHorizontal: 8,
-    paddingBottom: Platform.OS === "ios" ? 28 : 6,
+    // paddingBottom is set dynamically per device — see useSafeAreaInsets()
+    // in the component above.
   },
   bar: {
     flexDirection: "row",

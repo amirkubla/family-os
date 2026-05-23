@@ -241,6 +241,7 @@ t("key", { count: 3 })     // {{count}} interpolation
 - **Web `position: "fixed"`** needs casting: `Platform.OS === "web" && ({ position: "fixed" } as any)`.
 - **ScrollView vs FlatList:** FlatList has issues in some modal/nested contexts — prefer ScrollView for short, bounded lists.
 - **Accessibility on Pressable:** RN Web doesn't promote raw `<Pressable>` to a clickable role unless you set `accessibilityRole="button"` + `accessibilityLabel`. Plain `.click()` from a test/script will be ignored. For any new interactive Pressable, add these props plus a stable `testID` so the element is reachable from automation and screen readers. The bottom tab bar and the logout button are wired this way as the reference pattern.
+- **Safe-area insets (Android nav bar overlap):** `edgeToEdgeEnabled: true` in `app.json` makes the app draw under the system status bar AND nav bar. Without compensating for `useSafeAreaInsets().bottom`, the bottom tab bar gets overlapped by the system nav buttons on devices like Xiaomi/Redmi (3-button mode). `SafeAreaProvider` is wired at the root in `app/_layout.tsx`, and `CustomTabBar` reads `insets.bottom` for its `paddingBottom`. Anything else docked to the screen bottom (sticky CTAs, full-screen modals' close buttons) needs to do the same.
 
 ### Testing Changes
 Before considering any change done:

@@ -4,6 +4,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PaperProvider, Snackbar } from "react-native-paper";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -134,24 +135,31 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider theme={theme}>
-        <AuthGate />
-        <Stack>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-        </Stack>
-        {showOnboarding && <OnboardingWizard />}
-        <StatusBar style="dark" />
-        <Snackbar
-          visible={snackVisible}
-          onDismiss={() => setSnackVisible(false)}
-          duration={3000}
-          action={{ label: t("ok"), onPress: () => setSnackVisible(false) }}
-        >
-          {snackMsg}
-        </Snackbar>
-      </PaperProvider>
+      {/* SafeAreaProvider is required for useSafeAreaInsets() to return real
+          values. Without it, insets are always 0 and on Android with
+          edgeToEdgeEnabled the bottom tab bar gets overlapped by the system
+          navigation buttons (3-button mode on Xiaomi/Redmi etc.) or the
+          gesture handle. */}
+      <SafeAreaProvider>
+        <PaperProvider theme={theme}>
+          <AuthGate />
+          <Stack>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+          </Stack>
+          {showOnboarding && <OnboardingWizard />}
+          <StatusBar style="dark" />
+          <Snackbar
+            visible={snackVisible}
+            onDismiss={() => setSnackVisible(false)}
+            duration={3000}
+            action={{ label: t("ok"), onPress: () => setSnackVisible(false) }}
+          >
+            {snackMsg}
+          </Snackbar>
+        </PaperProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
