@@ -1,9 +1,24 @@
 /**
  * pushService.ts — Check for due event reminders and send push notifications
  *
- * Called by Cloud Scheduler every minute via POST /v1/notifications/check.
+ * Called by Cloud Scheduler every 15 min via POST /v1/notifications/check.
  * Uses the Expo Push API (free, no credentials needed).
  * Checks both family_events and schedule_blocks for due reminders.
+ *
+ * SCHEDULING WINDOW: each invocation fires every reminder whose target minute
+ * falls in [now, now + WINDOW_MINUTES). With a 15-min cron + 15-min window,
+ * each minute of the day is covered by exactly one tick — no double-fires
+ * from window overlap, and the existing sent_notifications dedup catches
+ * accidental retries.
+ *
+ * Trade-off: reminders fire 0 to WINDOW_MINUTES-1 minutes EARLY (never late).
+ * A "5 min before" reminder for an event at 14:00 (target 13:55) lands
+ * somewhere in [13:45, 14:00). Acceptable during stealth — users are aware.
+ *
+ * Why a 15-min interval instead of 1-min: Neon autosuspends after 5 min idle.
+ * Any cron <= 5 min keeps the DB pinned awake 100% (~720 CU-hr/mo at 0.25 CU
+ * = blown Free-tier cap of 100 CU-hr). 15-min lets the DB sleep 10 of every
+ * 15 min, so ~33% utilization → ~45-60 CU-hr/mo with the quiet-hours guard.
  */
 
 import { isNotNull } from "drizzle-orm";
@@ -14,6 +29,14 @@ import { sentNotificationsRepo } from "../repos/sentNotificationsRepo.js";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const TZ = "Asia/Jerusalem";
+
+/**
+ * Window width (in minutes) for "is this reminder due now?".
+ * MUST match the Cloud Scheduler cron interval (currently every 15 min,
+ * cron expression "every-15-min" written without slashes to avoid breaking
+ * this block comment). Half-open window so adjacent ticks don't overlap.
+ */
+const WINDOW_MINUTES = 15;
 
 interface ExpoPushMessage {
   to: string;
@@ -117,14 +140,19 @@ export async function checkAndSendReminders(): Promise<{
     const eventDate = getEventDateForToday(source, currentDow, todayYMD);
     if (!eventDate) continue;
 
-    // 5. For each reminder offset, check if it's due NOW
+    // 5. For each reminder offset, check if it's due in the current window
     for (const offsetMinutes of reminders) {
       const reminderMinute = source.startMinutes - offsetMinutes;
 
       // Skip if the reminder time is outside today (before midnight or after)
       if (reminderMinute < 0 || reminderMinute > 1439) continue;
-      // Only fire if current minute matches
-      if (currentMinutes !== reminderMinute) continue;
+      // Fire if target falls within [now, now + WINDOW_MINUTES) — half-open,
+      // so adjacent ticks don't overlap. See module header for the rationale.
+      if (
+        reminderMinute < currentMinutes ||
+        reminderMinute >= currentMinutes + WINDOW_MINUTES
+      )
+        continue;
 
       // 6. Check if already sent (dedup)
       const alreadySent = await sentNotificationsRepo.exists(
