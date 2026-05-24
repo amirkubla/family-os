@@ -92,7 +92,8 @@ export default function OnboardingWizard() {
           <ProgressDots current={dotPosition} total={totalSteps} />
           <ScrollView
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator
+            contentContainerStyle={{ paddingBottom: S.sm }}
           >
             {step === 1 && <Step1FamilyName onNext={() => setStep(2)} />}
             {step === 2 && (
@@ -820,7 +821,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     width: "92%",
     maxWidth: 460,
-    maxHeight: "88%",
+    maxHeight: "92%",
     padding: S.lg + 4,
     borderRadius: R.xl,
     ...SHADOW.lg,
