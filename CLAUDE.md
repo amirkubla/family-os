@@ -30,10 +30,22 @@ The Android SDK is at `~/Library/Android/sdk`. `ANDROID_HOME` is **not** exporte
 export ANDROID_HOME=~/Library/Android/sdk
 ~/Library/Android/sdk/emulator/emulator -avd Pixel_7 -no-snapshot-load &
 
-# Terminal 2 — once emulator shows lock screen, start Expo
+# Wait until boot completes:
+~/Library/Android/sdk/platform-tools/adb wait-for-device && \
+  ~/Library/Android/sdk/platform-tools/adb shell \
+    'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done; echo boot_completed'
+
+# Terminal 2 — start Metro only (no --android flag), then push URL to device
 export ANDROID_HOME=~/Library/Android/sdk
-npx expo start --android
+npx expo start
+# In a 3rd terminal (or once Metro shows "Waiting on http://localhost:8081"):
+~/Library/Android/sdk/platform-tools/adb shell am start \
+  -a android.intent.action.VIEW -d "exp://10.0.2.2:8081"
 ```
+
+**Why not `npx expo start --android`?** It has a race condition: after installing Expo Go, the CLI immediately runs `adb shell monkey -p host.exp.exponent -c LAUNCHER 1` to launch it. On both Pixel_7 and freshly-cloned AVDs the monkey command exits 251 ("no main activities found") even though `cmd package query-activities` resolves the LAUNCHER intent correctly — Expo CLI treats this as fatal, kills Metro, and exits 1. The workaround (Metro alone + manual `am start` with the `exp://10.0.2.2:8081` deep link) bypasses the broken monkey path entirely. `10.0.2.2` is the magic IP for the emulator to reach the host's localhost.
+
+**First run only:** Expo Go needs to be installed. The simplest way is to run `npx expo start --android` once — it will fail at the launch step, but it *does* install `host.exp.exponent` successfully. After that, use the `npx expo start` + `am start` flow above forever.
 
 **Verify emulator is connected:**
 ```bash
@@ -95,6 +107,8 @@ Frontend env vars use the `EXPO_PUBLIC_*` prefix (baked into the bundle at build
 | `EXPO_PUBLIC_APP_URL` | prod Cloud Run URL | `""` (empty → `window.location.origin`) | Base URL for shareable deep links (invite URLs) |
 
 **Same-origin pattern (prod):** Both vars are empty in `.env.production`. API calls become relative (`/v1/...`) and resolve to the Cloud Run service serving the bundle. Share links fall back to `window.location.origin` in JS. This means the same Docker image works on any Cloud Run service (prod, staging, future) — no rebuild needed per env.
+
+**Android emulator `localhost` trap.** On Android emulators, `localhost` resolves to the emulator itself, not the host — so `EXPO_PUBLIC_API_URL=http://localhost:3000` makes every API call hang for 10s and surface as a generic "שגיאה — נסו שנית" toast. The emulator reaches the host's localhost via the magic alias `10.0.2.2`. To handle this without breaking web (which needs real `localhost`) or iOS sim (also uses real `localhost`), we resolve the base URL at runtime via [src/lib/api/baseUrl.ts](src/lib/api/baseUrl.ts): `getApiBaseUrl()` reads `EXPO_PUBLIC_API_URL` and, on Android only, rewrites `localhost`/`127.0.0.1` to `10.0.2.2`. **All code reading the API URL must go through this helper, not `process.env.EXPO_PUBLIC_API_URL` directly** — currently used in [http.ts](src/lib/api/http.ts), [ApiAuthService.ts](src/auth/ApiAuthService.ts), [useAuthStore.ts](src/auth/useAuthStore.ts). If you add a new spot, route it through the helper or Android registration/login will break again.
 
 **Adding staging:** Just deploy the same image to another Cloud Run service. No env config to change. (If you ever need *different* build-time values per env — e.g., a separate analytics key — introduce `.env.staging` and use a Docker build arg + `app.config.ts` to pick which one gets copied in.)
 
@@ -368,6 +382,19 @@ The drill, in order:
 - The deployed service has `--allow-unauthenticated` (public access to the API); auth is enforced at the application layer via JWT. If JWT_SECRET leaks → game over until rotation.
 
 ## Session Log
+
+### 2026-05-24
+- Attempted to clone `Pixel_7` AVD into `Redmi_Note_13` (1080×2400 @ 400dpi, 2GB RAM, manufacturer label Xiaomi) by copying `~/.android/avd/Pixel_7.{avd,ini}` and editing `config.ini`. AVD booted fine but Expo Go failed to launch on it — same monkey-251 error we later found on Pixel_7 too. Deleted the clone.
+- Key learning: AVD cloning is cosmetic. `ro.product.manufacturer` comes from the system image (`google_apis`), so the OS still identifies as Google. To test Xiaomi-specific behavior (3-button nav safe-area overlap from the previous session), just toggle 3-button nav in Settings on Pixel_7.
+- **Root-caused the `npx expo start --android` race condition** that was blocking emulator launches all session: Expo CLI runs `adb shell monkey -p host.exp.exponent -c LAUNCHER 1` immediately after installing Expo Go, but monkey returns exit 251 ("no main activities found") despite `cmd package query-activities` resolving the intent correctly. CLI treats this as fatal and kills Metro.
+- **Workaround documented in the Android Emulator section above:** start Metro alone (`npx expo start`, no `--android` flag), then push the URL to the device manually with `adb shell am start -a android.intent.action.VIEW -d "exp://10.0.2.2:8081"`. `10.0.2.2` is the emulator's alias for host's localhost. App loaded and rendered correctly on Pixel_7 with this flow (today screen, Hebrew RTL, tab bar properly cleared above the 3-button nav).
+- Updated `~/.claude/projects/-Users-amirkoblyansky-family-os/memory/reference_android_emulator.md` with the workaround so future agents skip the broken `--android` flag.
+- **Tab bar pill corners — fully rounded on both platforms.** [CustomTabBar.tsx:200](src/components/CustomTabBar.tsx:200) `borderRadius: 18 → 999` + `overflow: "hidden"`. The original 18 gave rounded corners that looked sharp on Android because the cell is wider there (~194×68 stadium with flat top/bottom sides), while web stayed near-square (~60×64) so 18 looked fine. With 999, both platforms render fully rounded ends — Android becomes a long pill/stadium, web becomes a near-circle. Same look, different aspect ratio due to viewport width.
+- **Grocery/event chip corners — same fix.** [src/ui/modalStyles.ts:166](src/ui/modalStyles.ts:166) `borderRadius: R.xl (20) → 999` on `MS.chip`. Shared style used by 7 modals (Grocery, Chore, FamilyEvent x3, Project, ScheduleBlock x2). On Android, Paper `<Button compact>` renders ~44px tall and radius 20 sat just below the pill threshold (height/2); 999 forces pill regardless of internal Paper roundness.
+- **CRITICAL — Android registration was broken (all auth calls were).** Root cause: `EXPO_PUBLIC_API_URL=http://localhost:3000` works on web (browser resolves to host) but on Android emulator, `localhost` resolves to the emulator itself, so every fetch timed out after 10s and surfaced as the generic "שגיאה — נסו שנית". Symptoms: no console errors except network timeouts; backend never received the request.
+- **Fix:** new [src/lib/api/baseUrl.ts](src/lib/api/baseUrl.ts) helper `getApiBaseUrl()` reads `EXPO_PUBLIC_API_URL` and, on Android only, rewrites `localhost`/`127.0.0.1` to the emulator-magic alias `10.0.2.2`. Web and iOS sim use the raw value (they reach host's localhost natively). Wired into all 3 call sites that previously read `process.env.EXPO_PUBLIC_API_URL` directly: [http.ts](src/lib/api/http.ts), [ApiAuthService.ts](src/auth/ApiAuthService.ts), [useAuthStore.ts](src/auth/useAuthStore.ts).
+- **Why a helper instead of just changing `.env.development` to `10.0.2.2`:** that string only means something to the Android emulator — web and iOS sim would both break. Runtime swap keeps one env value working everywhere.
+- Verified end-to-end on Android emulator: registered `TestFam / testandroid1 / test123` → wizard step 2 loaded. Web reload — still logged in to משפחת כהן, today screen rendering normally. Documented under "Environment Configuration" above.
 
 ### 2026-05-23
 - Fixed `register.tsx` temporal dead zone bug — `joiningFamily` and `familyNameError` used before declaration
