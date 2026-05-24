@@ -197,8 +197,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 18,
+    borderRadius: 999,
     width: "90%",
+    overflow: "hidden",
     gap: 3,
     ...(Platform.OS === "web"
       ? { transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" } as any

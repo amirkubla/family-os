@@ -163,7 +163,7 @@ export const MS = StyleSheet.create({
     marginBottom: S.md - 2,
   },
   chip: {
-    borderRadius: R.xl,
+    borderRadius: 999,
   },
   chipLabel: {
     fontSize: 12,
