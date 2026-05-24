@@ -6,8 +6,9 @@
  */
 
 import { loadSession } from "@src/auth/storage";
+import { getApiBaseUrl } from "./baseUrl";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
+const BASE_URL = getApiBaseUrl();
 
 const TIMEOUT_MS = 10_000;
 

@@ -14,6 +14,7 @@ import {
   clearFamilyCache,
   registerAuthFamilyIdGetter,
 } from "@src/lib/familyContext";
+import { getApiBaseUrl } from "@src/lib/api/baseUrl";
 
 export type AuthStatus = "booting" | "loggedOut" | "loggedIn";
 
@@ -42,7 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         // Only invalidate on a definitive 401/403 — NOT on network errors
         // (so the app still works offline with cached data).
         try {
-          const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
+          const BASE_URL = getApiBaseUrl();
           const res = await fetch(`${BASE_URL}/v1/auth/me`, {
             headers: { Authorization: `Bearer ${session.token}` },
           });

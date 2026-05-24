@@ -9,8 +9,9 @@ import type { AuthService } from "./AuthService";
 import type { AuthSession, RegisterInput, LoginInput } from "./types";
 import { saveSession, loadSession, clearSession } from "./storage";
 import { ApiError } from "@src/lib/api/http";
+import { getApiBaseUrl } from "@src/lib/api/baseUrl";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
+const BASE_URL = getApiBaseUrl();
 
 // ---------------------------------------------------------------------------
 // Helpers — direct fetch to avoid circular dependency with http.ts
