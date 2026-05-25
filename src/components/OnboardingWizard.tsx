@@ -501,8 +501,10 @@ function Step3Kids({
   onBack: () => void;
 }) {
   const kids = useFamilyStore((s) => s.kids).filter((k) => k.isActive);
-  const [showForm, setShowForm] = useState(kids.length === 0);
-  const [error, setError] = useState("");
+  // Default to collapsed CTA, not the open form. Empty state shows a friendly
+  // "+ הוסף ילד/ה" button rather than the bulky form on entry. (Previous QA
+  // BUG #4 — the form-first layout looked like the step required a kid.)
+  const [showForm, setShowForm] = useState(false);
 
   // Inline form state
   const [name, setName] = useState("");
@@ -524,16 +526,13 @@ function Step3Kids({
     addKidRemote({ name: trimmed, emoji, color });
     resetForm();
     setShowForm(false);
-    setError("");
   };
 
-  const handleNext = () => {
-    if (kids.length === 0) {
-      setError(t("onboarding.atLeastOneKid"));
-      return;
-    }
-    onNext();
-  };
+  // Kids are optional — child-free couples, empty-nesters, single adults
+  // sharing a household are all valid "family OS" users. Previously this
+  // step blocked progress with "יש להוסיף לפחות ילד/ה אחד/ת"
+  // (QA Pass 1 BUG #3 — product-fit blocker).
+  const handleNext = () => onNext();
 
   return (
     <View>
@@ -612,8 +611,6 @@ function Step3Kids({
           {t("onboarding.addKid")}
         </Button>
       )}
-
-      {error ? <Text style={[MS.error, { marginTop: S.sm }]}>{error}</Text> : null}
 
       <View style={styles.navRow}>
         <Button onPress={onBack}>{t("onboarding.back")}</Button>
