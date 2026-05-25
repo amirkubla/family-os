@@ -55,11 +55,13 @@ export ANDROID_HOME=~/Library/Android/sdk
 
 # Terminal 2 — start Metro only (no --android flag), then push URL to device
 export ANDROID_HOME=~/Library/Android/sdk
-npx expo start
+REACT_NATIVE_PACKAGER_HOSTNAME=10.0.2.2 npx expo start
 # In a 3rd terminal (or once Metro shows "Waiting on http://localhost:8081"):
 ~/Library/Android/sdk/platform-tools/adb shell am start \
   -a android.intent.action.VIEW -d "exp://10.0.2.2:8081"
 ```
+
+**`REACT_NATIVE_PACKAGER_HOSTNAME=10.0.2.2` is required.** Without it, the manifest Metro serves at `/` returns `hostUri: 127.0.0.1:8081` and a `launchAsset.url` pointing at `http://127.0.0.1:8081/...`. From the emulator, `127.0.0.1` is the emulator's own loopback (same trap as the API URL — see "Android emulator `localhost` trap" below), so Expo Go fails the bundle fetch with `java.io.IOException: Failed to download remote update`. Symptom: Expo Go shows "Something went wrong" within ~500ms of launch (`mCurrentFocus` flips from `ExperienceActivity` to `ErrorActivity`), Metro logs zero bundle activity — which makes it look like Metro is dead when it isn't. The `exp://10.0.2.2:8081` deep link only steers the initial manifest fetch; the manifest itself dictates the bundle URL, so both need 10.0.2.2. Verify with `curl -s http://127.0.0.1:8081/ -H 'expo-platform: android' -H 'expo-runtime-version: exposdk:54.0.0' | jq '.launchAsset.url'` — should show `10.0.2.2:8081`, not `127.0.0.1:8081`.
 
 **Why not `npx expo start --android`?** It has a race condition: after installing Expo Go, the CLI immediately runs `adb shell monkey -p host.exp.exponent -c LAUNCHER 1` to launch it. On both Pixel_7 and freshly-cloned AVDs the monkey command exits 251 ("no main activities found") even though `cmd package query-activities` resolves the LAUNCHER intent correctly — Expo CLI treats this as fatal, kills Metro, and exits 1. The workaround (Metro alone + manual `am start` with the `exp://10.0.2.2:8081` deep link) bypasses the broken monkey path entirely. `10.0.2.2` is the magic IP for the emulator to reach the host's localhost.
 
