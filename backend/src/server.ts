@@ -26,7 +26,9 @@ import { familyMembersRoutes } from "./routes/familyMembers.js";
 import { familyEventsRoutes } from "./routes/familyEvents.js";
 import { pushTokenRoutes } from "./routes/pushTokens.js";
 import { notificationRoutes } from "./routes/notifications.js";
+import { internalRoutes } from "./routes/internal.js";
 import { jwtAuth, familyGuard } from "./middleware/auth.js";
+import { serviceTokenAuth } from "./middleware/serviceToken.js";
 
 // ---------------------------------------------------------------------------
 // App
@@ -68,6 +70,11 @@ app.route("/v1/family/:familyId/family-events", familyEventsRoutes);
 app.route("/v1/family/:familyId/push-tokens", pushTokenRoutes);
 app.route("/v1/family/:familyId/invites", inviteRoutes);
 app.route("/v1/notifications", notificationRoutes);
+
+// Internal API surface for service-to-service calls (Telegram bot Assistant).
+// Authed by SERVICE_TOKEN, not user JWT. Narrow scope: writes only.
+app.use("/v1/internal/*", serviceTokenAuth);
+app.route("/v1/internal", internalRoutes);
 
 // ---------------------------------------------------------------------------
 // Static web app (only when /public exists — i.e. Docker production image)

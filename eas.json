@@ -11,7 +11,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://family-os-4ilvxexrha-zf.a.run.app",
-        "EXPO_PUBLIC_APP_URL": "https://family-os-4ilvxexrha-zf.a.run.app"
+        "EXPO_PUBLIC_APP_URL": "https://family-os-4ilvxexrha-zf.a.run.app",
+        "EXPO_PUBLIC_ASSISTANT_URL": "https://family-ai-assistant-m7braajria-zf.a.run.app"
       }
     },
     "production": {
@@ -20,7 +21,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://family-os-4ilvxexrha-zf.a.run.app",
-        "EXPO_PUBLIC_APP_URL": "https://family-os-4ilvxexrha-zf.a.run.app"
+        "EXPO_PUBLIC_APP_URL": "https://family-os-4ilvxexrha-zf.a.run.app",
+        "EXPO_PUBLIC_ASSISTANT_URL": "https://family-ai-assistant-m7braajria-zf.a.run.app"
       }
     }
   }
