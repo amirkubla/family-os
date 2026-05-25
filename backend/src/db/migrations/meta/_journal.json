@@ -99,6 +99,13 @@
       "when": 1773470000000,
       "tag": "0013_invites_and_member_userid",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1779700000000,
+      "tag": "0014_push_token_unique_per_device",
+      "breakpoints": true
     }
   ]
 }

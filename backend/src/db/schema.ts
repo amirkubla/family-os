@@ -350,7 +350,12 @@ export const pushTokens = pgTable(
   },
   (t) => [
     index("push_tokens_family_id_idx").on(t.familyId),
-    uniqueIndex("push_tokens_family_token_uniq").on(t.familyId, t.token),
+    // A device's Expo push token uniquely identifies the device, not the
+    // (family, device) pair. The unique constraint is therefore on `token`
+    // alone — if a user switches families on the same device, the existing
+    // row's family_id is updated rather than a duplicate row being inserted.
+    // QA Pass 2 BUG-N3 found 4 tokens registered to 2–4 families each in prod.
+    uniqueIndex("push_tokens_token_uniq").on(t.token),
   ],
 );
 
