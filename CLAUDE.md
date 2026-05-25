@@ -10,6 +10,24 @@ Family OS — a Hebrew RTL family management app (React Native / Expo) targeting
 
 **Project status:** Solo developer (the maintainer), no real end users yet. Test data only. This means: breaking changes, JWT rotations, DB resets, and feature pivots are cheap. Don't over-engineer for backwards compatibility or zero-downtime migrations until there are real users.
 
+## Two-repo system
+
+The product spans **two separate Git repos / deploys**, both authored by the same maintainer. Most code lives here; the Telegram bot lives in its sibling.
+
+| Repo | Location | Hosts | Deployed at |
+|---|---|---|---|
+| **family-os** (this repo) | `/Users/amirkoblyansky/family-os` — `github.com/amirai21/family-os` | RN/Expo frontend (iOS / Android / web), Hono backend, Neon Postgres schema | Cloud Run `family-os` in GCP project `family-os-489209`, region `me-west1`. Public URL: `https://family-os-4ilvxexrha-zf.a.run.app` |
+| **family-ai-assistant** | `/Users/amirkoblyansky/workspace/family-ai-assistant` — `github.com/amirai21/family-ai-assistant` | FastAPI + SQLAlchemy + OpenAI. Telegram bot brain. Owns its own Neon DB for telegram bindings only — does NOT touch the family-os DB directly. | Cloud Run `family-ai-assistant` in GCP project `family-ai-assistant-476208`, region `me-west1`. URL: `https://family-ai-assistant-m7braajria-zf.a.run.app` |
+
+They talk to each other via HTTP, never via shared DB. See "Telegram bot architecture" below for the full data flow.
+
+The two GCP projects are both under the **personal** `amirkubla@gmail.com` account. Switch via:
+```bash
+~/google-cloud-sdk/bin/gcloud config set account amirkubla@gmail.com
+~/google-cloud-sdk/bin/gcloud config configurations activate personal   # family-os-489209
+# (for assistant ops just pass --project=family-ai-assistant-476208 explicitly)
+```
+
 ## Commands
 
 ### Frontend (root)
@@ -210,9 +228,86 @@ import { RTL_ROW, RTL_ALIGN_RIGHT, rtl, TEXT_RIGHT, TEXT_LEFT } from "@src/ui/rt
 ### Backend (`backend/`)
 Hono REST API with Drizzle ORM on Neon Postgres. Routes follow pattern `/v1/family/:familyId/<resource>`. All routes under `/v1/family/*` are protected by JWT middleware (`jwtAuth` + `familyGuard` ensures the JWT's familyId matches the URL param).
 
-**Route files:** `auth`, `chores`, `family`, `familyEvents`, `familyMembers`, `grocery`, `invites`, `kids`, `notes`, `notifications`, `projects`, `pushTokens`, `scheduleBlocks`.
+**Route files:** `auth`, `chores`, `family`, `familyEvents`, `familyMembers`, `grocery`, `internal`, `invites`, `kids`, `notes`, `notifications`, `projects`, `pushTokens`, `scheduleBlocks`.
 
 Schema is in `backend/src/db/schema.ts`. After schema changes: `npm run db:generate` → `npm run db:migrate`.
+
+**Internal service-to-service routes (`/v1/internal/*`):** narrow write-only surface for the Telegram bot Assistant. Auth'd by `SERVICE_TOKEN` (shared bearer) via `middleware/serviceToken.ts`, NOT user JWT. Currently exposes `POST /v1/internal/family/:familyId/{family-events,grocery}`. Add new endpoints here only when the Assistant grows new capabilities — don't widen this surface for general clients. The token lives in the family-os Cloud Run `SERVICE_TOKEN` env var and the Assistant Cloud Run `FAMILY_OS_SERVICE_TOKEN` env var — same value on both sides. Rotate together.
+
+### Telegram bot architecture (the sibling `family-ai-assistant` repo)
+
+The Telegram bot is implemented in a separate FastAPI service (see "Two-repo system" above). High-level flow:
+
+```
+User taps "חבר טלגרם" in family-os Settings
+   ↓
+family-os frontend → POST {ASSISTANT_URL}/telegram/generate-code   {family_id}
+   ↓
+Assistant mints a 6-char code (10-min TTL) in its OWN Neon DB
+   ↓ returns {code, expires_in_minutes}
+frontend opens https://t.me/family_os_assistant_bot?start=<code>
+   ↓ Telegram launches the bot DM, sends /start <code>
+Telegram → POST {ASSISTANT_URL}/telegram/webhook   (the registered webhook)
+   ↓
+Assistant /start handler: redeem code → upsert telegram_chats (chat_id → family_id)
+                                      → delete the code
+   ↓ replies "✅ חיברתי!" in the chat
+…now any Hebrew message from that chat_id is routed to the bot:
+   ↓
+Assistant /webhook → OpenAI gpt-4o-mini (Hebrew NL → structured intent)
+   ↓
+Per intent:
+  family_event  → POST {FAMILY_OS_API_URL}/v1/internal/family/:fid/family-events
+  grocery       → POST {FAMILY_OS_API_URL}/v1/internal/family/:fid/grocery
+  unsupported   → polite refusal back to the chat
+   ↓
+Bot sends reply to Telegram (✅ + summary)
+```
+
+**Key files in the sibling repo:**
+- `app/api/telegram_routes.py` — `/telegram/generate-code`, `/telegram/webhook`, `/telegram/admin/set-webhook`
+- `app/services/intent_parser.py` — OpenAI Hebrew → discriminated-union Pydantic intent (FamilyEventIntent / GroceryIntent / UnsupportedIntent)
+- `app/services/family_os_client.py` — async httpx client calling family-os `/v1/internal/*` with `Authorization: Bearer ${FAMILY_OS_SERVICE_TOKEN}`
+- `app/services/telegram_service.py` — code generation, atomic redeem, chat-binding upsert
+- `app/services/telegram_client.py` — outbound `sendMessage` + `setWebhook`
+- `app/models/telegram.py` — `TelegramCode` + `TelegramChat` SQLAlchemy models
+- `alembic/versions/0002_telegram_tables.py` — DB migration
+
+**Two databases.** The Assistant has its own Neon DB (project `family-ai-assistant-476208`) for `telegram_codes` + `telegram_chats` only. The family-os Neon DB is owned by family-os and is the single source of truth for family data; the Assistant reads/writes it only via REST. Never give the Assistant the family-os DATABASE_URL.
+
+**Required Cloud Run env vars on the Assistant:**
+- `DATABASE_URL` (plain) — Assistant's own Neon DB
+- `OPENAI_API_KEY` (Secret Manager) — for gpt-4o-mini intent extraction
+- `OPENAI_MODEL` (plain, default `gpt-4o-mini`)
+- `TELEGRAM_BOT_TOKEN` (Secret Manager) — from `@BotFather`
+- `FAMILY_OS_API_URL` (plain) — `https://family-os-4ilvxexrha-zf.a.run.app`
+- `FAMILY_OS_SERVICE_TOKEN` (plain, should move to Secret Manager) — matches family-os's `SERVICE_TOKEN`
+
+**Required Cloud Run env var on family-os:**
+- `SERVICE_TOKEN` (plain) — matches the Assistant's `FAMILY_OS_SERVICE_TOKEN`
+
+**Deploy gotcha (recorded 2026-05-25):** the Assistant's `.github/workflows/deploy.yml` originally used `gcloud run deploy ... --set-env-vars "DATABASE_URL=..."`. The `--set-env-vars` flag REPLACES the entire plain-env-var list with whatever is given, silently wiping anything set out-of-band. Changed to `--update-env-vars` which is additive. Always use `--update-env-vars` / `--update-secrets` (additive) — never `--set-env-vars` / `--set-secrets` (destructive) — in CD. Plain-env-var management is fragile; prefer Secret Manager for anything sensitive.
+
+**Manually register the webhook after a deploy/URL change:**
+```bash
+WEBHOOK="https://family-ai-assistant-m7braajria-zf.a.run.app/telegram/webhook"
+TOKEN=$(grep -oE '[0-9]{8,12}:[A-Za-z0-9_-]{30,}' /Users/amirkoblyansky/telegramtoken | head -1)
+SECRET="${TOKEN: -16}"
+curl -X POST "https://api.telegram.org/bot${TOKEN}/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\":\"$WEBHOOK\",\"secret_token\":\"$SECRET\",\"drop_pending_updates\":true}"
+unset TOKEN SECRET
+```
+The webhook handler verifies `X-Telegram-Bot-Api-Secret-Token` against the last 16 chars of the bot token — Telegram-recommended pattern.
+
+**Synthetic-webhook test driver.** To exercise the bot end-to-end without typing in Telegram (useful for QA / regression), POST a Telegram `Update` JSON to `/telegram/webhook` with the right `X-Telegram-Bot-Api-Secret-Token` header. The bot will still send real replies to the bound Telegram chat (acceptable side effect). See `/tmp/run_grocery_tests.sh` from the 2026-05-25 session for a reference script that fires a battery of prompts and diffs the resulting grocery_items rows.
+
+**Bot's intent scope today (2026-05-25):**
+- `family_event` — one-time recurring or one-time event creation (Hebrew NL parses date + time + title + optional location)
+- `grocery` — multi-item list, per-item qty + per-item shopping_category (`grocery` / `home` / `health`)
+- `unsupported` — anything else returns a polite Hebrew refusal
+
+Adding a new intent: extend the discriminated union + system prompt + webhook dispatch + (if it writes) a new internal route on the family-os side.
 
 ### Design Tokens (`src/ui/tokens.ts`)
 Always use tokens — never hardcode colors or spacing.
@@ -348,8 +443,24 @@ These rules exist because we leaked the Neon DB password, JWT_SECRET, and SCHEDU
   history -d $(history 1)
   ```
 - **Never paste secrets into chat with Claude.** Conversation transcripts are stored; treat them as semi-public. If you do paste one, rotate it after the task is done.
-- **Backend secrets live in Cloud Run env vars** (`gcloud run services update --update-env-vars`), never in the repo. The list right now: `DATABASE_URL`, `JWT_SECRET`, `SCHEDULER_SECRET`. Inspect with `gcloud run services describe family-os --format="value(spec.template.spec.containers[0].env)"`.
+- **Backend secrets live in Cloud Run env vars** (`gcloud run services update --update-env-vars` for plain, or Secret Manager for sensitive — prefer Secret Manager for new ones), never in the repo. Two services, two projects:
+  - **family-os** (`family-os-489209`): `DATABASE_URL`, `JWT_SECRET`, `SCHEDULER_SECRET`, `SERVICE_TOKEN`.
+  - **family-ai-assistant** (`family-ai-assistant-476208`): `DATABASE_URL` (Assistant's own Neon, NOT family-os's), `OPENAI_API_KEY` (Secret Manager), `TELEGRAM_BOT_TOKEN` (Secret Manager), `FAMILY_OS_API_URL` (plain), `FAMILY_OS_SERVICE_TOKEN` (matches family-os `SERVICE_TOKEN`, rotate together).
+  Inspect with `gcloud run services describe <service> --project=<proj> --region=me-west1 --format="value(spec.template.spec.containers[0].env[].name)"` to see names without leaking values.
 - **Frontend `EXPO_PUBLIC_*` are NOT secret** — they're baked into the JS bundle and inspectable in DevTools. Anything truly sensitive must NEVER use this prefix.
+- **Use Secret Manager for any new sensitive value.** Pattern:
+  ```bash
+  # Pipe value from file, never inline. The shell-redirect prevents the
+  # value from appearing in process listings or shell history.
+  cat /path/to/keyfile | tr -d '\n' | \
+    gcloud secrets create MY_SECRET --project=<proj> --replication-policy=automatic --data-file=-
+  gcloud secrets add-iam-policy-binding MY_SECRET --project=<proj> \
+    --member="serviceAccount:<project-number>-compute@developer.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor"
+  gcloud run services update <service> --project=<proj> --region=me-west1 \
+    --update-secrets="MY_SECRET=MY_SECRET:latest"
+  ```
+- **Never use `--set-env-vars` in CD pipelines.** It REPLACES the plain-env-var list, silently wiping vars set manually out-of-band. Use `--update-env-vars` (additive). Same applies to `--set-secrets` vs. `--update-secrets`. The Assistant repo's `deploy.yml` was bitten by this on 2026-05-25 and has been fixed.
 
 ### Files that must never be committed
 
@@ -382,6 +493,17 @@ The drill, in order:
 - The deployed service has `--allow-unauthenticated` (public access to the API); auth is enforced at the application layer via JWT. If JWT_SECRET leaks → game over until rotation.
 
 ## Session Log
+
+### 2026-05-25
+- **Telegram bot integration restored, end-to-end.** Discovered the family-os Settings "Connect Telegram" button was wired to `http://localhost:8000/telegram/generate-code` with no env var ever set; the deployed Assistant service had zero telegram code (git history confirmed it had never been there). The earlier working bot existed somewhere but its code never made it into the repo / was lost.
+- **Rebuilt from scratch** in `/Users/amirkoblyansky/workspace/family-ai-assistant`. New files: `app/models/telegram.py` (TelegramCode + TelegramChat), `alembic/versions/0002_telegram_tables.py`, `app/api/telegram_routes.py` (`/telegram/generate-code`, `/telegram/webhook`, `/telegram/admin/set-webhook`), `app/services/intent_parser.py` (gpt-4o-mini Hebrew NL → discriminated Pydantic union: FamilyEventIntent / GroceryIntent / UnsupportedIntent), `app/services/family_os_client.py` (httpx → family-os `/v1/internal/*`), `app/services/telegram_service.py`, `app/services/telegram_client.py`. Router mounted at ROOT not `/api` because the frontend hardcodes `${ASSISTANT_URL}/telegram/generate-code`.
+- **On the family-os side**: new `backend/src/middleware/serviceToken.ts` + `backend/src/routes/internal.ts` exposing narrow write-only `POST /v1/internal/family/:fid/{family-events,grocery}`. Auth'd by `SERVICE_TOKEN` (shared bearer) rather than user JWT. `EXPO_PUBLIC_ASSISTANT_URL` wired in `.env.production` + `eas.json` pointing at `https://family-ai-assistant-m7braajria-zf.a.run.app`.
+- **Two leaked secrets** during the investigation: the original BotFather token (user pasted) and the Assistant Neon DATABASE_URL (my `gcloud describe` dumped it into the chat). Bot token was rotated via `@BotFather /revoke`; Neon password rotation deferred but flagged.
+- **Secret Manager pattern adopted** for OPENAI_API_KEY and TELEGRAM_BOT_TOKEN — values piped from file into `gcloud secrets create --data-file=-`, then mounted via `--update-secrets`. Never appears in process listings, gcloud describe output, or shell history. This is the new standard for any sensitive value — see the "Secret handling" section above.
+- **`--set-env-vars` regression**: Assistant `.github/workflows/deploy.yml` originally used `--set-env-vars "DATABASE_URL=..."` which REPLACES the entire plain-env-var list, silently wiping `FAMILY_OS_SERVICE_TOKEN` + `FAMILY_OS_API_URL` on every CD run. Bot threw `httpx Illegal header value b'Bearer '`. Fixed by switching to `--update-env-vars` (additive). Verified the post-fix CI run preserves all env vars.
+- **Grocery test battery G1-G8** run via synthetic-webhook driver script (`/tmp/run_grocery_tests.sh`): 7/8 pass on first try. The one fail was G7 (cleaning supplies landed in `shopping_category="grocery"` instead of `"home"`). Fixed by exposing `shopping_category: Literal["grocery", "home", "health"]` on `GroceryItem` in the Pydantic schema + updating the system prompt with per-category Hebrew examples. Reply also now uses category-aware emojis (🛒 / 🏠 / 💊). Re-test pending.
+- **The synthetic-webhook driver pattern** is now the recommended way to QA the bot — POST a real Telegram-shaped `Update` JSON to `/telegram/webhook` with the right `X-Telegram-Bot-Api-Secret-Token` header. The bot sends real replies to the bound Telegram chat (acceptable side effect — the test runner is the user), and we diff DB rows to verify. Reference: the script written this session.
+- Architecture decision recorded in the new "Two-repo system" + "Telegram bot architecture" sections above. **Two databases, two repos, two Cloud Run services, one product.** The Assistant has its own Neon for telegram bindings; family-os DB stays the source of truth for family data; the bridge is the `SERVICE_TOKEN`-authed REST API.
 
 ### 2026-05-24
 - Attempted to clone `Pixel_7` AVD into `Redmi_Note_13` (1080×2400 @ 400dpi, 2GB RAM, manufacturer label Xiaomi) by copying `~/.android/avd/Pixel_7.{avd,ini}` and editing `config.ini`. AVD booted fine but Expo Go failed to launch on it — same monkey-251 error we later found on Pixel_7 too. Deleted the clone.
