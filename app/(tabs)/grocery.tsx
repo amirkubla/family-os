@@ -214,6 +214,9 @@ export default function GroceryScreen() {
             pressed && styles.addButtonPressed,
           ]}
           onPress={() => setModalOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t("grocery.quickAdd")}
+          testID="add-grocery-item"
         >
           <View style={styles.addButtonIcon}>
             <IconButton icon="plus" iconColor="#FFF" size={20} style={{ margin: 0 }} />

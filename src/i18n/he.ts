@@ -209,6 +209,7 @@ const he = {
     monthView: "חודש",
     weekView: "שבוע",
     dayView: "יום",
+    addEvent: "הוספת אירוע",
   },
 
   // ── Project status labels ──

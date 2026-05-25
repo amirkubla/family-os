@@ -378,6 +378,11 @@ export default function CalendarScreen() {
         style={styles.fab}
         color="#FFF"
         onPress={openAdd}
+        // a11y + automation hooks (QA Pass 2 BUG #8 — FAB had zero a11y props,
+        // its DOM tree had no role/cursor/aria/testID anywhere on web).
+        accessibilityRole="button"
+        accessibilityLabel={t("calendar.addEvent")}
+        testID="add-event-fab"
       />
 
       <FamilyEventModal
