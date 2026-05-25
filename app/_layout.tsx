@@ -139,6 +139,46 @@ export default function RootLayout() {
     });
   }, [authStatus, authFamilyId]);
 
+  // Deep-link from a tapped push notification to the relevant event.
+  // The reminder push carries `data.eventId`; without this listener, tapping
+  // the notification just opens the app to the last screen (QA Pass 2 BUG-N4).
+  // Native-only — expo-notifications is no-op on web.
+  const router = useRouter();
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    let sub: { remove: () => void } | undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const N = await import("expo-notifications");
+        if (cancelled) return;
+        // Handle taps that arrive while the app is running
+        sub = N.addNotificationResponseReceivedListener((response) => {
+          const data = response.notification.request.content.data as
+            | { eventId?: string }
+            | undefined;
+          if (data?.eventId) {
+            router.push(`/(tabs)/calendar?focus=${encodeURIComponent(data.eventId)}`);
+          }
+        });
+        // Handle a tap that LAUNCHED the app from a cold start
+        const last = await N.getLastNotificationResponseAsync();
+        const lastData = last?.notification.request.content.data as
+          | { eventId?: string }
+          | undefined;
+        if (lastData?.eventId) {
+          router.push(`/(tabs)/calendar?focus=${encodeURIComponent(lastData.eventId)}`);
+        }
+      } catch (err) {
+        console.warn("[push] Failed to install notification tap listener", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      sub?.remove();
+    };
+  }, [router]);
+
   const onboardingComplete = useFamilyStore((s) => s.onboardingComplete);
 
   // Hide splash once fonts are loaded, store hydrated, and auth resolved
