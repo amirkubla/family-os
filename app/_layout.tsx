@@ -110,6 +110,13 @@ export default function RootLayout() {
   // Logout clears family data via useAuthStore.logout().
   const authFamilyId = useAuthStore((s) => s.session?.user.familyId ?? null);
   const sessionIssuedAt = useAuthStore((s) => s.session?.issuedAt ?? 0);
+
+  // Tracks which session's pull has completed. Used to gate OnboardingWizard
+  // so it doesn't flash for ~500ms during the pull/auto-complete window for
+  // returning users (logout() resets onboardingComplete to false; the
+  // .then() below flips it back to true once we confirm a claimed member).
+  const [pulledForSession, setPulledForSession] = useState<number | null>(null);
+
   useEffect(() => {
     if (!hydrated || authStatus !== "loggedIn" || !authFamilyId) return;
 
@@ -125,9 +132,16 @@ export default function RootLayout() {
         if (!s.onboardingComplete && hasClaimed) {
           s.setOnboardingComplete(true);
         }
+        setPulledForSession(sessionIssuedAt);
       })
       .catch((err) => {
         console.warn("[sync] Initial pull failed:", err.message);
+        // Fall back to current behavior: if the pull failed we can't tell
+        // whether onboarding is needed, so honor the persisted store flag.
+        // For a truly new user on a flaky network this means the wizard
+        // still shows; for a returning user with cleared local state it
+        // also shows (same as before this gate existed).
+        setPulledForSession(sessionIssuedAt);
       });
   }, [hydrated, authStatus, authFamilyId, sessionIssuedAt]);
 
@@ -191,7 +205,15 @@ export default function RootLayout() {
 
   if (!ready) return null;
 
-  const showOnboarding = authStatus === "loggedIn" && !onboardingComplete;
+  // Only show the wizard once we've actually confirmed the user's
+  // onboarding state from the server. The .then() above flips
+  // onboardingComplete=true for returning users with a claimed member;
+  // without this gate, the wizard renders for the duration of the pull
+  // (~500ms) and then disappears — a visible flash on every login.
+  const showOnboarding =
+    authStatus === "loggedIn" &&
+    !onboardingComplete &&
+    pulledForSession === sessionIssuedAt;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
