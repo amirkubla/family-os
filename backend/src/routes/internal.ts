@@ -17,7 +17,9 @@ import { choresRepo } from "../repos/choresRepo.js";
 import { familyEventsRepo } from "../repos/familyEventsRepo.js";
 import { familyMembersRepo } from "../repos/familyMembersRepo.js";
 import { groceryRepo } from "../repos/groceryRepo.js";
+import { kidsRepo } from "../repos/kidsRepo.js";
 import { notesRepo } from "../repos/notesRepo.js";
+import { scheduleBlocksRepo } from "../repos/scheduleBlocksRepo.js";
 import { createFamilyEventSchema } from "../schemas/familyEvents.js";
 
 export const internalRoutes = new Hono();
@@ -156,11 +158,37 @@ function localDateParts(d: Date): { isoDate: string; dayOfWeek: number } {
   return { isoDate, dayOfWeek };
 }
 
+// Resolve a free-text kid name (Hebrew, case-insensitive exact match) to a
+// kid_id within a family. Returns null if not found — callers should treat
+// that as a 404 for the asked kid.
+async function resolveKidId(
+  familyId: string,
+  kidName: string,
+): Promise<string | null> {
+  const kids = await kidsRepo.listByFamily(familyId);
+  const needle = kidName.trim().toLowerCase();
+  const match = kids.find(
+    (k) => k.isActive && k.name.trim().toLowerCase() === needle,
+  );
+  return match ? match.id : null;
+}
+
 internalRoutes.get("/family/:familyId/family-events", async (c) => {
   const familyId = c.req.param("familyId")!;
   const range = c.req.query("range") ?? "today";
   if (range !== "today" && range !== "tomorrow" && range !== "week") {
     return c.json({ error: "range must be today|tomorrow|week" }, 400);
+  }
+
+  // Optional kid scope: only events whose assignee is this kid.
+  const kidNameParam = c.req.query("kidName")?.trim();
+  let kidIdFilter: string | null = null;
+  if (kidNameParam) {
+    kidIdFilter = await resolveKidId(familyId, kidNameParam);
+    if (kidIdFilter === null) {
+      // Empty list rather than 404 — bot replies "no events for X" cleanly.
+      return c.json([], 200);
+    }
   }
 
   const all = await familyEventsRepo.listByFamily(familyId);
@@ -200,7 +228,86 @@ internalRoutes.get("/family/:familyId/family-events", async (c) => {
     );
   }
 
+  // Apply kid scope after the date filter to keep the matchesDay closure simple.
+  if (kidIdFilter) {
+    filtered = filtered.filter(
+      (e) => e.assigneeType === "kid" && e.assigneeId === kidIdFilter,
+    );
+  }
+
   // Sort by start time for predictable bot output.
+  filtered.sort((a, b) => a.startMinutes - b.startMinutes);
+  return c.json(filtered, 200);
+});
+
+// ── schedule-blocks (kid's weekly schedule — classes, hobbies) ───────────
+//
+// Distinct from family-events: each block belongs to exactly one kid and
+// is shaped for the kid's weekly schedule screen. The bot uses this to
+// answer "what does דני have next week" (where dani's classes / hobbies
+// live), separately from family-wide events.
+
+internalRoutes.get("/family/:familyId/schedule-blocks", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const range = c.req.query("range") ?? "today";
+  if (range !== "today" && range !== "tomorrow" && range !== "week") {
+    return c.json({ error: "range must be today|tomorrow|week" }, 400);
+  }
+
+  const kidNameParam = c.req.query("kidName")?.trim();
+  let kidIdFilter: string | null = null;
+  if (kidNameParam) {
+    kidIdFilter = await resolveKidId(familyId, kidNameParam);
+    if (kidIdFilter === null) {
+      return c.json([], 200);
+    }
+  }
+
+  const all = kidIdFilter
+    ? await scheduleBlocksRepo.listByKid(kidIdFilter)
+    : await scheduleBlocksRepo.listByFamily(familyId);
+
+  // Same range-matching logic as family-events. Kept inline rather than
+  // extracted because the predicate is small and the type differs by one
+  // field (no isRecurring/date semantics drift to worry about).
+  const today = new Date();
+  const todayParts = localDateParts(today);
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  const tomorrowParts = localDateParts(tomorrow);
+
+  const isOneTime = (b: (typeof all)[number]) => !b.isRecurring && !!b.date;
+  const isRecurring = (b: (typeof all)[number]) =>
+    b.isRecurring && Array.isArray(b.daysOfWeek) && b.daysOfWeek.length > 0;
+
+  const matchesDay = (
+    b: (typeof all)[number],
+    isoDate: string,
+    dow: number,
+  ) =>
+    (isOneTime(b) && b.date === isoDate) ||
+    (isRecurring(b) && (b.daysOfWeek as number[]).includes(dow));
+
+  let filtered = all;
+  if (range === "today") {
+    filtered = all.filter((b) =>
+      matchesDay(b, todayParts.isoDate, todayParts.dayOfWeek),
+    );
+  } else if (range === "tomorrow") {
+    filtered = all.filter((b) =>
+      matchesDay(b, tomorrowParts.isoDate, tomorrowParts.dayOfWeek),
+    );
+  } else {
+    const weekDays: { isoDate: string; dayOfWeek: number }[] = [];
+    for (let i = 0; i < 7; i++) {
+      weekDays.push(
+        localDateParts(new Date(today.getTime() + i * 24 * 60 * 60 * 1000)),
+      );
+    }
+    filtered = all.filter((b) =>
+      weekDays.some((d) => matchesDay(b, d.isoDate, d.dayOfWeek)),
+    );
+  }
+
   filtered.sort((a, b) => a.startMinutes - b.startMinutes);
   return c.json(filtered, 200);
 });
@@ -224,9 +331,48 @@ internalRoutes.get("/family/:familyId/chores", async (c) => {
   if (status !== "undone" && status !== "all") {
     return c.json({ error: "status must be undone|all" }, 400);
   }
-  const rows =
+  const assigneeMemberId = c.req.query("assigneeMemberId");
+  const selectedForTodayParam = c.req.query("selectedForToday");
+  // Only accept the literal strings "true"/"false" — silently ignoring
+  // typos would mask Assistant bugs.
+  let selectedForTodayFilter: boolean | null = null;
+  if (selectedForTodayParam !== undefined) {
+    if (selectedForTodayParam !== "true" && selectedForTodayParam !== "false") {
+      return c.json({ error: "selectedForToday must be true|false" }, 400);
+    }
+    selectedForTodayFilter = selectedForTodayParam === "true";
+  }
+
+  let rows =
     status === "all"
       ? await choresRepo.listByFamily(familyId)
       : await choresRepo.listUndone(familyId);
+
+  if (assigneeMemberId) {
+    rows = rows.filter((r) => r.assignedToMemberId === assigneeMemberId);
+  }
+  if (selectedForTodayFilter !== null) {
+    rows = rows.filter((r) => r.selectedForToday === selectedForTodayFilter);
+  }
+
   return c.json(rows, 200);
+});
+
+// ── members (read-only; for the Assistant's /me onboarding) ──────────────
+
+internalRoutes.get("/family/:familyId/members", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const rows = await familyMembersRepo.listByFamily(familyId);
+  // Active members only — inactive rows are kept for historical attribution
+  // (e.g., chores assigned to a parent who left), but don't belong in a
+  // "who are you?" picker.
+  const active = rows
+    .filter((m) => m.isActive)
+    .map((m) => ({
+      id: m.id,
+      displayName: m.displayName,
+      role: m.role,
+      avatarEmoji: m.avatarEmoji,
+    }));
+  return c.json(active, 200);
 });
