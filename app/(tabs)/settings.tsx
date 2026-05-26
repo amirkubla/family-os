@@ -186,12 +186,29 @@ export default function SettingsScreen() {
 
   const connectTelegram = async () => {
     setConnectingTelegram(true);
+    // On web, popup blockers gate window.open() to the call stack of the
+    // original user click. We can't await our fetch and THEN call open —
+    // the gesture has expired by then and the browser silently blocks the
+    // popup with no console error. The fix: pre-open a placeholder tab
+    // synchronously here, redirect it once we have the code.
+    // Native (iOS/Android) doesn't have this restriction — Linking.openURL
+    // works after async work just fine.
+    let preOpenedWin: Window | null = null;
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      preOpenedWin = window.open("about:blank", "_blank");
+    }
     try {
       const familyId = await getFamilyId();
       const { code } = await telegramApi.generateCode(familyId);
       const deepLink = `https://t.me/family_os_assistant_bot?start=${code}`;
-      await Linking.openURL(deepLink);
+      if (preOpenedWin) {
+        preOpenedWin.location.href = deepLink;
+      } else {
+        await Linking.openURL(deepLink);
+      }
     } catch {
+      // Don't leave an empty about:blank tab if anything went wrong.
+      if (preOpenedWin) preOpenedWin.close();
       Alert.alert(t("settings.telegramError"));
     } finally {
       setConnectingTelegram(false);

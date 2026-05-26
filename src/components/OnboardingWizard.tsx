@@ -745,12 +745,24 @@ function Step5Telegram({
 
   const connectTelegram = async () => {
     setConnecting(true);
+    // See settings.tsx for the full explanation — popup blockers gate
+    // window.open() to the original click's call stack on web, so we must
+    // pre-open a tab synchronously and redirect it once we have the code.
+    let preOpenedWin: Window | null = null;
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      preOpenedWin = window.open("about:blank", "_blank");
+    }
     try {
       const familyId = await getFamilyId();
       const { code } = await telegramApi.generateCode(familyId);
       const deepLink = `https://t.me/family_os_assistant_bot?start=${code}`;
-      await Linking.openURL(deepLink);
+      if (preOpenedWin) {
+        preOpenedWin.location.href = deepLink;
+      } else {
+        await Linking.openURL(deepLink);
+      }
     } catch {
+      if (preOpenedWin) preOpenedWin.close();
       Alert.alert(t("settings.telegramError"));
     } finally {
       setConnecting(false);
