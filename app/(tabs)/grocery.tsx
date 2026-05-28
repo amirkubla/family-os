@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Platform, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Platform } from "react-native";
 import {
   Card,
   Text,
@@ -8,6 +8,7 @@ import {
   IconButton,
   Divider,
   SegmentedButtons,
+  FAB,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -27,7 +28,7 @@ import {
   OTHER_SUBCATEGORY,
 } from "@src/models/customization";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { C, R, S, SHADOW } from "@src/ui/tokens";
+import { C, R, S } from "@src/ui/tokens";
 
 /** Emoji per subcategory — keyed by English key AND Hebrew label for compat with legacy data. */
 const SUBCATEGORY_EMOJI: Record<string, string> = {
@@ -259,22 +260,20 @@ export default function GroceryScreen() {
           </Card.Content>
         </Card>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.addButton,
-            pressed && styles.addButtonPressed,
-          ]}
-          onPress={() => setModalOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel={t("grocery.quickAdd")}
-          testID="add-grocery-item"
-        >
-          <View style={styles.addButtonIcon}>
-            <IconButton icon="plus" iconColor="#FFF" size={20} style={{ margin: 0 }} />
-          </View>
-          <Text style={styles.addButtonLabel}>{t("grocery.quickAdd")}</Text>
-        </Pressable>
       </ScrollView>
+
+      {/* Floating action button — consistent with /calendar and /kid/*.
+          The previous design was a wide purple bar scrolling with the
+          list, which disappeared on long lists; a FAB stays visible. */}
+      <FAB
+        icon="plus"
+        style={styles.fab}
+        color="#FFF"
+        onPress={() => setModalOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={t("grocery.quickAdd")}
+        testID="add-grocery-item"
+      />
 
       <GroceryAddModal
         visible={modalOpen || !!editingItem}
@@ -360,31 +359,15 @@ const styles = StyleSheet.create({
   boughtLabel: { fontSize: 13, fontWeight: "600", color: C.textSecondary, textAlign: TEXT_RIGHT },
   boughtRow: { opacity: 0.5 },
   boughtText: { textDecorationLine: "line-through", color: C.textMuted, textAlign: TEXT_RIGHT },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: S.sm,
-    borderRadius: R.xl,
+  // FAB matches the /calendar + /kid FAB styling so all three feel like
+  // the same app. Bottom-left in RTL-web (RN Web doesn't auto-mirror
+  // physical left/right; iOS native does, so this lands bottom-left on
+  // web and bottom-right on iOS — consistent with the other tabs).
+  fab: {
+    position: "absolute",
+    left: S.xl,
+    bottom: S.xl,
+    borderRadius: R.lg,
     backgroundColor: C.purple,
-    paddingVertical: S.md,
-    paddingHorizontal: S.xl,
-    ...SHADOW.md,
-    shadowColor: C.purple,
-  },
-  addButtonPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-  addButtonIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addButtonLabel: {
-    color: "#FFF",
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 0.3,
   },
 });
