@@ -16,8 +16,8 @@ The product spans **two separate Git repos / deploys**, both authored by the sam
 
 | Repo | Location | Hosts | Deployed at |
 |---|---|---|---|
-| **family-os** (this repo) | `/Users/amirkoblyansky/family-os` — `github.com/amirai21/family-os` | RN/Expo frontend (iOS / Android / web), Hono backend, Neon Postgres schema | Cloud Run `family-os` in GCP project `family-os-489209`, region `me-west1`. Public URL: `https://family-os-4ilvxexrha-zf.a.run.app` |
-| **family-ai-assistant** | `/Users/amirkoblyansky/workspace/family-ai-assistant` — `github.com/amirai21/family-ai-assistant` | FastAPI + SQLAlchemy + OpenAI. Telegram bot brain. Owns its own Neon DB for telegram bindings only — does NOT touch the family-os DB directly. | Cloud Run `family-ai-assistant` in GCP project `family-ai-assistant-476208`, region `me-west1`. URL: `https://family-ai-assistant-m7braajria-zf.a.run.app` |
+| **family-os** (this repo) | `/Users/amirkoblyansky/family-os` — `github.com/amirkubla/family-os` | RN/Expo frontend (iOS / Android / web), Hono backend, Neon Postgres schema | Cloud Run `family-os` in GCP project `family-os-489209`, region `me-west1`. Public URL: `https://family-os-4ilvxexrha-zf.a.run.app` |
+| **family-ai-assistant** | `/Users/amirkoblyansky/workspace/family-ai-assistant` — `github.com/amirkubla/family-ai-assistant` | FastAPI + SQLAlchemy + OpenAI. Telegram bot brain. Owns its own Neon DB for telegram bindings only — does NOT touch the family-os DB directly. | Cloud Run `family-ai-assistant` in GCP project `family-ai-assistant-476208`, region `me-west1`. URL: `https://family-ai-assistant-m7braajria-zf.a.run.app` |
 
 They talk to each other via HTTP, never via shared DB. See "Telegram bot architecture" below for the full data flow.
 
@@ -490,11 +490,17 @@ The drill, in order:
 
 ### Public surface
 
-- Repo `github.com/amirai21/family-os` is **public**. Default to "anything I commit is on the internet permanently."
+- Repo `github.com/amirkubla/family-os` is **public**. Default to "anything I commit is on the internet permanently."
 - Cloud Run service URLs (`*.run.app`) are public by design. `EXPO_PUBLIC_API_URL` being committed is fine — it's just the hostname.
 - The deployed service has `--allow-unauthenticated` (public access to the API); auth is enforced at the application layer via JWT. If JWT_SECRET leaks → game over until rotation.
 
 ## Session Log
+
+### 2026-05-27
+- **GitHub ownership transferred** from the work user `amirai21` to the personal user `amirkubla` for both repos: `github.com/amirkubla/family-os` and `github.com/amirkubla/family-ai-assistant`. Local git remotes repointed; CLAUDE.md references in both repos updated; old URLs still redirect via GitHub for now but should be considered deprecated.
+- **CD impact (verified for family-os)**: the family-os deploy workflow authenticates via a static `GCP_SA_KEY` secret (`google-github-actions/auth@v2` with `credentials_json`) — repo secrets transfer with the repo, so the first post-transfer push (`477700d` for the customization feature) deployed cleanly. No action needed there.
+- **CD impact (heads-up for family-ai-assistant)**: the Assistant's workflow uses Workload Identity Federation instead — `workload_identity_provider: projects/${{ secrets.GCP_WIF_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github/providers/github-oidc`. WIF providers commonly enforce an `assertion.repository_owner == 'amirai21'` attribute condition. If yours does, the next Assistant push will fail with a 403 from `google-github-actions/auth`. Fix: update the provider's attribute condition to `amirkubla` (or to a broader expression covering both). Quickest probe is to do a trivial Assistant push and watch the run.
+- **Other org references**: grepped `*.md / *.yml / *.json / *.ts` across both repos — only the three architecture lines in family-os CLAUDE.md and the one cross-link in family-ai-assistant CLAUDE.md mentioned `amirai21`. No deploy.yml hardcoded the owner. No code references. Clean.
 
 ### 2026-05-25
 - **Telegram bot integration restored, end-to-end.** Discovered the family-os Settings "Connect Telegram" button was wired to `http://localhost:8000/telegram/generate-code` with no env var ever set; the deployed Assistant service had zero telegram code (git history confirmed it had never been there). The earlier working bot existed somewhere but its code never made it into the repo / was lost.
