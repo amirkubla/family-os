@@ -18,7 +18,7 @@ import { useFamilyEventsForDate } from "@src/store/familyEventSelectors";
 import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S, R } from "@src/ui/tokens";
-import { TEXT_RIGHT } from "@src/ui/rtl";
+import { TEXT_RIGHT, RTL_ROW } from "@src/ui/rtl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -301,7 +301,9 @@ export default function DayCalendar({
                         left: `${leftPercent}%` as any,
                         width: `${widthPercent - 1}%` as any,
                         backgroundColor: hovered ? ev.color + "40" : ev.color + "22",
-                        borderLeftColor: ev.color,
+                        // See WeekCalendar — logical border start side so the
+                        // accent stripe lands on the visual right in RTL.
+                        borderStartColor: ev.color,
                       },
                     ]}
                     onPress={() => onEventPress?.(ev.id, ev.source)}
@@ -411,19 +413,24 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(108, 99, 255, 0.06)",
   },
 
+  // RTL: stripe on the writing-direction start (visual right in RTL).
   eventBlock: {
     position: "absolute",
-    borderLeftWidth: 4,
+    borderStartWidth: 4,
     borderRadius: R.sm,
     paddingHorizontal: S.sm,
     paddingVertical: S.xs,
     overflow: "hidden",
-    marginRight: 2,
+    marginEnd: 2,
     zIndex: 1,
     ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
   },
+  // RTL_ROW (not "row-reverse") — CLAUDE.md notes "row-reverse" double-flips
+  // on web, putting the icon on the visual left. RTL_ROW = plain "row" in
+  // RTL, which RN Web auto-mirrors to right-to-left so the icon sits at the
+  // visual right next to the title.
   eventRow: {
-    flexDirection: "row-reverse",
+    flexDirection: RTL_ROW,
     alignItems: "flex-start",
     gap: S.sm,
   },
@@ -438,11 +445,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
   eventTime: {
     fontSize: 11,
     color: C.textSecondary,
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
     marginTop: 1,
   },
 });

@@ -25,6 +25,7 @@ import {
 } from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S, R } from "@src/ui/tokens";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -451,7 +452,12 @@ export default function WeekCalendar({
                             left: `${leftPercent}%` as any,
                             width: `${widthPercent - 2}%` as any,
                             backgroundColor: hovered ? ev.color + "40" : ev.color + "28",
-                            borderLeftColor: ev.color,
+                            // borderStartColor + borderStartWidth (in styles.eventBlock)
+                            // put the colored accent stripe on the writing-direction
+                            // start side — visual RIGHT in RTL. Using physical
+                            // borderLeft* would hardcode it to the left on web
+                            // (RN Web doesn't auto-mirror physical sides).
+                            borderStartColor: ev.color,
                           },
                         ]}
                         onPress={() => onEventPress?.(ev.id, ev.source)}
@@ -596,15 +602,17 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(108, 99, 255, 0.06)",
   },
 
-  // Event blocks
+  // Event blocks. RTL: stripe is on the writing-direction start (visual
+  // right in RTL); text right-aligned with explicit writingDirection so
+  // mixed emoji + Hebrew renders consistently across web/iOS/Android.
   eventBlock: {
     position: "absolute",
-    borderLeftWidth: 3,
+    borderStartWidth: 3,
     borderRadius: 4,
     paddingHorizontal: 3,
     paddingVertical: 2,
     overflow: "hidden",
-    marginRight: 1,
+    marginEnd: 1,
     zIndex: 1,
     ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
   },
@@ -612,10 +620,14 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "700",
     lineHeight: 12,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
   eventTime: {
     fontSize: 8,
     color: C.textSecondary,
     lineHeight: 10,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
 });
