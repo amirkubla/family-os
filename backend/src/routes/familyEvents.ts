@@ -6,6 +6,26 @@ import {
   upsertFamilyEventSchema,
   patchFamilyEventSchema,
 } from "../schemas/familyEvents.js";
+import {
+  materializeForSource,
+  cancelForSource,
+} from "../services/reminderService.js";
+
+// Fire-and-forget the reminder materialize/cancel side-effects: we don't
+// want the API response blocked on Cloud Tasks RPCs, and a failure there
+// shouldn't fail the user's event-write. Errors are logged inside the
+// service. The next event edit re-runs materialize, so a missed call is
+// self-healing.
+function rematerializeAsync(id: string): void {
+  materializeForSource("family_event", id).catch((err) =>
+    console.error(`[familyEvents] materializeForSource failed:`, err),
+  );
+}
+function cancelAsync(id: string): void {
+  cancelForSource("family_event", id).catch((err) =>
+    console.error(`[familyEvents] cancelForSource failed:`, err),
+  );
+}
 
 export const familyEventsRoutes = new Hono();
 
@@ -31,6 +51,7 @@ familyEventsRoutes.post(
     const familyId = c.req.param("familyId")!;
     const body = c.req.valid("json");
     const row = await familyEventsRepo.create({ ...body, familyId });
+    rematerializeAsync(row.id);
     return c.json(row, 201);
   },
 );
@@ -51,6 +72,7 @@ familyEventsRoutes.put(
     const id = c.req.param("id");
     const body = c.req.valid("json");
     const row = await familyEventsRepo.upsert({ ...body, id, familyId });
+    rematerializeAsync(row.id);
     return c.json(row);
   },
 );
@@ -71,6 +93,7 @@ familyEventsRoutes.patch(
     const body = c.req.valid("json");
     const row = await familyEventsRepo.update(id, body);
     if (!row) return c.json({ error: "Not found" }, 404);
+    rematerializeAsync(row.id);
     return c.json(row);
   },
 );
@@ -80,5 +103,6 @@ familyEventsRoutes.delete("/:id", async (c) => {
   const id = c.req.param("id");
   const ok = await familyEventsRepo.delete(id);
   if (!ok) return c.json({ error: "Not found" }, 404);
+  cancelAsync(id);
   return c.json({ deleted: true });
 });

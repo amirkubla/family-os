@@ -11,9 +11,11 @@
     "db:mock": "tsx src/scripts/mockData.ts",
     "db:mock:user": "tsx src/scripts/mockForUser.ts",
     "db:lookup": "tsx src/scripts/lookupUser.ts",
+    "reminders:backfill": "tsx src/scripts/backfillReminders.ts",
     "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
+    "@google-cloud/tasks": "^6.2.2",
     "@hono/node-server": "^1.19.10",
     "@hono/zod-validator": "^0.8.0",
     "@neondatabase/serverless": "^0.10.4",

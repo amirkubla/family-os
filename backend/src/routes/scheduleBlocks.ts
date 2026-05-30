@@ -6,8 +6,25 @@ import {
   upsertScheduleBlockSchema,
   patchScheduleBlockSchema,
 } from "../schemas/scheduleBlocks.js";
+import {
+  materializeForSource,
+  cancelForSource,
+} from "../services/reminderService.js";
 
 export const scheduleBlocksRoutes = new Hono();
+
+// See familyEvents.ts for the rationale: fire-and-forget so a slow Cloud
+// Tasks call (or a transient queue error) doesn't fail the user's write.
+function rematerializeAsync(id: string): void {
+  materializeForSource("schedule_block", id).catch((err) =>
+    console.error(`[scheduleBlocks] materializeForSource failed:`, err),
+  );
+}
+function cancelAsync(id: string): void {
+  cancelForSource("schedule_block", id).catch((err) =>
+    console.error(`[scheduleBlocks] cancelForSource failed:`, err),
+  );
+}
 
 // Shared validation-error responder
 const onValidationError = (
@@ -37,6 +54,7 @@ scheduleBlocksRoutes.post(
     const familyId = c.req.param("familyId")!;
     const body = c.req.valid("json");
     const row = await scheduleBlocksRepo.create({ ...body, familyId });
+    rematerializeAsync(row.id);
     return c.json(row, 201);
   },
 );
@@ -50,6 +68,7 @@ scheduleBlocksRoutes.put(
     const id = c.req.param("id");
     const body = c.req.valid("json");
     const row = await scheduleBlocksRepo.upsert({ ...body, id, familyId });
+    rematerializeAsync(row.id);
     return c.json(row);
   },
 );
@@ -63,6 +82,7 @@ scheduleBlocksRoutes.patch(
     const body = c.req.valid("json");
     const row = await scheduleBlocksRepo.update(id, body);
     if (!row) return c.json({ error: "Not found" }, 404);
+    rematerializeAsync(row.id);
     return c.json(row);
   },
 );
@@ -72,5 +92,6 @@ scheduleBlocksRoutes.delete("/:id", async (c) => {
   const id = c.req.param("id");
   const ok = await scheduleBlocksRepo.delete(id);
   if (!ok) return c.json({ error: "Not found" }, 404);
+  cancelAsync(id);
   return c.json({ deleted: true });
 });

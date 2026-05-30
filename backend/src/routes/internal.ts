@@ -21,6 +21,7 @@ import { kidsRepo } from "../repos/kidsRepo.js";
 import { notesRepo } from "../repos/notesRepo.js";
 import { scheduleBlocksRepo } from "../repos/scheduleBlocksRepo.js";
 import { createFamilyEventSchema } from "../schemas/familyEvents.js";
+import { materializeForSource } from "../services/reminderService.js";
 
 export const internalRoutes = new Hono();
 
@@ -40,6 +41,11 @@ internalRoutes.post(
     const familyId = c.req.param("familyId")!;
     const body = c.req.valid("json");
     const row = await familyEventsRepo.create({ ...body, familyId });
+    // Bot-created events should get reminders materialized just like
+    // app-created ones. Fire-and-forget; see familyEvents.ts for rationale.
+    materializeForSource("family_event", row.id).catch((err) =>
+      console.error(`[internal] materializeForSource failed:`, err),
+    );
     return c.json(row, 201);
   },
 );

@@ -467,3 +467,75 @@ export const sentNotifications = pgTable(
     ),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// reminders
+// ---------------------------------------------------------------------------
+//
+// One live row per (event/block × lead-minutes). The row is updated in
+// place across a recurring series: on fire, status flips to "sent" briefly
+// while the next occurrence is computed, then the row is rewritten with
+// the new occurrence_ts/fire_at + a fresh Cloud Task and status returns to
+// "pending". This bounds storage to O(events × leads) regardless of how
+// long the series runs.
+//
+// `task_name` is the Cloud Tasks resource name we got back from the
+// enqueue API. We keep it so we can DELETE the queued task on event edit
+// or cancel — otherwise stale tasks would fire after the user has changed
+// the schedule.
+//
+// `source_kind` + `source_id` is a polymorphic ref to either family_events
+// or schedule_blocks. There is no FK constraint on source_id (Postgres
+// can't FK to one of two tables); ON DELETE CASCADE through family_id
+// covers the family-deletion case, and event-level deletes go through the
+// cancelForSource code path which deletes the reminder rows + tasks
+// explicitly.
+
+export const reminders = pgTable(
+  "reminders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sourceKind: text("source_kind", {
+      enum: ["family_event", "schedule_block"],
+    }).notNull(),
+    sourceId: uuid("source_id").notNull(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    leadMinutes: integer("lead_minutes").notNull(),
+    occurrenceTs: timestamp("occurrence_ts", { withTimezone: true }).notNull(),
+    fireAt: timestamp("fire_at", { withTimezone: true }).notNull(),
+    taskName: text("task_name"),
+    status: text("status", {
+      enum: [
+        "pending",
+        "processing",
+        "sent",
+        "failed",
+        "cancelled",
+        "complete",
+      ],
+    })
+      .default("pending")
+      .notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("reminders_status_fire_at_idx").on(t.status, t.fireAt),
+    index("reminders_family_id_idx").on(t.familyId),
+    index("reminders_source_idx").on(t.sourceKind, t.sourceId),
+    uniqueIndex("reminders_source_lead_uniq").on(
+      t.sourceKind,
+      t.sourceId,
+      t.leadMinutes,
+    ),
+  ],
+);
+
+export const remindersRelations = relations(reminders, ({ one }) => ({
+  family: one(families, {
+    fields: [reminders.familyId],
+    references: [families.id],
+  }),
+}));

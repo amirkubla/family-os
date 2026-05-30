@@ -11,6 +11,7 @@ import type {
   familyEvents,
   pushTokens,
   sentNotifications,
+  reminders,
   users,
   invites,
 } from "../db/schema.js";
@@ -30,6 +31,7 @@ export type ScheduleBlock = InferSelectModel<typeof scheduleBlocks>;
 export type FamilyEvent = InferSelectModel<typeof familyEvents>;
 export type PushToken = InferSelectModel<typeof pushTokens>;
 export type SentNotification = InferSelectModel<typeof sentNotifications>;
+export type Reminder = InferSelectModel<typeof reminders>;
 export type User = InferSelectModel<typeof users>;
 export type Invite = InferSelectModel<typeof invites>;
 
@@ -47,6 +49,7 @@ export type NewProject = InferInsertModel<typeof projects>;
 export type NewScheduleBlock = InferInsertModel<typeof scheduleBlocks>;
 export type NewFamilyEvent = InferInsertModel<typeof familyEvents>;
 export type NewPushToken = InferInsertModel<typeof pushTokens>;
+export type NewReminder = InferInsertModel<typeof reminders>;
 export type NewUser = InferInsertModel<typeof users>;
 export type NewInvite = InferInsertModel<typeof invites>;
 
@@ -63,6 +66,16 @@ export type UpdateChore = Partial<Omit<NewChore, "id">>;
 export type UpdateProject = Partial<Omit<NewProject, "id">>;
 export type UpdateScheduleBlock = Partial<Omit<NewScheduleBlock, "id">>;
 export type UpdateFamilyEvent = Partial<Omit<NewFamilyEvent, "id">>;
+export type UpdateReminder = Partial<Omit<NewReminder, "id">>;
+
+export type ReminderSourceKind = "family_event" | "schedule_block";
+export type ReminderStatus =
+  | "pending"
+  | "processing"
+  | "sent"
+  | "failed"
+  | "cancelled"
+  | "complete";
 
 // ---------------------------------------------------------------------------
 // Enums (mirrored from schema for convenience)
