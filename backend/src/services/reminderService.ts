@@ -22,7 +22,7 @@
  * (see remindersRepo) is the atomic gate that makes the handler safe
  * under concurrent re-delivery from multiple Cloud Run instances.
  */
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNotNull, sql } from "drizzle-orm";
 import { db } from "../db/client.js";
 import {
   familyEvents,
@@ -483,8 +483,28 @@ function formatReminderLabel(minutes: number): string {
 export async function listAllSourcesWithReminders(): Promise<
   Array<{ kind: ReminderSourceKind; id: string }>
 > {
-  const events = await db.select({ id: familyEvents.id }).from(familyEvents);
-  const blocks = await db.select({ id: scheduleBlocks.id }).from(scheduleBlocks);
+  // Only rows with a non-empty reminders array. The first cut returned every
+  // row (no filter), which made the backfill iterate ~500 sources to produce
+  // ~7 actual reminders. Tightened so the backfill only processes what
+  // actually has reminders configured.
+  const events = await db
+    .select({ id: familyEvents.id })
+    .from(familyEvents)
+    .where(
+      and(
+        isNotNull(familyEvents.reminders),
+        sql`${familyEvents.reminders} <> '[]'`,
+      ),
+    );
+  const blocks = await db
+    .select({ id: scheduleBlocks.id })
+    .from(scheduleBlocks)
+    .where(
+      and(
+        isNotNull(scheduleBlocks.reminders),
+        sql`${scheduleBlocks.reminders} <> '[]'`,
+      ),
+    );
   return [
     ...events.map((e) => ({ kind: "family_event" as const, id: e.id })),
     ...blocks.map((b) => ({ kind: "schedule_block" as const, id: b.id })),
