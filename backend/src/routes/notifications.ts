@@ -89,22 +89,36 @@ notificationRoutes.post("/admin/backfill-reminders", async (c) => {
   if (!verifySharedSecret(c)) {
     return c.json({ error: "Unauthorized" }, 401);
   }
+  // Synchronous: Cloud Run kills the container after the response is sent
+  // (especially with min-instances=0), so a fire-and-forget background loop
+  // only finishes as long as the container happens to stay alive — verified
+  // empirically when only 1 of 511 sources materialized. Parallelism keeps
+  // wall time well under the 5-min request timeout.
+  const CONCURRENCY = 10;
   const sources = await listAllSourcesWithReminders();
-  // Background: fire-and-forget, errors logged inside.
-  (async () => {
-    console.log(`[backfill] Starting backfill for ${sources.length} sources`);
-    let processed = 0;
-    let errors = 0;
-    for (const s of sources) {
-      try {
-        await materializeForSource(s.kind, s.id);
-        processed++;
-      } catch (err) {
-        errors++;
-        console.error(`[backfill] ${s.kind}/${s.id} failed:`, err);
+  console.log(`[backfill] Starting for ${sources.length} sources (concurrency=${CONCURRENCY})`);
+  let processed = 0;
+  let errors = 0;
+  const startMs = Date.now();
+  // Simple work-pool: spawn N workers that consume from a shared index.
+  let nextIdx = 0;
+  await Promise.all(
+    Array.from({ length: CONCURRENCY }, async () => {
+      while (true) {
+        const i = nextIdx++;
+        if (i >= sources.length) return;
+        const s = sources[i]!;
+        try {
+          await materializeForSource(s.kind, s.id);
+          processed++;
+        } catch (err) {
+          errors++;
+          console.error(`[backfill] ${s.kind}/${s.id} failed:`, err);
+        }
       }
-    }
-    console.log(`[backfill] Done — processed=${processed} errors=${errors}`);
-  })();
-  return c.json({ accepted: true, count: sources.length });
+    }),
+  );
+  const elapsedMs = Date.now() - startMs;
+  console.log(`[backfill] Done — processed=${processed} errors=${errors} elapsed=${elapsedMs}ms`);
+  return c.json({ count: sources.length, processed, errors, elapsedMs });
 });
