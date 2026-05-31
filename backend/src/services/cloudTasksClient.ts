@@ -37,7 +37,13 @@ function isEnabled(): boolean {
 let _client: CloudTasksClient | null = null;
 function getClient(): CloudTasksClient {
   if (_client === null) {
-    _client = new CloudTasksClient();
+    // fallback: 'rest' makes the client use HTTPS+JSON instead of gRPC.
+    // On Cloud Run the first gRPC call was taking ~25s on channel setup
+    // (name resolution + LB pick), causing DEADLINE_EXCEEDED on every
+    // task create during the backfill. REST has no channel state — each
+    // call is an independent HTTPS request, much more robust on a
+    // scale-to-zero container where the channel never gets reused.
+    _client = new CloudTasksClient({ fallback: "rest" });
   }
   return _client;
 }
