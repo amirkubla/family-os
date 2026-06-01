@@ -6,7 +6,7 @@ import { useAuthStore } from "@src/auth/useAuthStore";
 import { t } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import AuthShell, { AuthFooterLink } from "@src/components/auth/AuthShell";
+import AuthShell, { AuthFooterLink, AuthField } from "@src/components/auth/AuthShell";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 
@@ -129,17 +129,12 @@ export default function RegisterScreen() {
       {/* Invite code — trailing icon switches to a teal check when the
           code resolves, giving instant feedback that the family was found. */}
       <View>
-        <TextInput
-          mode="outlined"
+        <AuthField
           label={t("auth.familyCode")}
           value={inviteCode}
           onChangeText={(text) => setInviteCode(text.toUpperCase())}
           autoCapitalize="characters"
           maxLength={6}
-          outlineColor={C.border}
-          activeOutlineColor={C.purple}
-          style={styles.input}
-          contentStyle={styles.inputContent}
           right={
             validatingInvite ? (
               <TextInput.Icon icon="loading" />
@@ -222,15 +217,10 @@ export default function RegisterScreen() {
       {/* Family name — only for new families (not invite join) */}
       {!joiningFamily && (
         <View>
-          <TextInput
-            mode="outlined"
+          <AuthField
             label={t("auth.familyNamePlaceholder")}
             value={newFamilyName}
             onChangeText={setNewFamilyName}
-            outlineColor={C.border}
-            activeOutlineColor={C.purple}
-            style={styles.input}
-            contentStyle={styles.inputContent}
             right={<TextInput.Icon icon="home-heart" />}
           />
           {familyNameError ? (
@@ -242,16 +232,11 @@ export default function RegisterScreen() {
       )}
 
       <View>
-        <TextInput
-          mode="outlined"
+        <AuthField
           label={t("auth.username")}
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
-          outlineColor={C.border}
-          activeOutlineColor={C.purple}
-          style={styles.input}
-          contentStyle={styles.inputContent}
           right={<TextInput.Icon icon="account" />}
         />
         {usernameError ? (
@@ -262,16 +247,11 @@ export default function RegisterScreen() {
       </View>
 
       <View>
-        <TextInput
-          mode="outlined"
+        <AuthField
           label={t("auth.password")}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          outlineColor={C.border}
-          activeOutlineColor={C.purple}
-          style={styles.input}
-          contentStyle={styles.inputContent}
           right={<TextInput.Icon icon="lock" />}
         />
         {passwordError ? (
@@ -309,8 +289,6 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  input: { backgroundColor: C.surface },
-  inputContent: { textAlign: TEXT_RIGHT, writingDirection: "rtl" },
   helper: { textAlign: TEXT_RIGHT, marginTop: 2 },
   helperInfo: { textAlign: TEXT_RIGHT, marginTop: 2, color: C.textMuted },
   btn: { borderRadius: R.md, marginTop: S.sm },

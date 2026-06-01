@@ -25,7 +25,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Text } from "react-native-paper";
+import { Text, TextInput, type TextInputProps } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { C, R, S } from "@src/ui/tokens";
@@ -213,5 +213,62 @@ const footerLinkStyles = StyleSheet.create({
   action: {
     color: C.purple,
     fontWeight: "700",
+  },
+});
+
+// ---------------------------------------------------------------------------
+// AuthField — static label above an outlined TextInput.
+//
+// Why static-above and not Paper's floating `label` prop:
+//   Paper's outlined-input floating label animates with `transform: scale()`
+//   from "inside" position to "above border" position. Combined with Hebrew
+//   text + writingDirection: "rtl", the scale transform flipped the glyphs
+//   and the border-notch cutout missed the label. Static labels above the
+//   input sidestep the whole animation, and incidentally match the
+//   Linear/Stripe direction better (they don't use floating labels either).
+//
+// The TextInput gets `accessibilityLabel` set to the same string so screen
+// readers announce the field by name even though Paper's label prop isn't
+// used.
+// ---------------------------------------------------------------------------
+
+export function AuthField({
+  label,
+  ...inputProps
+}: { label: string } & TextInputProps) {
+  return (
+    <View>
+      <Text style={fieldStyles.label}>{label}</Text>
+      <TextInput
+        mode="outlined"
+        outlineColor={C.border}
+        activeOutlineColor={C.purple}
+        accessibilityLabel={label}
+        {...inputProps}
+        // Merge caller styles on top of ours so per-input overrides still
+        // work, but force the white surface + RTL writing direction so
+        // every auth field looks/behaves consistently.
+        style={[fieldStyles.input, inputProps.style]}
+        contentStyle={[fieldStyles.inputContent, inputProps.contentStyle]}
+      />
+    </View>
+  );
+}
+
+const fieldStyles = StyleSheet.create({
+  label: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: C.surface,
+  },
+  inputContent: {
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
 });

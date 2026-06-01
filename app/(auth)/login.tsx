@@ -6,7 +6,7 @@ import { useAuthStore } from "@src/auth/useAuthStore";
 import { t } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
 import { TEXT_RIGHT } from "@src/ui/rtl";
-import AuthShell, { AuthFooterLink } from "@src/components/auth/AuthShell";
+import AuthShell, { AuthFooterLink, AuthField } from "@src/components/auth/AuthShell";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -20,9 +20,8 @@ export default function LoginScreen() {
   const usernameError = username.length > 0 && username.length < 3;
   const passwordError = password.length > 0 && password.length < 4;
 
-  // Auth-call path is unchanged from the previous version — this redesign is
-  // presentational only. Validation rules and the error → message mapping
-  // both stay exactly as they were.
+  // Auth-call path is unchanged — this redesign is presentational only.
+  // Validation rules and the error → message mapping both stay as they were.
   const handleLogin = async () => {
     setError("");
     if (username.length < 3 || password.length < 4) return;
@@ -52,19 +51,11 @@ export default function LoginScreen() {
         />
       }
     >
-      <TextInput
-        mode="outlined"
+      <AuthField
         label={t("auth.username")}
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
-        // Accent the focused outline so the active field is unambiguous —
-        // C.border is the resting outline (matches the rest of the app's
-        // outlined inputs).
-        outlineColor={C.border}
-        activeOutlineColor={C.purple}
-        style={styles.input}
-        contentStyle={styles.inputContent}
         right={<TextInput.Icon icon="account" />}
       />
       {usernameError ? (
@@ -73,16 +64,11 @@ export default function LoginScreen() {
         </HelperText>
       ) : null}
 
-      <TextInput
-        mode="outlined"
+      <AuthField
         label={t("auth.password")}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        outlineColor={C.border}
-        activeOutlineColor={C.purple}
-        style={styles.input}
-        contentStyle={styles.inputContent}
         right={<TextInput.Icon icon="lock" />}
       />
       {passwordError ? (
@@ -114,9 +100,6 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  // C.surface keeps the field obviously a control vs. the C.bg page colour.
-  input: { backgroundColor: C.surface },
-  inputContent: { textAlign: TEXT_RIGHT, writingDirection: "rtl" },
   // padding="none" + this style strips Paper's default vertical inset so the
   // error sits tightly under the input instead of pushing the next field down.
   helper: { textAlign: TEXT_RIGHT, marginTop: -S.sm },
