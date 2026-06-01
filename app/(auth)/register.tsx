@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuthStore } from "@src/auth/useAuthStore";
 import { t } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import AuthShell, { AuthFooterLink } from "@src/components/auth/AuthShell";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 
@@ -38,7 +38,9 @@ export default function RegisterScreen() {
   const usernameError = username.length > 0 && username.length < 3;
   const passwordError = password.length > 0 && password.length < 4;
 
-  // Validate invite code when it reaches 6 chars
+  // Validate invite code when it reaches 6 chars — UNCHANGED from the
+  // pre-redesign version; the form logic, API calls, and validation rules
+  // are intentionally untouched by this presentational redesign.
   const validateInvite = useCallback(async (code: string) => {
     if (code.length < 6) {
       setInviteFamilyName("");
@@ -114,213 +116,214 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.container}>
-          <Text variant="headlineLarge" style={styles.title}>
-            {t("auth.registerTitle")}
-          </Text>
+    <AuthShell
+      title={t("auth.registerTitle")}
+      footer={
+        <AuthFooterLink
+          prompt={t("auth.hasAccountPrompt")}
+          action={t("auth.hasAccountAction")}
+          onPress={() => router.replace("/(auth)/login")}
+        />
+      }
+    >
+      {/* Invite code — trailing icon switches to a teal check when the
+          code resolves, giving instant feedback that the family was found. */}
+      <View>
+        <TextInput
+          mode="outlined"
+          label={t("auth.familyCode")}
+          value={inviteCode}
+          onChangeText={(text) => setInviteCode(text.toUpperCase())}
+          autoCapitalize="characters"
+          maxLength={6}
+          outlineColor={C.border}
+          activeOutlineColor={C.purple}
+          style={styles.input}
+          contentStyle={styles.inputContent}
+          right={
+            validatingInvite ? (
+              <TextInput.Icon icon="loading" />
+            ) : inviteCode.length >= 6 && inviteFamilyName ? (
+              <TextInput.Icon icon="check-circle" color={C.teal} />
+            ) : (
+              <TextInput.Icon icon="account-group" />
+            )
+          }
+        />
+        {inviteError ? (
+          <HelperText type="error" visible padding="none" style={styles.helper}>
+            {inviteError}
+          </HelperText>
+        ) : !joiningFamily ? (
+          <HelperText type="info" visible padding="none" style={styles.helperInfo}>
+            {t("auth.inviteHint")}
+          </HelperText>
+        ) : null}
+        {joiningFamily ? (
+          <View style={styles.familyBadge}>
+            <Text style={styles.familyBadgeText}>
+              {t("auth.joiningFamily")} {inviteFamilyName} ✨
+            </Text>
+          </View>
+        ) : null}
+      </View>
 
-          {/* Invite code field */}
+      {/* Member picker — shown when invite is valid and has unlinked members */}
+      {joiningFamily && members.length > 0 && (
+        <View style={styles.memberPickerContainer}>
+          <Text style={styles.memberPickerTitle}>{t("auth.whoAreYou")}</Text>
+          <Text style={styles.memberPickerSubtitle}>{t("auth.pickMember")}</Text>
+          <View style={styles.memberPickerRow}>
+            {members.map((m) => {
+              const selected = selectedMemberId === m.id;
+              const memberColor = m.color ?? C.purple;
+              return (
+                <Pressable
+                  key={m.id}
+                  style={[
+                    styles.memberChip,
+                    {
+                      backgroundColor: selected ? memberColor + "20" : C.surface,
+                      borderColor: selected ? memberColor : C.border,
+                      borderWidth: selected ? 2 : 1,
+                    },
+                  ]}
+                  onPress={() => setSelectedMemberId(selected ? null : m.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={m.displayName}
+                >
+                  <View
+                    style={[
+                      styles.memberChipEmoji,
+                      { backgroundColor: memberColor + "18" },
+                    ]}
+                  >
+                    <Text style={styles.memberEmojiText}>
+                      {m.avatarEmoji ?? "👤"}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.memberChipName,
+                      selected && { color: memberColor, fontWeight: "800" },
+                    ]}
+                  >
+                    {m.displayName}
+                  </Text>
+                  {selected && <Text style={{ fontSize: 14 }}>✓</Text>}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {/* Family name — only for new families (not invite join) */}
+      {!joiningFamily && (
+        <View>
           <TextInput
             mode="outlined"
-            placeholder={t("auth.familyCode")}
-            value={inviteCode}
-            onChangeText={(text) => setInviteCode(text.toUpperCase())}
-            autoCapitalize="characters"
-            maxLength={6}
+            label={t("auth.familyNamePlaceholder")}
+            value={newFamilyName}
+            onChangeText={setNewFamilyName}
+            outlineColor={C.border}
+            activeOutlineColor={C.purple}
             style={styles.input}
             contentStyle={styles.inputContent}
-            right={
-              validatingInvite ? (
-                <TextInput.Icon icon="loading" />
-              ) : inviteCode.length >= 6 && inviteFamilyName ? (
-                <TextInput.Icon icon="check-circle" color={C.teal} />
-              ) : (
-                <TextInput.Icon icon="account-group" />
-              )
-            }
+            right={<TextInput.Icon icon="home-heart" />}
           />
-          {inviteError ? (
-            <HelperText type="error" visible style={styles.helper}>
-              {inviteError}
+          {familyNameError ? (
+            <HelperText type="error" visible padding="none" style={styles.helper}>
+              {t("settings.nameMinLength")}
             </HelperText>
           ) : null}
-          {joiningFamily ? (
-            <View style={styles.familyBadge}>
-              <Text style={styles.familyBadgeText}>
-                {t("auth.joiningFamily")} {inviteFamilyName} ✨
-              </Text>
-            </View>
-          ) : (
-            <HelperText type="info" visible style={styles.helper}>
-              {t("auth.inviteHint")}
-            </HelperText>
-          )}
+        </View>
+      )}
 
-          {/* Member picker — shown when invite is valid and has unlinked members */}
-          {joiningFamily && members.length > 0 && (
-            <View style={styles.memberPickerContainer}>
-              <Text style={styles.memberPickerTitle}>
-                {t("auth.whoAreYou")}
-              </Text>
-              <Text style={styles.memberPickerSubtitle}>
-                {t("auth.pickMember")}
-              </Text>
-              <View style={styles.memberPickerRow}>
-                {members.map((m) => {
-                  const selected = selectedMemberId === m.id;
-                  const memberColor = m.color ?? C.purple;
-                  return (
-                    <Pressable
-                      key={m.id}
-                      style={[
-                        styles.memberChip,
-                        {
-                          backgroundColor: selected
-                            ? memberColor + "20"
-                            : C.surface,
-                          borderColor: selected
-                            ? memberColor
-                            : C.border,
-                          borderWidth: selected ? 2 : 1,
-                        },
-                      ]}
-                      onPress={() =>
-                        setSelectedMemberId(selected ? null : m.id)
-                      }
-                    >
-                      <View
-                        style={[
-                          styles.memberChipEmoji,
-                          { backgroundColor: memberColor + "18" },
-                        ]}
-                      >
-                        <Text style={styles.memberEmojiText}>
-                          {m.avatarEmoji ?? "👤"}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.memberChipName,
-                          selected && { color: memberColor, fontWeight: "800" },
-                        ]}
-                      >
-                        {m.displayName}
-                      </Text>
-                      {selected && (
-                        <Text style={{ fontSize: 14 }}>✓</Text>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-
-          {/* Family name — only for new families (not invite join) */}
-          {!joiningFamily && (
-            <>
-              <TextInput
-                mode="outlined"
-                placeholder={t("auth.familyNamePlaceholder")}
-                value={newFamilyName}
-                onChangeText={setNewFamilyName}
-                style={styles.input}
-                contentStyle={styles.inputContent}
-                right={<TextInput.Icon icon="home-heart" />}
-              />
-              <HelperText type="error" visible={familyNameError} style={styles.helper}>
-                {t("settings.nameMinLength")}
-              </HelperText>
-            </>
-          )}
-
-          <TextInput
-            mode="outlined"
-            placeholder={t("auth.username")}
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            style={styles.input}
-            contentStyle={styles.inputContent}
-            right={<TextInput.Icon icon="account" />}
-          />
-          <HelperText type="error" visible={usernameError} style={styles.helper}>
+      <View>
+        <TextInput
+          mode="outlined"
+          label={t("auth.username")}
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          outlineColor={C.border}
+          activeOutlineColor={C.purple}
+          style={styles.input}
+          contentStyle={styles.inputContent}
+          right={<TextInput.Icon icon="account" />}
+        />
+        {usernameError ? (
+          <HelperText type="error" visible padding="none" style={styles.helper}>
             {t("auth.usernameMin")}
           </HelperText>
+        ) : null}
+      </View>
 
-          <TextInput
-            mode="outlined"
-            placeholder={t("auth.password")}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-            contentStyle={styles.inputContent}
-            right={<TextInput.Icon icon="lock" />}
-          />
-          <HelperText type="error" visible={passwordError} style={styles.helper}>
+      <View>
+        <TextInput
+          mode="outlined"
+          label={t("auth.password")}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          outlineColor={C.border}
+          activeOutlineColor={C.purple}
+          style={styles.input}
+          contentStyle={styles.inputContent}
+          right={<TextInput.Icon icon="lock" />}
+        />
+        {passwordError ? (
+          <HelperText type="error" visible padding="none" style={styles.helper}>
             {t("auth.passwordMin")}
           </HelperText>
+        ) : null}
+      </View>
 
-          {error ? (
-            <HelperText type="error" visible style={styles.helper}>
-              {error}
-            </HelperText>
-          ) : null}
+      {error ? (
+        <HelperText type="error" visible padding="none" style={styles.helper}>
+          {error}
+        </HelperText>
+      ) : null}
 
-          <Button
-            mode="contained"
-            onPress={handleRegister}
-            loading={loading}
-            disabled={loading || username.length < 3 || password.length < 4 || (!joiningFamily && newFamilyName.trim().length < 2)}
-            style={styles.btn}
-            contentStyle={styles.btnContent}
-            labelStyle={styles.btnLabel}
-          >
-            {joiningFamily ? t("auth.joinFamily") : t("auth.register")}
-          </Button>
-
-          <Button
-            mode="text"
-            onPress={() => router.replace("/(auth)/login")}
-            style={styles.link}
-          >
-            {t("auth.hasAccount")}
-          </Button>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <Button
+        mode="contained"
+        onPress={handleRegister}
+        loading={loading}
+        disabled={
+          loading ||
+          username.length < 3 ||
+          password.length < 4 ||
+          (!joiningFamily && newFamilyName.trim().length < 2)
+        }
+        buttonColor={C.purple}
+        style={styles.btn}
+        contentStyle={styles.btnContent}
+        labelStyle={styles.btnLabel}
+      >
+        {joiningFamily ? t("auth.joinFamily") : t("auth.register")}
+      </Button>
+    </AuthShell>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  flex: { flex: 1 },
-  container: { flex: 1, justifyContent: "center", paddingHorizontal: S.xl + S.sm },
-  title: {
-    fontWeight: "800",
-    color: C.textPrimary,
-    textAlign: "center",
-    marginBottom: S.xxl,
-  },
-  input: { backgroundColor: C.surface, textAlign: TEXT_RIGHT, writingDirection: "rtl", marginBottom: 2 },
-  inputContent: { textAlign: TEXT_RIGHT },
-  helper: { textAlign: TEXT_RIGHT },
+  input: { backgroundColor: C.surface },
+  inputContent: { textAlign: TEXT_RIGHT, writingDirection: "rtl" },
+  helper: { textAlign: TEXT_RIGHT, marginTop: 2 },
+  helperInfo: { textAlign: TEXT_RIGHT, marginTop: 2, color: C.textMuted },
   btn: { borderRadius: R.md, marginTop: S.sm },
-  btnContent: { paddingVertical: 6 },
-  btnLabel: { fontSize: 16, fontWeight: "700" },
-  link: { marginTop: S.lg },
+  btnContent: { paddingVertical: 8 },
+  btnLabel: { fontSize: 16, fontWeight: "600" },
+
+  // Family badge — quiet teal confirmation when an invite resolves.
   familyBadge: {
     backgroundColor: C.teal + "14",
     borderRadius: R.md,
     paddingVertical: S.sm,
     paddingHorizontal: S.md,
-    marginBottom: S.sm,
+    marginTop: S.sm,
     alignSelf: "center",
   },
   familyBadgeText: {
@@ -329,21 +332,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
+
   // Member picker
-  memberPickerContainer: {
-    marginBottom: S.md,
-    gap: S.xs,
-  },
+  memberPickerContainer: { gap: S.xs },
   memberPickerTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: C.textPrimary,
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
   memberPickerSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: C.textSecondary,
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
     marginBottom: S.sm,
   },
   memberPickerRow: {
@@ -364,8 +367,8 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
+    alignItems: "center",
+    justifyContent: "center",
   },
   memberEmojiText: { fontSize: 20 },
   memberChipName: {

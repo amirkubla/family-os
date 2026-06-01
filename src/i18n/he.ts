@@ -312,6 +312,12 @@ const he = {
     register: "צור חשבון",
     noAccount: "אין לך חשבון? הרשמה",
     hasAccount: "כבר יש לך חשבון? התחברות",
+    // Split forms used by the AuthShell footer link — the prompt is muted
+    // and the action gets the accent color.
+    noAccountPrompt: "אין לך חשבון?",
+    noAccountAction: "הרשמה",
+    hasAccountPrompt: "כבר יש לך חשבון?",
+    hasAccountAction: "התחברות",
     usernameMin: "שם משתמש חייב להכיל לפחות 3 תווים",
     passwordMin: "סיסמה חייבת להכיל לפחות 4 תווים",
     usernameTaken: "שם המשתמש תפוס",
