@@ -496,6 +496,47 @@ The drill, in order:
 
 ## Session Log
 
+### 2026-06-02 — features shipped + iOS simulator working but iOS RTL unresolved
+
+This is a long entry because a lot landed. Skim the headers.
+
+**State at end of session (uncommitted / unpushed):**
+- 2 unpushed commits on family-os master: `d117376` (auth redesign) + `efab06b` (auth static-label fix).
+- Working tree modified, NOT committed: `app/_layout.tsx`, `app.json`, `package.json`.
+  - `_layout.tsx`: AsyncStorage-guarded `Updates.reloadAsync()` in dev (was prod-only). See "iOS sim + RTL" below — kept it because it's a small Android-dev-UX win even though it didn't fix iOS dev.
+  - `app.json` + `package.json`: auto-modified by `npx expo run:ios` prebuild (adds iOS native config, registers `expo` plugins). Leave or commit as-is; they reflect a working iOS native build.
+- `.env.development` is pointed at **PROD Cloud Run URL** (was swapped for iPhone testing). Restore to `http://localhost:3000` for local-backend dev.
+- iOS simulator (iPhone 17 Pro, iOS 26.3) currently has the FamilyOS dev client installed and was just relaunched via `xcrun simctl launch` to test RTL after process restart. **Outcome unknown at end of session.** Next agent: ask the user what they see, or screenshot the simulator.
+
+**Reminder pipeline cutover (Cloud Tasks)** — fully shipped earlier in the session. The old 15-min Cloud Scheduler poll is PAUSED; per-reminder Cloud Tasks now own the firing path. Measured end-to-end latency on the live test was **1.7s** from scheduled `fire_at` to row marked `sent`. Details: new `reminders` table + Drizzle migration 0016, new `cloudTasksClient.ts` (uses REST transport via `fallback: "rest"` — gRPC was timing out at 25s on Cloud Run channel setup), `reminderService.ts` with materialize / cancel / handleFire, write-path hooks in `routes/familyEvents.ts` + `routes/scheduleBlocks.ts`, new endpoint `POST /v1/notifications/fire-reminder` (shared-secret), admin endpoint `POST /v1/notifications/admin/backfill-reminders` (runs sync with concurrency=10, NOT fire-and-forget — Cloud Run kills the container after the response, that's how the first backfill only got 1 of 511 sources through). 3 reminders currently pending in prod, all fire 2026-06-02+. Old `check-event-reminders` Cloud Scheduler job: state PAUSED in europe-west1, leave for ~48h then delete.
+
+**Customization feature** — `התאמה אישית` screen + per-family JSONB `customizations` column on `families` (migration 0015) + Hebrew default subcategory lists in `src/models/customization.ts` (aligned exactly with the i18n `groceryCategory` Hebrew labels — drift here re-introduces the "everything in אחר" bug). Grocery tab groups by subcategory; bucket lookup falls back to `groceryCategoryLabel(item.subcategory)` so legacy English-keyed items resolve into their Hebrew bucket without a DB migration. Live deployed; verified with the test family's 7 reminder-bearing items.
+
+**Kid view enhancements** — week/day calendar sub-views in `/kid/[kidId]` (next to month + pattern), kid-assigned family events now appear alongside schedule blocks across all views, prev/next arrows in the accent bar cycle through active kids (`router.replace` keeps back-stack clean). Required adding `kidId?` prop to `WeekCalendar` + `DayCalendar` — when set, filters family events to `assigneeType==="kid" && assigneeId===kidId` and blocks to `kidId===kidId`.
+
+**Auth screens redesign (Linear/Stripe direction)** — new `src/components/auth/AuthShell.tsx` (shared wrapper, max-width 420 on web, generous spacing, quiet wordmark), inputs migrated from Paper's floating label to **static labels above** (Paper's floating label gets mangled in Hebrew RTL — `transform: scale()` + `writingDirection: "rtl"` flip glyphs and break the border notch). Both pages use new `AuthField` helper from AuthShell. Form logic / validation / `useAuthStore` calls completely untouched. Commits: `d117376` + `efab06b`. Two new i18n keys: `auth.noAccountPrompt`/`Action` and `auth.hasAccountPrompt`/`Action`. **NOT pushed yet.**
+
+**Grocery FAB** — replaced the bottom-bar `Pressable` with a `<FAB>` matching `/calendar` and `/kid/*`. Net `-17` LoC. Already shipped (`37dc337`).
+
+**RTL fix for time-grid event boxes** — `WeekCalendar.tsx` + `DayCalendar.tsx`: switched `borderLeftWidth` / `borderLeftColor` to logical `borderStartWidth` / `borderStartColor`, added `textAlign: TEXT_RIGHT` + `writingDirection: "rtl"` on `eventTitle`/`eventTime`, replaced `DayCalendar.eventRow`'s `flexDirection: "row-reverse"` (CLAUDE.md-documented double-flip anti-pattern) with `RTL_ROW`. Already shipped (`b340050`).
+
+**iOS Simulator setup (this session, NEW gotchas to record)** — User reinstalled Xcode from App Store (~14 GB), then `xcodebuild -downloadPlatform iOS` for the iOS 26.3 sim runtime (~7 GB). `npx expo run:ios` from project root builds a local dev client (no Apple Developer Program required for simulators — only physical devices need signing). Three gotchas hit this session:
+  1. **CocoaPods CLI fails to install via gem** on first run because Homebrew installed Ruby 4.0 alongside it, and Ruby 4 broke `unicode_normalize` for ASCII-8BIT strings — `pod install` crashes with `Encoding::CompatibilityError`. Expo CLI auto-falls-back to `brew install cocoapods` which succeeds; but the actual `pod install` still hits the Ruby bug. **Workaround that's known to work**: `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install` from `ios/`. After that, all subsequent `expo run:ios` runs work.
+  2. **Cwd persistence in the Bash tool**: `cd ios && pod install` leaks the cwd into the *next* Bash call. Running `npx expo run:ios` from there fails with `ConfigError: The expected package.json path ./ios/package.json does not exist`. Always explicitly `cd /Users/amirkoblyansky/family-os` before launching expo.
+  3. **`expo run:ios` background-process semantics**: launching via `& > log` returns "exit 0" immediately for the wrapper, but the `npm exec` + `node` + `xcodebuild` descendants keep running. Don't assume completion from the wrapper's exit code — read the log or use Monitor.
+
+**iOS RTL is still broken even in a dev client (the actual reason)** — `I18nManager.forceRTL(true)` persists to iOS UserDefaults under the bundle ID, but **JS bundle reload via `Updates.reloadAsync()` does NOT restart the native iOS process** — the native `I18nManager` singleton is initialized once at native app launch and never re-reads UserDefaults afterward. So even with the dev-mode reload guard I added to `_layout.tsx`, `isRTL` stays false for the entire JS session. The fix is a TRUE native process restart: `xcrun simctl terminate <udid> com.amirkubla.familyos` + `xcrun simctl launch <udid> com.amirkubla.familyos`. The user observed LTR layout (title `היום` on left, calendar Sunday on left) AFTER the dev-mode auto-reload fired; we then ran simctl terminate+launch. **Awaiting user verification of whether the simctl-driven process restart actually flips it.** If yes, problem solved per-install. If no, iOS isn't honoring forceRTL even for our bundle — would need to investigate further (possibly via `[settings] direct UserDefaults write at native init, or move forceRTL into the AppDelegate, etc.).
+
+**AsyncStorage flag** — `family-os:rtl-reload-attempted-v1`. Set on first dev launch in `_layout.tsx` to prevent reload loop if forceRTL fails to persist. If a fresh-install retry is needed, **`xcrun simctl erase <udid>`** wipes everything including AsyncStorage, OR delete just the app from the simulator home screen (long-press → delete).
+
+**Outstanding follow-ups for next session:**
+1. Resolve the iOS RTL question (verify simctl terminate+launch behavior, or investigate UserDefaults persistence in the dev client binary).
+2. Commit + push the 2 auth-redesign commits (`d117376`, `efab06b`).
+3. Decide on `app/_layout.tsx` change: keep (Android-dev win) or revert (no iOS-dev value).
+4. Revert `.env.development` back to `http://localhost:3000`.
+5. Decide whether to commit `app.json` + `package.json` prebuild changes (they're needed for iOS native builds going forward — committing is correct if iOS is now in scope).
+6. Delete the paused `check-event-reminders` Cloud Scheduler job (currently just paused for safety).
+
 ### 2026-05-27
 - **GitHub ownership transferred** from the work user `amirai21` to the personal user `amirkubla` for both repos: `github.com/amirkubla/family-os` and `github.com/amirkubla/family-ai-assistant`. Local git remotes repointed; CLAUDE.md references in both repos updated; old URLs still redirect via GitHub for now but should be considered deprecated.
 - **CD impact (verified for family-os)**: the family-os deploy workflow authenticates via a static `GCP_SA_KEY` secret (`google-github-actions/auth@v2` with `credentials_json`) — repo secrets transfer with the repo, so the first post-transfer push (`477700d` for the customization feature) deployed cleanly. No action needed there.
