@@ -64,6 +64,7 @@ export function apiToLocalNote(a: ApiNote): Note {
     title: a.title ?? undefined,
     body: a.body,
     pinned: a.pinned,
+    kidId: a.kidId ?? undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -75,6 +76,10 @@ export function localToApiNote(item: Note) {
     title: item.title ?? null,
     body: item.body,
     pinned: item.pinned,
+    // Send explicit null so the backend's upsert sees the key and can
+    // unassign on the conflict-update branch. JSON.stringify drops
+    // undefined values; null is preserved.
+    kidId: item.kidId ?? null,
   };
 }
 
@@ -117,6 +122,7 @@ export function apiToLocalProject(a: ApiProject): Project {
     description: a.description ?? undefined,
     status: a.status,
     progress: a.progress,
+    kidId: a.kidId ?? undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -129,6 +135,7 @@ export function localToApiProject(item: Project) {
     description: item.description ?? null,
     status: item.status,
     progress: item.progress,
+    kidId: item.kidId ?? null,
   };
 }
 

@@ -168,6 +168,11 @@ export const notes = pgTable(
     familyId: uuid("family_id")
       .notNull()
       .references(() => families.id, { onDelete: "cascade" }),
+    // Optional kid ownership. NULL = family-wide note (shown on /home).
+    // Non-null = kid's personal note (shown only in /kid/[kidId]).
+    // ON DELETE SET NULL so deleting a kid demotes their notes to
+    // family-wide rather than nuking them.
+    kidId: uuid("kid_id").references(() => kids.id, { onDelete: "set null" }),
     title: text("title"),
     body: text("body").notNull(),
     pinned: boolean("pinned").default(false).notNull(),
@@ -176,6 +181,7 @@ export const notes = pgTable(
   (t) => [
     index("notes_family_id_idx").on(t.familyId),
     index("notes_family_pinned_idx").on(t.familyId, t.pinned),
+    index("notes_kid_id_idx").on(t.kidId),
   ],
 );
 
@@ -229,6 +235,9 @@ export const projects = pgTable(
     familyId: uuid("family_id")
       .notNull()
       .references(() => families.id, { onDelete: "cascade" }),
+    // Optional kid ownership — same semantics as notes.kid_id. NULL =
+    // family-wide project on /home; non-null = kid project on /kid/[kidId].
+    kidId: uuid("kid_id").references(() => kids.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     description: text("description"),
     status: text("status", { enum: ["idea", "in_progress", "done"] })
@@ -240,6 +249,7 @@ export const projects = pgTable(
   (t) => [
     index("projects_family_id_idx").on(t.familyId),
     index("projects_family_status_idx").on(t.familyId, t.status),
+    index("projects_kid_id_idx").on(t.kidId),
     check("projects_progress_range", sql`${t.progress} >= 0 AND ${t.progress} <= 100`),
   ],
 );

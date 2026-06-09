@@ -8,6 +8,7 @@ import { MS } from "@src/ui/modalStyles";
 import { C } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
+import KidOwnerPicker from "./KidOwnerPicker";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "idea", label: statusLabel("idea") },
@@ -157,13 +158,16 @@ interface Props {
   visible: boolean;
   onDismiss: () => void;
   editProject?: Project | null;
+  /** Pre-select a kid (used by the kid view's "+" button). */
+  defaultKidId?: string;
 }
 
-export default function ProjectModal({ visible, onDismiss, editProject }: Props) {
+export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("idea");
   const [progress, setProgress] = useState(0);
+  const [kidId, setKidId] = useState<string | undefined>(undefined);
   // In-flight guard against rapid double-clicks (QA Pass 1 BUG #2).
   // Ref for synchronous re-entrancy check; state for visual disabled/loading.
   const submittingRef = useRef(false);
@@ -177,12 +181,17 @@ export default function ProjectModal({ visible, onDismiss, editProject }: Props)
       setDescription(editProject.description ?? "");
       setStatus(editProject.status);
       setProgress(editProject.progress);
+      setKidId(editProject.kidId);
     } else {
       setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);
+      setKidId(defaultKidId);
     }
-  }, [editProject, visible]);
+  }, [editProject, visible, defaultKidId]);
 
-  const reset = () => { setTitle(""); setDescription(""); setStatus("idea"); setProgress(0); };
+  const reset = () => {
+    setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);
+    setKidId(undefined);
+  };
 
   const handleSubmit = () => {
     if (submittingRef.current) return; // double-click guard (synchronous)
@@ -195,11 +204,13 @@ export default function ProjectModal({ visible, onDismiss, editProject }: Props)
         description: description.trim() || undefined,
         status,
         progress: Math.round(progress),
+        kidId,
       });
     } else {
       addProjectRemote({
         title: title.trim(),
         description: description.trim() || undefined,
+        kidId,
       });
     }
     reset();
@@ -258,6 +269,12 @@ export default function ProjectModal({ visible, onDismiss, editProject }: Props)
           <ProgressSlider value={progress} onChange={setProgress} />
         </>
       )}
+
+      <KidOwnerPicker
+        value={kidId}
+        onChange={setKidId}
+        label={t("projectModal.assignToKid")}
+      />
 
       <View style={MS.actions}>
         <Button onPress={handleDismiss}>{t("cancel")}</Button>

@@ -38,6 +38,7 @@ export interface ApiGroceryItem {
 export interface ApiNote {
   id: string;
   familyId: string;
+  kidId: string | null;
   title: string | null;
   body: string;
   pinned: boolean;
@@ -73,6 +74,7 @@ export interface ApiFamilyMember {
 export interface ApiProject {
   id: string;
   familyId: string;
+  kidId: string | null;
   title: string;
   description: string | null;
   status: "idea" | "in_progress" | "done";

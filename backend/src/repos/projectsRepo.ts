@@ -58,6 +58,9 @@ export const projectsRepo = {
           description: sql`excluded.description`,
           status: sql`excluded.status`,
           progress: sql`excluded.progress`,
+          // Same rationale as notesRepo — kid_id must be in the conflict
+          // set or PUT requests won't update it.
+          kidId: sql`excluded.kid_id`,
           updatedAt: new Date(),
         },
       })

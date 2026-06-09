@@ -44,6 +44,10 @@ export const notesRepo = {
           title: sql`excluded.title`,
           body: sql`excluded.body`,
           pinned: sql`excluded.pinned`,
+          // kid_id has to be listed explicitly here or PUT requests that
+          // change the kid assignment (or unassign by sending kidId=null)
+          // would silently no-op the change on the conflict branch.
+          kidId: sql`excluded.kid_id`,
           updatedAt: new Date(),
         },
       })

@@ -128,8 +128,8 @@ interface FamilyState {
   clearAllCategory: (shoppingCategory: ShoppingCategory) => string[];
 
   // Notes actions
-  addNote: (input: { title?: string; body: string }) => Note;
-  updateNote: (id: string, patch: Partial<Pick<Note, "title" | "body">>) => void;
+  addNote: (input: { title?: string; body: string; kidId?: string }) => Note;
+  updateNote: (id: string, patch: Partial<Pick<Note, "title" | "body" | "kidId">>) => void;
   toggleNotePinned: (id: string) => void;
   deleteNote: (id: string) => void;
 
@@ -162,10 +162,10 @@ interface FamilyState {
   setFamilyMemberActive: (id: string, isActive: boolean) => void;
 
   // Projects actions
-  addProject: (input: { title: string; description?: string }) => Project;
+  addProject: (input: { title: string; description?: string; kidId?: string }) => Project;
   updateProject: (
     id: string,
-    patch: Partial<Pick<Project, "title" | "description" | "status" | "progress">>
+    patch: Partial<Pick<Project, "title" | "description" | "status" | "progress" | "kidId">>
   ) => void;
   deleteProject: (id: string) => void;
 
@@ -346,13 +346,14 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Notes ── */
 
-      addNote: ({ title, body }) => {
+      addNote: ({ title, body, kidId }) => {
         const now = Date.now();
         const item: Note = {
           id: makeId(),
           title,
           body,
           pinned: false,
+          kidId,
           updatedAt: now,
           createdAt: now,
         };
@@ -429,7 +430,7 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Projects ── */
 
-      addProject: ({ title, description }) => {
+      addProject: ({ title, description, kidId }) => {
         const now = Date.now();
         const item: Project = {
           id: makeId(),
@@ -437,6 +438,7 @@ export const useFamilyStore = create<FamilyState>()(
           description,
           status: "idea" as ProjectStatus,
           progress: 0,
+          kidId,
           updatedAt: now,
           createdAt: now,
         };

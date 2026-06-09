@@ -153,9 +153,14 @@ export default function HomeScreen() {
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   // Store
-  const notes = useFamilyStore((s) => s.notes);
+  // /home shows only FAMILY-WIDE notes/projects (kidId == null/undefined).
+  // Kid-owned ones live in /kid/[kidId] exclusively, so we don't duplicate
+  // them here. Chores and other resources stay family-wide either way.
+  const allNotes = useFamilyStore((s) => s.notes);
+  const notes = useMemo(() => allNotes.filter((n) => !n.kidId), [allNotes]);
   const chores = useFamilyStore((s) => s.chores);
-  const projects = useFamilyStore((s) => s.projects);
+  const allProjects = useFamilyStore((s) => s.projects);
+  const projects = useMemo(() => allProjects.filter((p) => !p.kidId), [allProjects]);
   const kids = useFamilyStore((s) => s.kids);
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
 

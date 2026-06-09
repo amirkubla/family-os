@@ -101,6 +101,12 @@ const he = {
     familyEventTag: "אירוע",
     prevKid: "ילד קודם",
     nextKid: "ילד הבא",
+    notes: "פתקים",
+    projects: "פרויקטים",
+    noNotes: "אין פתקים",
+    noProjects: "אין פרויקטים",
+    addNote: "הוספת פתק",
+    addProject: "הוספת פרויקט",
   },
 
   // ── Grocery Add Modal ──
@@ -118,6 +124,7 @@ const he = {
     editTitle: "עריכת פתק",
     titleLabel: "כותרת (אופציונלי)",
     bodyLabel: "תוכן הפתק",
+    assignToKid: "שייך לילד/ה (אופציונלי)",
   },
 
   // ── Chore Add Modal ──
@@ -138,6 +145,7 @@ const he = {
     description: "תיאור (אופציונלי)",
     status: "סטטוס",
     progress: "התקדמות: {{n}}%",
+    assignToKid: "שייך לילד/ה (אופציונלי)",
   },
 
   // ── Schedule Block Modal ──

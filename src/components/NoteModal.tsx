@@ -6,16 +6,24 @@ import { addNoteRemote, updateNoteRemote } from "@src/lib/sync/remoteCrud";
 import { t } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
 import ModalWrapper from "./ModalWrapper";
+import KidOwnerPicker from "./KidOwnerPicker";
 
 interface Props {
   visible: boolean;
   onDismiss: () => void;
   editNote?: Note | null;
+  /**
+   * Pre-select a kid when opening fresh. Used by the kid view's "+" button
+   * so the new note is owned by the kid in context. Ignored when editing
+   * (the existing note's own kidId wins).
+   */
+  defaultKidId?: string;
 }
 
-export default function NoteModal({ visible, onDismiss, editNote }: Props) {
+export default function NoteModal({ visible, onDismiss, editNote, defaultKidId }: Props) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [kidId, setKidId] = useState<string | undefined>(undefined);
   // In-flight guard against rapid double-clicks (QA Pass 1 BUG #2).
   // Ref for synchronous re-entrancy check; state for visual disabled/loading.
   const submittingRef = useRef(false);
@@ -27,13 +35,15 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
     if (editNote) {
       setTitle(editNote.title ?? "");
       setBody(editNote.body);
+      setKidId(editNote.kidId);
     } else {
       setTitle("");
       setBody("");
+      setKidId(defaultKidId);
     }
-  }, [editNote, visible]);
+  }, [editNote, visible, defaultKidId]);
 
-  const reset = () => { setTitle(""); setBody(""); };
+  const reset = () => { setTitle(""); setBody(""); setKidId(undefined); };
 
   const handleSubmit = () => {
     if (submittingRef.current) return; // double-click guard (synchronous)
@@ -44,9 +54,10 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
       updateNoteRemote(editNote.id, {
         title: title.trim() || undefined,
         body: body.trim(),
+        kidId,
       });
     } else {
-      addNoteRemote({ title: title.trim() || undefined, body: body.trim() });
+      addNoteRemote({ title: title.trim() || undefined, body: body.trim(), kidId });
     }
     reset();
     onDismiss();
@@ -79,6 +90,8 @@ export default function NoteModal({ visible, onDismiss, editNote }: Props) {
         style={[MS.input, { minHeight: 160 }]}
         contentStyle={[MS.inputContent, { minHeight: 150 }]}
       />
+
+      <KidOwnerPicker value={kidId} onChange={setKidId} />
 
       <View style={MS.actions}>
         <Button onPress={handleDismiss}>{t("cancel")}</Button>

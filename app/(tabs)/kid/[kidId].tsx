@@ -35,12 +35,16 @@ import {
   deleteScheduleBlockRemote,
   updateFamilyEventRemote,
   deleteFamilyEventRemote,
+  deleteNoteRemote,
+  deleteProjectRemote,
 } from "@src/lib/sync/remoteCrud";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
+import type { Note } from "@src/models/note";
+import type { Project } from "@src/models/project";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
-import { t, dayName, blockTypeLabel } from "@src/i18n";
+import { t, dayName, blockTypeLabel, statusLabel } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 import { TYPE_COLORS } from "@src/ui/semanticColors";
@@ -50,6 +54,8 @@ import WeekCalendar from "@src/components/Calendar/WeekCalendar";
 import DayCalendar from "@src/components/Calendar/DayCalendar";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import FamilyEventModal from "@src/components/FamilyEventModal";
+import NoteModal from "@src/components/NoteModal";
+import ProjectModal from "@src/components/ProjectModal";
 import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -271,6 +277,26 @@ export default function KidScheduleScreen() {
   // Family-event modal (edit/delete only — new events are created on /calendar)
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<FamilyEvent | null>(null);
+  // Note + Project modals — owned by this kid. New ones get defaultKidId=kidId.
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  // Section-collapse state (local; doesn't need to persist across sessions).
+  const [notesExpanded, setNotesExpanded] = useState(true);
+  const [projectsExpanded, setProjectsExpanded] = useState(true);
+
+  // This kid's notes + projects (kidId === kidId).
+  const allNotes = useFamilyStore((s) => s.notes);
+  const kidNotes = useMemo(
+    () => allNotes.filter((n) => n.kidId === kidId),
+    [allNotes, kidId],
+  );
+  const allProjects = useFamilyStore((s) => s.projects);
+  const kidProjects = useMemo(
+    () => allProjects.filter((p) => p.kidId === kidId),
+    [allProjects, kidId],
+  );
 
   const openAdd = (dayOfWeek?: number) => {
     setEditingBlock(null);
@@ -509,6 +535,136 @@ export default function KidScheduleScreen() {
                   </Card.Content>
                 </Card>
               )}
+
+              {/* --- This kid's notes (kidId === kidId) --- */}
+              <View style={styles.sectionHeaderRow}>
+                <SectionHeader
+                  label={t("kid.notes")}
+                  collapsible
+                  expanded={notesExpanded}
+                  onToggle={() => setNotesExpanded((v) => !v)}
+                  testID="kid-section-notes"
+                />
+                <IconButton
+                  icon="plus-circle"
+                  size={28}
+                  iconColor={kidColor}
+                  accessibilityLabel={t("kid.addNote")}
+                  onPress={() => {
+                    setEditingNote(null);
+                    setNoteModalOpen(true);
+                  }}
+                />
+              </View>
+              {notesExpanded && (
+                kidNotes.length === 0 ? (
+                  <Text style={styles.emptyText}>{t("kid.noNotes")}</Text>
+                ) : (
+                  <Card style={styles.card} mode="elevated">
+                    <Card.Content>
+                      {kidNotes.map((note) => (
+                        <Pressable
+                          key={note.id}
+                          style={({ hovered }: any) => [
+                            styles.kidItemRow,
+                            hovered && styles.kidItemRowHover,
+                          ]}
+                          onPress={() => {
+                            setEditingNote(note);
+                            setNoteModalOpen(true);
+                          }}
+                        >
+                          <View
+                            style={[styles.kidItemStripe, { backgroundColor: kidColor }]}
+                          />
+                          <View style={styles.kidItemBody}>
+                            <Text style={styles.kidItemTitle} numberOfLines={1}>
+                              {note.title || note.body.split("\n")[0] || t("home.note")}
+                            </Text>
+                            {note.body ? (
+                              <Text style={styles.kidItemSub} numberOfLines={2}>
+                                {note.body}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <IconButton
+                            icon="trash-can-outline"
+                            size={18}
+                            iconColor={C.textMuted}
+                            onPress={() =>
+                              requestDelete(() => deleteNoteRemote(note.id))
+                            }
+                          />
+                        </Pressable>
+                      ))}
+                    </Card.Content>
+                  </Card>
+                )
+              )}
+
+              {/* --- This kid's projects --- */}
+              <View style={styles.sectionHeaderRow}>
+                <SectionHeader
+                  label={t("kid.projects")}
+                  collapsible
+                  expanded={projectsExpanded}
+                  onToggle={() => setProjectsExpanded((v) => !v)}
+                  testID="kid-section-projects"
+                />
+                <IconButton
+                  icon="plus-circle"
+                  size={28}
+                  iconColor={kidColor}
+                  accessibilityLabel={t("kid.addProject")}
+                  onPress={() => {
+                    setEditingProject(null);
+                    setProjectModalOpen(true);
+                  }}
+                />
+              </View>
+              {projectsExpanded && (
+                kidProjects.length === 0 ? (
+                  <Text style={styles.emptyText}>{t("kid.noProjects")}</Text>
+                ) : (
+                  <Card style={styles.card} mode="elevated">
+                    <Card.Content>
+                      {kidProjects.map((proj) => (
+                        <Pressable
+                          key={proj.id}
+                          style={({ hovered }: any) => [
+                            styles.kidItemRow,
+                            hovered && styles.kidItemRowHover,
+                          ]}
+                          onPress={() => {
+                            setEditingProject(proj);
+                            setProjectModalOpen(true);
+                          }}
+                        >
+                          <View
+                            style={[styles.kidItemStripe, { backgroundColor: kidColor }]}
+                          />
+                          <View style={styles.kidItemBody}>
+                            <Text style={styles.kidItemTitle} numberOfLines={1}>
+                              {proj.title}
+                            </Text>
+                            <Text style={styles.kidItemSub} numberOfLines={1}>
+                              {statusLabel(proj.status)} · {proj.progress}%
+                            </Text>
+                          </View>
+                          <IconButton
+                            icon="trash-can-outline"
+                            size={18}
+                            iconColor={C.textMuted}
+                            onPress={() =>
+                              requestDelete(() => deleteProjectRemote(proj.id))
+                            }
+                          />
+                        </Pressable>
+                      ))}
+                    </Card.Content>
+                  </Card>
+                )
+              )}
             </>
           )}
 
@@ -592,6 +748,29 @@ export default function KidScheduleScreen() {
               : undefined
           }
         />
+        {/* This kid's notes — defaultKidId pre-fills the picker so the add
+            button doesn't accidentally create family-wide notes from here. */}
+        <NoteModal
+          visible={noteModalOpen}
+          onDismiss={() => {
+            setNoteModalOpen(false);
+            setEditingNote(null);
+          }}
+          editNote={editingNote}
+          defaultKidId={kidId}
+        />
+
+        {/* Same for projects. */}
+        <ProjectModal
+          visible={projectModalOpen}
+          onDismiss={() => {
+            setProjectModalOpen(false);
+            setEditingProject(null);
+          }}
+          editProject={editingProject}
+          defaultKidId={kidId}
+        />
+
         <ConfirmDeleteModal
           visible={confirmVisible}
           onConfirm={confirmDelete}
@@ -636,6 +815,52 @@ const styles = StyleSheet.create({
     textAlign: TEXT_RIGHT,
     fontSize: 14,
     paddingVertical: S.xs,
+  },
+
+  // Header row with collapsible label on one side and add button on the other.
+  // RTL_ROW so it mirrors with the rest of the page (label sits on the right
+  // visual edge in Hebrew, add button on the left).
+  sectionHeaderRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  // Note/project row — accent stripe + title/sub + delete. Pressable opens
+  // the modal. Mirrors the schedule blockRow style on purpose so the kid view
+  // feels cohesive.
+  kidItemRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    paddingVertical: S.sm,
+    borderRadius: R.sm,
+    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+  },
+  kidItemRowHover: {
+    backgroundColor: C.bg,
+  },
+  kidItemStripe: {
+    width: 4,
+    height: 36,
+    borderRadius: 2,
+    marginEnd: S.md,
+  },
+  kidItemBody: {
+    flex: 1,
+    gap: 2,
+  },
+  kidItemTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  kidItemSub: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
 
   // Block row — matches Today's blockRow pattern
