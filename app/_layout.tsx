@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { I18nManager, Platform } from "react-native";
+import { I18nManager, Platform, DevSettings } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -48,7 +48,7 @@ import OnboardingWizard from "@src/components/OnboardingWizard";
 // isRTL=false, re-enters this block, reloads again, etc. Guard against it
 // by tracking "we've already tried this install" in AsyncStorage and
 // bailing out if so.
-const RTL_RELOAD_KEY = "family-os:rtl-reload-attempted-v1";
+const RTL_RELOAD_KEY = "family-os:rtl-reload-attempted-v2"; // v2: uses DevSettings.reload() in dev
 if (Platform.OS !== "web" && !I18nManager.isRTL) {
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
@@ -67,7 +67,15 @@ if (Platform.OS !== "web" && !I18nManager.isRTL) {
       // since forceRTL persistence (when it works) makes this naturally
       // single-shot.
     }
-    Updates.reloadAsync().catch(() => {});
+    // In Expo Go, expo-updates is disabled and reloadAsync() throws
+    // ERR_UPDATES_DISABLED (silently caught). Use DevSettings.reload()
+    // instead — that's the Metro bridge restart, always available in dev.
+    // In production builds, Updates.reloadAsync() is the right call.
+    if (__DEV__) {
+      DevSettings.reload();
+    } else {
+      Updates.reloadAsync().catch(() => {});
+    }
   })();
 }
 
