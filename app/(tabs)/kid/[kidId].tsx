@@ -46,8 +46,8 @@ import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, blockTypeLabel, statusLabel } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { C, R, S } from "@src/ui/tokens";
-import { TYPE_COLORS } from "@src/ui/semanticColors";
+import { C, R, S, SHADOW } from "@src/ui/tokens";
+import { TYPE_COLORS, STATUS_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import WeekCalendar from "@src/components/Calendar/WeekCalendar";
@@ -61,6 +61,22 @@ import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
 type CalendarView = "month" | "week" | "day";
+
+// Same palette as /home so kid-owned notes/projects look identical.
+const NOTE_COLORS = {
+  accent: "#D97706",
+  bg: "#FFFBF0",
+  border: "#F5E6C8",
+  barDefault: "#E8D5B0",
+  hover: "#FFF3D6",
+} as const;
+
+const PROJECT_COLORS = {
+  accent: "#6C63FF",
+  bg: "#F8F7FF",
+  border: "#E8E5FF",
+  hover: "#EEEAFF",
+} as const;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -560,45 +576,49 @@ export default function KidScheduleScreen() {
                 kidNotes.length === 0 ? (
                   <Text style={styles.emptyText}>{t("kid.noNotes")}</Text>
                 ) : (
-                  <Card style={styles.card} mode="elevated">
-                    <Card.Content>
-                      {kidNotes.map((note) => (
-                        <Pressable
-                          key={note.id}
-                          style={({ hovered }: any) => [
-                            styles.kidItemRow,
-                            hovered && styles.kidItemRowHover,
-                          ]}
-                          onPress={() => {
-                            setEditingNote(note);
-                            setNoteModalOpen(true);
-                          }}
-                        >
-                          <View
-                            style={[styles.kidItemStripe, { backgroundColor: kidColor }]}
-                          />
-                          <View style={styles.kidItemBody}>
-                            <Text style={styles.kidItemTitle} numberOfLines={1}>
-                              {note.title || note.body.split("\n")[0] || t("home.note")}
-                            </Text>
-                            {note.body ? (
-                              <Text style={styles.kidItemSub} numberOfLines={2}>
-                                {note.body}
-                              </Text>
-                            ) : null}
+                  <View style={styles.notesGrid}>
+                    {kidNotes.map((note) => (
+                      <Pressable
+                        key={note.id}
+                        style={({ pressed, hovered }: any) => [
+                          styles.noteCard,
+                          hovered && styles.noteCardHover,
+                          pressed && styles.noteCardPressed,
+                        ]}
+                        onPress={() => {
+                          setEditingNote(note);
+                          setNoteModalOpen(true);
+                        }}
+                      >
+                        {/* Top row: 📝 icon + delete */}
+                        <View style={styles.noteTopRow}>
+                          <View style={styles.noteIcon}>
+                            <Text style={{ fontSize: 18 }}>📝</Text>
                           </View>
+                          <View style={{ flex: 1 }} />
                           <IconButton
                             icon="trash-can-outline"
-                            size={18}
+                            size={16}
                             iconColor={C.textMuted}
-                            onPress={() =>
-                              requestDelete(() => deleteNoteRemote(note.id))
-                            }
+                            style={styles.noteActionBtn}
+                            onPress={() => requestDelete(() => deleteNoteRemote(note.id))}
                           />
-                        </Pressable>
-                      ))}
-                    </Card.Content>
-                  </Card>
+                        </View>
+
+                        <Text style={styles.noteTitle} numberOfLines={1}>
+                          {note.title || t("home.note")}
+                        </Text>
+                        {note.body ? (
+                          <Text style={styles.noteBody} numberOfLines={3}>
+                            {note.body}
+                          </Text>
+                        ) : null}
+
+                        {/* Bottom accent bar */}
+                        <View style={styles.noteAccentBar} />
+                      </Pressable>
+                    ))}
+                  </View>
                 )
               )}
 
@@ -626,43 +646,77 @@ export default function KidScheduleScreen() {
                 kidProjects.length === 0 ? (
                   <Text style={styles.emptyText}>{t("kid.noProjects")}</Text>
                 ) : (
-                  <Card style={styles.card} mode="elevated">
-                    <Card.Content>
-                      {kidProjects.map((proj) => (
+                  <View style={styles.projectsContainer}>
+                    {kidProjects.map((proj) => {
+                      const statusColor = STATUS_COLORS[proj.status];
+                      const statusEmoji = proj.status === "done" ? "✅" : proj.status === "in_progress" ? "🔨" : "💡";
+                      return (
                         <Pressable
                           key={proj.id}
-                          style={({ hovered }: any) => [
-                            styles.kidItemRow,
-                            hovered && styles.kidItemRowHover,
+                          style={({ pressed, hovered }: any) => [
+                            styles.projectCard,
+                            hovered && styles.projectCardHover,
+                            pressed && { transform: [{ scale: 0.98 }] },
                           ]}
                           onPress={() => {
                             setEditingProject(proj);
                             setProjectModalOpen(true);
                           }}
                         >
-                          <View
-                            style={[styles.kidItemStripe, { backgroundColor: kidColor }]}
-                          />
-                          <View style={styles.kidItemBody}>
-                            <Text style={styles.kidItemTitle} numberOfLines={1}>
+                          {/* Left accent stripe */}
+                          <View style={[styles.projectStripe, { backgroundColor: statusColor }]} />
+
+                          {/* Main content */}
+                          <View style={styles.projectBody}>
+                            <View style={styles.projectTopRow}>
+                              <View style={[styles.projectStatusChip, { backgroundColor: statusColor + "18" }]}>
+                                <Text style={{ fontSize: 12 }}>{statusEmoji}</Text>
+                                <Text style={[styles.projectStatusText, { color: statusColor }]}>
+                                  {statusLabel(proj.status)}
+                                </Text>
+                              </View>
+                              <View style={{ flex: 1 }} />
+                              <IconButton
+                                icon="trash-can-outline"
+                                size={16}
+                                iconColor={C.textMuted}
+                                style={styles.projectActionBtn}
+                                onPress={() => requestDelete(() => deleteProjectRemote(proj.id))}
+                              />
+                            </View>
+
+                            <Text style={styles.projectTitle} numberOfLines={1}>
                               {proj.title}
                             </Text>
-                            <Text style={styles.kidItemSub} numberOfLines={1}>
-                              {statusLabel(proj.status)} · {proj.progress}%
-                            </Text>
+
+                            {proj.description ? (
+                              <Text style={styles.projDesc} numberOfLines={2}>
+                                {proj.description}
+                              </Text>
+                            ) : null}
+
+                            {/* Progress bar */}
+                            <View style={styles.projectProgressRow}>
+                              <View style={styles.projectProgressTrack}>
+                                <View
+                                  style={[
+                                    styles.projectProgressFill,
+                                    {
+                                      backgroundColor: statusColor,
+                                      width: `${proj.progress}%` as any,
+                                    },
+                                  ]}
+                                />
+                              </View>
+                              <Text style={[styles.projectProgressLabel, { color: statusColor }]}>
+                                {proj.progress}%
+                              </Text>
+                            </View>
                           </View>
-                          <IconButton
-                            icon="trash-can-outline"
-                            size={18}
-                            iconColor={C.textMuted}
-                            onPress={() =>
-                              requestDelete(() => deleteProjectRemote(proj.id))
-                            }
-                          />
                         </Pressable>
-                      ))}
-                    </Card.Content>
-                  </Card>
+                      );
+                    })}
+                  </View>
                 )
               )}
             </>
@@ -817,50 +871,175 @@ const styles = StyleSheet.create({
     paddingVertical: S.xs,
   },
 
-  // Header row with collapsible label on one side and add button on the other.
-  // RTL_ROW so it mirrors with the rest of the page (label sits on the right
-  // visual edge in Hebrew, add button on the left).
+  // Section header row — collapsible label + add button, RTL-aware.
   sectionHeaderRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
   },
 
-  // Note/project row — accent stripe + title/sub + delete. Pressable opens
-  // the modal. Mirrors the schedule blockRow style on purpose so the kid view
-  // feels cohesive.
-  kidItemRow: {
+  // ── Notes (identical to /home) ──
+  notesGrid: {
+    flexDirection: RTL_ROW,
+    flexWrap: "wrap",
+    gap: S.md,
+    marginBottom: S.lg,
+  },
+  noteCard: {
+    backgroundColor: NOTE_COLORS.bg,
+    borderWidth: 1,
+    borderColor: NOTE_COLORS.border,
+    borderRadius: R.lg,
+    padding: S.lg,
+    minWidth: 160,
+    flex: 1,
+    maxWidth: "100%" as any,
+    ...SHADOW.sm,
+    ...(Platform.OS === "web"
+      ? { cursor: "pointer" as any, transition: "all 0.2s ease" }
+      : {}),
+    overflow: "hidden" as const,
+  },
+  noteCardHover: {
+    backgroundColor: NOTE_COLORS.hover,
+    borderColor: "#EAD49B",
+    transform: [{ translateY: -2 }],
+    ...SHADOW.md,
+  },
+  noteCardPressed: {
+    transform: [{ scale: 0.97 }],
+  },
+  noteTopRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
-    paddingVertical: S.sm,
-    borderRadius: R.sm,
-    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+    marginBottom: S.sm,
   },
-  kidItemRowHover: {
-    backgroundColor: C.bg,
+  noteIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: NOTE_COLORS.accent + "14",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
-  kidItemStripe: {
-    width: 4,
-    height: 36,
-    borderRadius: 2,
-    marginEnd: S.md,
+  noteActionBtn: {
+    margin: 0,
+    width: 28,
+    height: 28,
   },
-  kidItemBody: {
-    flex: 1,
-    gap: 2,
-  },
-  kidItemTitle: {
+  noteTitle: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
     color: C.textPrimary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
+    marginBottom: 4,
   },
-  kidItemSub: {
+  noteBody: {
     fontSize: 13,
     color: C.textSecondary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
+    lineHeight: 19,
+  },
+  noteAccentBar: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: NOTE_COLORS.barDefault,
+    marginTop: S.md,
+  },
+
+  // ── Projects (identical to /home) ──
+  projectsContainer: {
+    gap: S.xs,
+    marginBottom: S.lg,
+  },
+  projectCard: {
+    flexDirection: RTL_ROW,
+    backgroundColor: PROJECT_COLORS.bg,
+    borderWidth: 1,
+    borderColor: PROJECT_COLORS.border,
+    borderRadius: R.lg,
+    marginBottom: S.md,
+    overflow: "hidden" as const,
+    ...SHADOW.sm,
+    ...(Platform.OS === "web"
+      ? { cursor: "pointer" as any, transition: "all 0.2s ease" }
+      : {}),
+  },
+  projectCardHover: {
+    backgroundColor: PROJECT_COLORS.hover,
+    borderColor: PROJECT_COLORS.accent + "40",
+    transform: [{ translateY: -2 }],
+    ...SHADOW.md,
+  },
+  projectStripe: {
+    width: 5,
+    alignSelf: "stretch" as const,
+  },
+  projectBody: {
+    flex: 1,
+    padding: S.lg,
+    gap: S.xs,
+  },
+  projectTopRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    marginBottom: S.xs,
+  },
+  projectStatusChip: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: S.sm + 2,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  projectStatusText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  projectActionBtn: {
+    margin: 0,
+    width: 28,
+    height: 28,
+  },
+  projectTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  projDesc: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    lineHeight: 19,
+  },
+  projectProgressRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.sm,
+    marginTop: S.sm,
+  },
+  projectProgressTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: PROJECT_COLORS.accent + "15",
+    overflow: "hidden" as const,
+  },
+  projectProgressFill: {
+    height: 6,
+    borderRadius: 3,
+  },
+  projectProgressLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    minWidth: 36,
+    textAlign: "left" as const,
   },
 
   // Block row — matches Today's blockRow pattern
