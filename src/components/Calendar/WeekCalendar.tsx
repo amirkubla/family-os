@@ -25,7 +25,7 @@ import {
 } from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S, R } from "@src/ui/tokens";
-import { TEXT_RIGHT } from "@src/ui/rtl";
+import { TEXT_RIGHT, RTL_ROW, isRTLActive } from "@src/ui/rtl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -342,9 +342,8 @@ export default function WeekCalendar({
         <IconButton icon="chevron-left" size={22} onPress={goBack} />
       </View>
 
-      {/* Day headers */}
+      {/* Day headers — spacer at end so it sits on the LEFT in both RTL_ROW modes */}
       <View style={styles.dayHeaderRow}>
-        <View style={styles.timeLabelSpacer} />
         {days.map((day, i) => {
           const dateStr = ymd(day);
           const isSelected = dateStr === selectedDate;
@@ -379,6 +378,7 @@ export default function WeekCalendar({
             </Pressable>
           );
         })}
+        <View style={styles.timeLabelSpacer} />
       </View>
 
       {/* Time grid (scrollable) */}
@@ -397,9 +397,8 @@ export default function WeekCalendar({
             );
           })}
 
-          {/* Day columns with events */}
+          {/* Day columns with events — spacer at end for LEFT placement in RTL_ROW */}
           <View style={styles.dayColumnsContainer}>
-            <View style={styles.timeLabelSpacer} />
             {days.map((day, i) => {
               const dateStr = ymd(day);
               const isSelected = dateStr === selectedDate;
@@ -477,6 +476,7 @@ export default function WeekCalendar({
                 </View>
               );
             })}
+            <View style={styles.timeLabelSpacer} />
           </View>
         </View>
       </ScrollView>
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
 
   // Day header row
   dayHeaderRow: {
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
     alignItems: "center",
     marginBottom: 4,
   },
@@ -579,16 +579,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: GRID_HEIGHT,
-    flexDirection: "row",
+    flexDirection: RTL_ROW,
   },
   dayColumn: {
     flex: 1,
     position: "relative",
   },
-  dayColumnBorder: {
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: C.border,
-  },
+  // Column separator: when engine is active (isRTL=true) borderRight is
+  // mirrored to physical-left; when manual RTL (isRTL=false, row-reverse)
+  // we explicitly need borderLeft. Both use i<6 condition since Sunday (i=0)
+  // is always the rightmost column after reversal.
+  dayColumnBorder: isRTLActive
+    ? { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border }
+    : { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border },
 
   // Time slots (clickable half-hour areas)
   timeSlot: {

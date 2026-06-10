@@ -14,6 +14,7 @@ import React, { useMemo, useCallback } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { Text, IconButton } from "react-native-paper";
 import he from "@src/i18n/he";
+import { RTL_ROW } from "@src/ui/rtl";
 import { LOCALE } from "@src/i18n";
 
 interface MarkedDate {
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   monthLabel: { fontWeight: "700", color: "#1A1A2E", textAlign: "center" },
-  weekRow: { flexDirection: "row" },
+  weekRow: { flexDirection: RTL_ROW },
   cell: {
     flex: 1,
     height: CELL_SIZE,
