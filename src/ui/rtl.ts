@@ -23,39 +23,46 @@ export const isRTLActive: boolean = Platform.OS === "web" || I18nManager.isRTL;
 /** Runtime RTL flag — true after I18nManager.forceRTL(true) takes effect. */
 export const isRTL = I18nManager.isRTL;
 
+// Whether the native RTL engine is active at this module-load instant.
+// On Android: forceRTL persists fast, isRTL = true by the time JS loads ✓
+// On iOS standalone (prod / dev-client): isRTL = true after Updates.reloadAsync ✓
+// On iOS Expo Go: isRTL stays false until a full Expo Go process restart —
+//   the Expo Go bridge does NOT reinitialize TurboModule constants on a
+//   DevSettings.reload() JS bundle reload, so isRTL is stuck at bridge-init
+//   time. We handle this by falling back to explicit RTL values (row-reverse,
+//   flex-end, "right") when the engine is not yet active.
+const _engineRTL = Platform.OS === "web" || I18nManager.isRTL;
+
 /**
  * FlexDirection for a row that should flow right-to-left (Hebrew reading order).
  *
- * **Always "row"** — we rely on the layout engine to mirror it when RTL is
- * active (both RN Web with `dir="rtl"` and native with `I18nManager.isRTL`).
+ * - Engine active (web / Android / iOS after restart): `"row"` — the layout
+ *   engine mirrors it to RTL automatically.
+ * - Engine not yet active (iOS Expo Go first-launch): `"row-reverse"` — manual
+ *   RTL so components look correct even before the engine flips.
  *
- * History: this used to evaluate to `"row-reverse"` as a manual fallback when
- * `isRTLActive === false` at module load. That backfired on Android: if the
- * native engine had already flipped to RTL by render time (a race between
- * forceRTL persistence and JS module loading), the engine would mirror
- * `"row-reverse"` again, producing an effectively LTR layout. The MonthCalendar
- * week-row using plain `"row"` rendered correctly while modal section headers
- * using `RTL_ROW` rendered backwards. See `Updates.reloadAsync()` in
- * `app/_layout.tsx` for the first-launch handling that ensures the engine is
- * in RTL mode before anything renders.
+ * Why the old "always row" broke iOS Expo Go: Expo Go reuses the native bridge
+ * across JS bundle reloads, so isRTL is read once at bridge init. forceRTL +
+ * DevSettings.reload() doesn't refresh the constant. Without the fallback,
+ * "row" + no engine mirroring = LTR forever in Expo Go.
  */
-export const RTL_ROW: "row" = "row";
+export const RTL_ROW: "row" | "row-reverse" = _engineRTL ? "row" : "row-reverse";
 
 /**
  * alignSelf value that places an item on the RIGHT side of a column.
- * Always `"flex-start"` — the engine maps `start` to the physical right edge
- * when in RTL mode. Same rationale as `RTL_ROW`: let the engine handle it.
+ * - Engine active: `"flex-start"` → engine maps logical start to physical right.
+ * - Engine not active: `"flex-end"` → physical right in a non-mirrored layout.
  */
-export const RTL_ALIGN_RIGHT: "flex-start" = "flex-start";
+export const RTL_ALIGN_RIGHT: "flex-start" | "flex-end" = _engineRTL ? "flex-start" : "flex-end";
 
 /**
  * textAlign value for right-aligned text.
- *  - Web: "right" (dir="rtl" on <html> does NOT auto-align Text components).
- *  - Native with RTL active: the engine auto-mirrors "right" → "left",
- *    so we omit it (undefined) and let the RTL default handle it.
+ * - Web: always `"right"` (CSS dir="rtl" does NOT auto-align RN Text).
+ * - Native, engine active (isRTL = true): `undefined` — engine default is RTL.
+ * - Native, engine not active (isRTL = false, iOS Expo Go): `"right"` — explicit.
  */
 export const TEXT_RIGHT: "right" | undefined =
-  Platform.OS === "web" ? "right" : undefined;
+  _engineRTL && Platform.OS !== "web" ? undefined : "right";
 
 /**
  * textAlign value for left-aligned text (e.g. numbers, progress labels).
