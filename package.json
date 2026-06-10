@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "dev": "concurrently --names \"frontend,backend\" --prefix-colors \"cyan,magenta\" \"expo start --web --port 8083\" \"npm run dev --prefix backend\""

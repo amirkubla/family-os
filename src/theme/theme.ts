@@ -1,9 +1,24 @@
 import { MD3LightTheme, configureFonts } from "react-native-paper";
+import { Platform } from "react-native";
 
 export const theme = {
   ...MD3LightTheme,
   roundness: 16,
-  fonts: configureFonts({ config: { fontFamily: "Rubik" } }),
+  // Use Rubik on web + Android. Skip it on iOS: when iOS renders text
+  // with an explicit fontFamily, CoreText does NOT fall back to Apple
+  // Color Emoji for emoji codepoints, so every emoji in a Text element
+  // (member avatars 👨, kid icons 👶, calendar event chip glyphs) rendered
+  // as a missing-glyph "?". iOS system font (SF Pro / SF Hebrew) renders
+  // Hebrew beautifully and falls back to Apple Color Emoji on the fly,
+  // so omitting fontFamily on iOS fixes emoji app-wide.
+  // Why this didn't bite in Expo Go: Expo Go's binary doesn't ship the
+  // Rubik .ttf, so the "Rubik" string silently no-op'd and iOS used the
+  // system font anyway (with the fallback that gave us working emoji).
+  // Our prebuilt dev client loads Rubik for real via expo-font, which
+  // is what surfaced the regression.
+  fonts: configureFonts({
+    config: { fontFamily: Platform.OS === "ios" ? undefined : "Rubik" },
+  }),
   colors: {
     ...MD3LightTheme.colors,
     primary: "#6C63FF", // friendly purple

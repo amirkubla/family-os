@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { I18nManager, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PaperProvider, Snackbar } from "react-native-paper";
@@ -14,6 +15,7 @@ import {
   Rubik_700Bold,
   Rubik_800ExtraBold,
 } from "@expo-google-fonts/rubik";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { theme } from "@src/theme/theme";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useAuthStore } from "@src/auth/useAuthStore";
@@ -34,18 +36,39 @@ import OnboardingWizard from "@src/components/OnboardingWizard";
 //
 // Fix: after calling forceRTL, immediately trigger a JS bundle reload via
 // expo-updates. The reload re-reads I18nManager.isRTL, which now returns true,
-// and every component renders with proper RTL on this same install. Production
-// only — in dev (`__DEV__`), Updates.reloadAsync may error or fight with
-// Metro's HMR, so we skip and rely on the developer to manually reload.
+// and every component renders with proper RTL on this same install.
+//
+// We do this in BOTH prod and dev (incl. Expo Go) because the only way to
+// flip the running JS context's `isRTL` is a reload. Older code skipped the
+// reload in `__DEV__` to "avoid fighting Metro HMR" — but that just left
+// devs in LTR forever in Expo Go, which is what tripped iOS testing.
+//
+// The infinite-loop concern: if forceRTL ever FAILS to persist (Expo Go iOS
+// has been observed to do this), the next module init still sees
+// isRTL=false, re-enters this block, reloads again, etc. Guard against it
+// by tracking "we've already tried this install" in AsyncStorage and
+// bailing out if so.
+const RTL_RELOAD_KEY = "family-os:rtl-reload-attempted-v1";
 if (Platform.OS !== "web" && !I18nManager.isRTL) {
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
-  if (!__DEV__) {
-    // Defer to next tick so any error from reloadAsync doesn't crash the
-    // initial render. Swallow errors silently — if it fails, the user just
-    // sees LTR until their next manual app launch (current behavior).
+  // Async IIFE so the synchronous module load isn't blocked by storage.
+  // If forceRTL persists, the next module init takes the early-return at
+  // the `!I18nManager.isRTL` check above — the flag is harmlessly left
+  // set. If forceRTL didn't persist, the flag prevents a reload loop;
+  // user sees LTR and we know dev-only iOS is the limit.
+  (async () => {
+    try {
+      const already = await AsyncStorage.getItem(RTL_RELOAD_KEY);
+      if (already) return;
+      await AsyncStorage.setItem(RTL_RELOAD_KEY, "1");
+    } catch {
+      // AsyncStorage hiccup — still safe to attempt the reload once,
+      // since forceRTL persistence (when it works) makes this naturally
+      // single-shot.
+    }
     Updates.reloadAsync().catch(() => {});
-  }
+  })();
 }
 
 if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -74,6 +97,13 @@ export default function RootLayout() {
     "Rubik-Medium": Rubik_500Medium,
     "Rubik-Bold": Rubik_700Bold,
     "Rubik-ExtraBold": Rubik_800ExtraBold,
+    // MaterialCommunityIcons.font is the glyph map react-native-paper's
+    // <IconButton> + every other `icon="…"` Paper prop renders from. In
+    // Expo Go this loads automatically; in a prebuilt dev client / iOS
+    // simulator the .ttf is NOT bundled by default, so we have to ask
+    // expo-font to register it explicitly here. Without this, every icon
+    // in the app renders as a missing-glyph "?" box on iOS.
+    ...MaterialCommunityIcons.font,
   });
 
   // Wait for Zustand to rehydrate from AsyncStorage/localStorage before rendering.
