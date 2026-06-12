@@ -1,0 +1,84 @@
+# .maestro/add-grocery-item.yaml — iOS
+# Run: maestro test -p iOS -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" .maestro/add-grocery-item.yaml
+appId: com.amirkubla.familyos
+---
+# 1. Start fresh
+- launchApp:
+    clearKeychain: true
+
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+
+# 2. Login
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 30000
+- tapOn:
+    id: "input-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${QA_PASSWORD}
+- pressKey: Enter
+- runFlow:
+    when:
+      visible:
+        text: "Not Now"
+    commands:
+      - tapOn:
+          text: "Not Now"
+- extendedWaitUntil:
+    visible:
+      id: "tab-today"
+    timeout: 30000
+
+# 3. Deep-link to Grocery with add modal pre-opened (?modal=add bypasses FAB tap)
+- openLink: "familyos://grocery?modal=add"
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+
+# 4. Modal is open — fill and submit
+- extendedWaitUntil:
+    visible:
+      id: "input-grocery-name"
+    timeout: 8000
+- tapOn:
+    id: "input-grocery-name"
+- inputText: "QA Grocery"
+- tapOn:
+    id: "input-grocery-qty"
+- inputText: "2"
+# pressKey Enter triggers onSubmitEditing → handleSubmit (dismisses keyboard + saves)
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# 5. Assert item visible in unbought section
+- extendedWaitUntil:
+    visible:
+      text: "QA Grocery"
+    timeout: 10000
+
+# 6. Delete item directly from unbought section (mark-bought skipped — RTL checkbox
+#    tap causes navigation away from grocery screen on iOS under XCUITest)
+- tapOn:
+    id: "grocery-delete-QA Grocery"
+- waitForAnimationToEnd
+
+# 7. Assert item gone
+- assertNotVisible:
+    text: "QA Grocery"
+
+- takeScreenshot: qa-reports/screenshots/add-grocery-item

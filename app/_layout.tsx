@@ -34,49 +34,48 @@ import OnboardingWizard from "@src/components/OnboardingWizard";
 // renders LTR — a user-visible bug on Android (the calendar/grocery/event
 // modal labels, the chip rows, etc.).
 //
-// Fix: after calling forceRTL, immediately trigger a JS bundle reload via
-// expo-updates. The reload re-reads I18nManager.isRTL, which now returns true,
-// and every component renders with proper RTL on this same install.
+// Fix: after calling forceRTL, immediately trigger a JS bundle reload so the
+// next module init reads isRTL=true. Both dev (DevSettings.reload) and prod
+// (Updates.reloadAsync) paths are covered.
 //
-// We do this in BOTH prod and dev (incl. Expo Go) because the only way to
-// flip the running JS context's `isRTL` is a reload. Older code skipped the
-// reload in `__DEV__` to "avoid fighting Metro HMR" — but that just left
-// devs in LTR forever in Expo Go, which is what tripped iOS testing.
-//
-// The infinite-loop concern: if forceRTL ever FAILS to persist (Expo Go iOS
-// has been observed to do this), the next module init still sees
-// isRTL=false, re-enters this block, reloads again, etc. Guard against it
-// by tracking "we've already tried this install" in AsyncStorage and
-// bailing out if so.
-const RTL_RELOAD_KEY = "family-os:rtl-reload-attempted-v2"; // v2: uses DevSettings.reload() in dev
+// Loop-prevention: we track attempt count in AsyncStorage. The guard is
+// outcome-based, not attempt-based — if isRTL is still false after N reloads
+// (forceRTL didn't persist, e.g. iOS Expo Go), we stop after MAX_RTL_ATTEMPTS.
+// Crucially, we do NOT bail just because the key exists — we check isRTL first.
+// This means a wiped emulator / cleared SharedPreferences re-triggers correctly
+// without requiring AsyncStorage to also be cleared.
+const RTL_RELOAD_KEY = "family-os:rtl-reload-count-v3";
+const MAX_RTL_ATTEMPTS = 3;
+
 if (Platform.OS !== "web" && !I18nManager.isRTL) {
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
-  // Async IIFE so the synchronous module load isn't blocked by storage.
-  // If forceRTL persists, the next module init takes the early-return at
-  // the `!I18nManager.isRTL` check above — the flag is harmlessly left
-  // set. If forceRTL didn't persist, the flag prevents a reload loop;
-  // user sees LTR and we know dev-only iOS is the limit.
   (async () => {
+    let attempts = 0;
     try {
-      const already = await AsyncStorage.getItem(RTL_RELOAD_KEY);
-      if (already) return;
-      await AsyncStorage.setItem(RTL_RELOAD_KEY, "1");
+      const stored = await AsyncStorage.getItem(RTL_RELOAD_KEY);
+      attempts = stored ? parseInt(stored, 10) : 0;
+      if (attempts >= MAX_RTL_ATTEMPTS) {
+        // forceRTL didn't persist after multiple tries (iOS Expo Go known limit).
+        // Give up to avoid a reload loop — app stays LTR only in this edge case.
+        return;
+      }
+      await AsyncStorage.setItem(RTL_RELOAD_KEY, String(attempts + 1));
     } catch {
-      // AsyncStorage hiccup — still safe to attempt the reload once,
-      // since forceRTL persistence (when it works) makes this naturally
-      // single-shot.
+      // AsyncStorage unavailable — still attempt one reload; forceRTL
+      // persistence (when it works) makes subsequent runs skip this block
+      // naturally via the `!I18nManager.isRTL` check above.
     }
-    // In Expo Go, expo-updates is disabled and reloadAsync() throws
-    // ERR_UPDATES_DISABLED (silently caught). Use DevSettings.reload()
-    // instead — that's the Metro bridge restart, always available in dev.
-    // In production builds, Updates.reloadAsync() is the right call.
     if (__DEV__) {
       DevSettings.reload();
     } else {
       Updates.reloadAsync().catch(() => {});
     }
   })();
+} else if (Platform.OS !== "web" && I18nManager.isRTL) {
+  // RTL is active — reset the attempt counter so a future wipe/reset
+  // gets its full MAX_RTL_ATTEMPTS budget again.
+  AsyncStorage.removeItem(RTL_RELOAD_KEY).catch(() => {});
 }
 
 if (Platform.OS === "web" && typeof document !== "undefined") {

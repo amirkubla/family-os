@@ -82,11 +82,14 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
         placeholder={t("settings.memberName")}
         value={name}
         onChangeText={(v) => { setName(v); if (nameError) setNameError(""); }}
+        onSubmitEditing={handleSubmit}
+        returnKeyType="done"
         mode="outlined"
         style={MS.input}
         contentStyle={MS.inputContent}
         autoFocus
         error={!!nameError}
+        testID="input-member-name"
       />
       {nameError ? <Text style={MS.error}>{nameError}</Text> : null}
 
@@ -125,7 +128,7 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
 
       <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" onPress={handleSubmit}>{t("save")}</Button>
+        <Button mode="contained" onPress={handleSubmit} testID="btn-save">{t("save")}</Button>
       </View>
     </ModalWrapper>
   );

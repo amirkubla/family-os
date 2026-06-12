@@ -1,0 +1,48 @@
+# .maestro/login-android.yaml  (Android only)
+# Run with:
+#   maestro test -p Android -e QA_EMAIL="$QA_ANDROID_EMAIL" -e QA_PASSWORD="$QA_ANDROID_PASSWORD" .maestro/login-android.yaml
+#
+# Strategy: wait for bundle load, then detect state via deep link to Settings.
+#   - logout-button visible (logged in)  → logout → login
+#   - input-email visible (logged out)   → login directly
+#
+# Pre-requisite (once per emulator session): adb reverse tcp:8081 tcp:8081
+appId: com.amirkubla.familyos
+---
+# NOTE: Do NOT use launchApp — it kills the app on Android, breaking the Metro URL.
+# The app must already be running. Start this flow with openLink to navigate.
+
+# Navigate to Settings via deep link (app is already loaded on Today screen)
+- openLink: "familyos://settings"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Scroll down to reveal logout button then tap by text (testID scroll unreliable on Android)
+- scrollUntilVisible:
+    element:
+      text: "התנתק"
+    direction: DOWN
+- tapOn:
+    text: "התנתק"
+- waitForAnimationToEnd
+
+# Wait for login screen
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 20000
+
+# Login
+- tapOn:
+    id: "input-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${QA_PASSWORD}
+- pressKey: Enter
+
+# Assert: no longer on login screen = login navigation succeeded
+- assertNotVisible:
+    id: "input-email"
+- takeScreenshot: qa-reports/screenshots/login

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
+import { useAuthStore } from "@src/auth/useAuthStore";
 import {
   Card,
   Text,
@@ -48,8 +49,8 @@ const ASSIGNEE_COLORS: Record<AssigneeType, string> = {
   kid: C.red,
 };
 
-const todayDow = new Date().getDay();
-const todayDate = toYMD(new Date());
+// NOTE: these were previously at module level (stale across Metro sessions).
+// Moved inside the component so they recompute on every render/remount.
 
 // Header background — soft sky blue inspired by the reference app
 const HEADER_BG = "#D6ECFA";
@@ -68,6 +69,11 @@ type TodayItem =
 // ---------------------------------------------------------------------------
 
 export default function TodayScreen() {
+  // Computed inside component so they're fresh on each render/remount
+  const todayDow = new Date().getDay();
+  const todayDate = toYMD(new Date());
+
+  const session = useAuthStore((s) => s.session);
   const grocery = useFamilyStore((s) => s.grocery);
   const chores = useFamilyStore((s) => s.chores);
   const projects = useFamilyStore((s) => s.projects);
@@ -162,8 +168,15 @@ export default function TodayScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Inner View carries testID — SafeAreaView from react-native-safe-area-context
+          does not expose testID to UIAutomator on Android */}
+      <View testID="roster-screen" style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{t("today.title")}</Text>
+        {/* Hidden node for QA hierarchy assertions — not rendered visually */}
+        {session?.user.username ? (
+          <View testID="user-header-name" accessibilityLabel={session.user.username} style={{ height: 0, overflow: "hidden" }} />
+        ) : null}
         <FamilyBadge />
 
         {/* ── Unified Today Card ── */}
@@ -190,6 +203,7 @@ export default function TodayScreen() {
                     return (
                       <Pressable
                         key={`event-${event.id}`}
+                        testID={"today-event-" + event.title}
                         style={({ hovered }: any) => [
                           styles.itemRow,
                           hovered && styles.itemRowHover,
@@ -457,6 +471,7 @@ export default function TodayScreen() {
         }}
         editProject={editingProject}
       />
+      </View>
     </SafeAreaView>
   );
 }

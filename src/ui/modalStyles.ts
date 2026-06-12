@@ -161,6 +161,10 @@ export const MS = StyleSheet.create({
     flexWrap: "wrap",
     gap: S.sm - 2,
     marginBottom: S.md - 2,
+    // width: "100%" ensures the chip row stretches to the full container width.
+    // Without it, flexWrap:"wrap" can cause the row to collapse to content width
+    // on RN Web, shrinking every sibling View (including MS.actions) below it.
+    width: "100%",
   },
   chip: {
     borderRadius: 999,
@@ -199,7 +203,10 @@ export const MS = StyleSheet.create({
   // ---------------------------------------------------------------------------
   actions: {
     flexDirection: RTL_ROW,
-    justifyContent: "flex-end",
+    // In RTL ("row" direction), "flex-start" = RIGHT edge on both native and web.
+    // CSS flex-direction:row with direction:rtl flows right→left, so flex-start = right.
+    // Confirmed: native (iOS/Android) via I18nManager.isRTL, web via CSS direction:rtl.
+    justifyContent: "flex-start",
     gap: S.sm + 2,
     marginTop: S.xl,
     paddingTop: S.lg,

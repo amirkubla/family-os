@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Platform } from "react-native";
 import {
   Card,
@@ -11,6 +11,7 @@ import {
   FAB,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
   toggleGroceryBoughtRemote,
@@ -72,6 +73,16 @@ export default function GroceryScreen() {
   const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ShoppingCategory>("grocery");
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  const { modal } = useLocalSearchParams<{ modal?: string }>();
+
+  // Deep-link modal opener: familyos://grocery?modal=add
+  // Used by QA flows to bypass RTL tap issues on iOS.
+  useEffect(() => {
+    if (modal === "add") {
+      setEditingItem(null);
+      setModalOpen(true);
+    }
+  }, [modal]);
 
   const filtered = grocery.filter((g) => g.shoppingCategory === selectedCategory);
   const unbought = filtered.filter((g) => !g.isBought);
@@ -174,6 +185,7 @@ export default function GroceryScreen() {
                 {group.items.map((item) => (
                   <View
                     key={item.id}
+                    testID={"grocery-row-" + item.title}
                     style={[styles.row, hoveredItemId === item.id && styles.rowHover]}
                     {...(Platform.OS === "web" ? {
                       onPointerEnter: () => setHoveredItemId(item.id),
@@ -181,6 +193,7 @@ export default function GroceryScreen() {
                     } : {} as any)}
                   >
                     <Checkbox
+                      testID={"grocery-check-" + item.title}
                       status="unchecked"
                       onPress={() => toggleGroceryBoughtRemote(item.id)}
                     />
@@ -198,6 +211,7 @@ export default function GroceryScreen() {
                       onPress={() => setEditingItem(item)}
                     />
                     <IconButton
+                      testID={"grocery-delete-" + item.title}
                       icon="trash-can-outline"
                       size={18}
                       onPress={() => deleteGroceryRemote(item.id)}
@@ -228,6 +242,7 @@ export default function GroceryScreen() {
                 {bought.map((item) => (
                   <View
                     key={item.id}
+                    testID={"grocery-row-" + item.title}
                     style={[styles.row, styles.boughtRow, hoveredItemId === item.id && styles.rowHover]}
                     {...(Platform.OS === "web" ? {
                       onPointerEnter: () => setHoveredItemId(item.id),
@@ -252,6 +267,8 @@ export default function GroceryScreen() {
                       icon="trash-can-outline"
                       size={18}
                       onPress={() => deleteGroceryRemote(item.id)}
+                      testID={"grocery-delete-" + item.title}
+                      accessibilityLabel={"grocery-delete-" + item.title}
                     />
                   </View>
                 ))}

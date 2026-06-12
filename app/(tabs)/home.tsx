@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import {
   Text,
   IconButton,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
@@ -83,6 +83,7 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
 
   return (
     <Pressable
+      testID={"chore-row-" + chore.title}
       style={({ pressed, hovered }: any) => [
         styles.choreCard,
         chore.done && styles.choreCardDone,
@@ -93,6 +94,7 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
     >
       {/* Checkbox circle */}
       <Pressable
+        testID={"chore-check-" + chore.title}
         style={[styles.choreCheckCircle, chore.done && styles.choreCheckCircleDone]}
         onPress={() => toggleChoreDoneRemote(chore.id)}
       >
@@ -133,6 +135,7 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
           onPress={() => toggleChoreSelectedForTodayRemote(chore.id)}
         />
         <IconButton
+          testID={"chore-delete-" + chore.title}
           icon="trash-can-outline"
           size={16}
           iconColor={C.textMuted}
@@ -150,6 +153,7 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { modal, status: initialStatus } = useLocalSearchParams<{ modal?: string; status?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   // Store
@@ -178,6 +182,25 @@ export default function HomeScreen() {
   const [kidModalOpen, setKidModalOpen] = useState(false);
   const [editingKid, setEditingKid] = useState<Kid | null>(null);
   const [showAllNotes, setShowAllNotes] = useState(false);
+
+  // Deep-link modal opener: familyos://home?modal=chore|note|project
+  // Used by QA flows to bypass RTL tap issues — no physical button tap needed.
+  // Also ensures the relevant section is expanded so the new item is visible after save.
+  useEffect(() => {
+    if (modal === "chore") {
+      if (!homeSections.chores) toggleHomeSection("chores");
+      setEditingChore(null);
+      setChoreModalOpen(true);
+    } else if (modal === "note") {
+      if (!homeSections.notes) toggleHomeSection("notes");
+      setEditingNote(null);
+      setNoteModalOpen(true);
+    } else if (modal === "project") {
+      if (!homeSections.projects) toggleHomeSection("projects");
+      setEditingProject(null);
+      setProjectModalOpen(true);
+    }
+  }, [modal]);
 
   // Reset expanded notes when navigating back to home
   useFocusEffect(useCallback(() => { setShowAllNotes(false); }, []));
@@ -275,6 +298,7 @@ export default function HomeScreen() {
             <IconButton
               icon="plus"
               size={20}
+              testID="btn-add-note"
               style={styles.notesAddBtn}
               iconColor={NOTE_COLORS.accent}
               onPress={() => {
@@ -294,6 +318,7 @@ export default function HomeScreen() {
             {visibleNotes.map((note) => (
               <Pressable
                 key={note.id}
+                testID={"note-card-" + (note.title || "")}
                 style={({ pressed, hovered }: any) => [
                   styles.noteCard,
                   note.pinned && styles.noteCardPinned,
@@ -314,6 +339,8 @@ export default function HomeScreen() {
                   <IconButton
                     icon={note.pinned ? "pin-off" : "pin"}
                     size={16}
+                    testID={"note-pin-" + (note.title || "")}
+                    accessibilityLabel={"note-pin-" + (note.title || "")}
                     iconColor={NOTE_COLORS.accent}
                     style={styles.noteActionBtn}
                     onPress={() => toggleNotePinnedRemote(note.id)}
@@ -321,6 +348,7 @@ export default function HomeScreen() {
                   <IconButton
                     icon="trash-can-outline"
                     size={16}
+                    testID={"note-delete-" + (note.title || "")}
                     iconColor={C.textMuted}
                     style={styles.noteActionBtn}
                     onPress={() => requestDelete(() => deleteNoteRemote(note.id))}
@@ -382,6 +410,8 @@ export default function HomeScreen() {
             <IconButton
               icon="plus"
               size={20}
+              testID="btn-add-chore"
+              accessibilityLabel="btn-add-chore"
               style={styles.choresAddBtn}
               iconColor={CHORE_COLORS.accent}
               onPress={() => {
@@ -479,6 +509,8 @@ export default function HomeScreen() {
             <IconButton
               icon="plus"
               size={20}
+              testID="btn-add-project"
+              accessibilityLabel="btn-add-project"
               style={styles.projectsAddBtn}
               iconColor={PROJECT_COLORS.accent}
               onPress={() => {
@@ -501,6 +533,7 @@ export default function HomeScreen() {
             return (
               <Pressable
                 key={proj.id}
+                testID={"project-card-" + proj.title}
                 style={({ pressed, hovered }: any) => [
                   styles.projectCard,
                   hovered && styles.projectCardHover,
@@ -525,6 +558,7 @@ export default function HomeScreen() {
                     </View>
                     <View style={{ flex: 1 }} />
                     <IconButton
+                      testID={"project-delete-" + proj.title}
                       icon="trash-can-outline"
                       size={16}
                       iconColor={C.textMuted}
@@ -591,6 +625,7 @@ export default function HomeScreen() {
           setEditingProject(null);
         }}
         editProject={editingProject}
+        initialStatus={!editingProject && initialStatus ? (initialStatus as any) : undefined}
       />
       <KidModal
         visible={kidModalOpen}

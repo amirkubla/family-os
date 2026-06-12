@@ -1,0 +1,50 @@
+# .maestro/login.yaml  (iOS only — use login-android.yaml for Android)
+# Run with:
+#   maestro test -p iOS --reinstall-driver -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" .maestro/login.yaml
+#
+# clearKeychain wipes Keychain (SecureStore) → always starts on login screen on iOS.
+appId: com.amirkubla.familyos
+---
+- launchApp:
+    clearKeychain: true
+
+# iOS: clearKeychain may show "Open in Family OS?" dialog
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+
+# Wait for login screen
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 30000
+
+# Login
+- tapOn:
+    id: "input-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${QA_PASSWORD}
+- pressKey: Enter
+
+# iOS: dismiss "Save Password?" if it appears
+- runFlow:
+    when:
+      visible:
+        text: "Not Now"
+    commands:
+      - tapOn:
+          text: "Not Now"
+
+# Assert home screen via tab bar (Pressable testID reliably visible on both platforms)
+- extendedWaitUntil:
+    visible:
+      id: "tab-today"
+    timeout: 30000
+- takeScreenshot: qa-reports/screenshots/login

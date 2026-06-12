@@ -5,7 +5,7 @@
  * FAB to add new family events.
  */
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import {
   Card,
@@ -15,6 +15,7 @@ import {
   SegmentedButtons,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
@@ -85,7 +86,11 @@ function EventRow({
   }
 
   return (
-    <Pressable style={styles.eventRow} onPress={onEdit}>
+    <Pressable
+      testID={"event-row-" + event.title}
+      style={styles.eventRow}
+      onPress={onEdit}
+    >
       <View style={[styles.eventStripe, { backgroundColor: color }]} />
       <View style={styles.eventInfo}>
         <View style={styles.eventTitleRow}>
@@ -111,7 +116,12 @@ function EventRow({
           </Text>
         </View>
       </View>
-      <IconButton icon="trash-can-outline" size={18} onPress={onDelete} />
+      <IconButton
+        icon="trash-can-outline"
+        size={18}
+        onPress={onDelete}
+        testID={"event-delete-" + event.title}
+      />
     </Pressable>
   );
 }
@@ -176,6 +186,7 @@ function KidBlockRow({
 type CalendarView = "month" | "week" | "day";
 
 export default function CalendarScreen() {
+  const { modal } = useLocalSearchParams<{ modal?: string }>();
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
   const selectedDow = dayOfWeekFromYMD(selectedDate);
@@ -201,6 +212,17 @@ export default function CalendarScreen() {
   // Pre-filled time for slot-click creation
   const [slotStartTime, setSlotStartTime] = useState<string | undefined>();
   const [slotEndTime, setSlotEndTime] = useState<string | undefined>();
+
+  // Deep-link modal opener: familyos://calendar?modal=add
+  // Used by QA flows to bypass RTL tap issues — no physical FAB tap needed.
+  useEffect(() => {
+    if (modal === "add") {
+      setSlotStartTime(undefined);
+      setSlotEndTime(undefined);
+      setEditingEvent(null);
+      setModalOpen(true);
+    }
+  }, [modal]);
 
   const openAdd = () => {
     setSlotStartTime(undefined);

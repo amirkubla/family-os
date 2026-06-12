@@ -161,7 +161,7 @@ function NoteCard({
 }) {
   return (
     <View style={{ width: cardWidth, marginHorizontal: GAP / 2 }}>
-      <Pressable onPress={onPress} style={styles.noteCard}>
+      <Pressable onPress={onPress} style={styles.noteCard} testID={"today-note-" + (note.title || note.body.slice(0, 20))}>
         <Text style={styles.pinIcon}>📌</Text>
         <Text
           variant="titleSmall"

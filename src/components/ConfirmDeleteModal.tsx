@@ -32,7 +32,7 @@ export default function ConfirmDeleteModal({ visible, onConfirm, onDismiss }: Pr
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>{t("confirmDelete.cancel")}</Button>
-          <Button onPress={onConfirm} textColor={C.red}>
+          <Button testID="btn-confirm-delete" onPress={onConfirm} textColor={C.red}>
             {t("confirmDelete.confirm")}
           </Button>
         </Dialog.Actions>

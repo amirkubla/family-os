@@ -1,0 +1,161 @@
+# .maestro/today-screen-android.yaml  (Android)
+# No launchApp — kills Metro URL on Android.
+appId: com.amirkubla.familyos
+---
+# NOTE: Do NOT use launchApp — kills Metro URL on Android.
+
+# 1. Logout first
+- openLink: "familyos://settings"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "הגדרות"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "התנתק"
+    direction: DOWN
+- tapOn:
+    text: "התנתק"
+- waitForAnimationToEnd
+
+# 2. Login
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 20000
+- tapOn:
+    id: "input-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${QA_PASSWORD}
+- pressKey: Enter
+- assertNotVisible:
+    id: "input-email"
+- waitForAnimationToEnd
+
+# 3. Create family event for today
+- openLink: "familyos://calendar?modal=add"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "input-event-title"
+    timeout: 12000
+- tapOn:
+    id: "input-event-title"
+- inputText: "QA Today Event"
+# Switch to one-time event so date = today (default is recurring Monday-only)
+- tapOn:
+    text: "חד פעמי"
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# 4. Create and pin a note
+- openLink: "familyos://home?modal=note"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "input-note-body"
+    timeout: 8000
+- tapOn:
+    id: "input-note-body"
+- inputText: "QA today note body"
+- tapOn:
+    id: "input-note-title"
+- inputText: "QA Today Note"
+- pressKey: Enter
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "note-pin-QA Today Note"
+    direction: DOWN
+- tapOn:
+    id: "note-pin-QA Today Note"
+- waitForAnimationToEnd
+
+# 5. Create a project
+- openLink: "familyos://home?modal=project&status=in_progress"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "input-project-title"
+    timeout: 8000
+- tapOn:
+    id: "input-project-title"
+- inputText: "QA Today Project"
+- pressKey: Enter
+- waitForAnimationToEnd
+# Set project to in_progress (initialStatus param may not parse; edit to be safe)
+- scrollUntilVisible:
+    element:
+      id: "project-card-QA Today Project"
+    direction: DOWN
+- tapOn:
+    id: "project-card-QA Today Project"
+- waitForAnimationToEnd
+- tapOn:
+    text: "בתהליך"
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# 6. Navigate to Today and verify
+- openLink: "familyos://today"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: "today-event-QA Today Event"
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible:
+      id: "today-note-QA Today Note"
+    timeout: 10000
+
+# Scroll to reveal projects carousel (below pinned notes on Today)
+# Use text assertion — ASCII title findable by UIAutomator, testID in ScrollView unreliable
+- scroll
+- extendedWaitUntil:
+    visible:
+      text: "QA Today Project"
+    timeout: 10000
+
+- takeScreenshot: qa-reports/screenshots/today-screen
+
+# 7. Cleanup
+- openLink: "familyos://calendar"
+- waitForAnimationToEnd
+- tapOn:
+    id: "event-delete-QA Today Event"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd
+
+- openLink: "familyos://home"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "note-delete-QA Today Note"
+    direction: DOWN
+- tapOn:
+    id: "note-delete-QA Today Note"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      id: "project-delete-QA Today Project"
+    direction: DOWN
+- tapOn:
+    id: "project-delete-QA Today Project"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd

@@ -38,7 +38,10 @@ function MemberRow({
   onRestore?: () => void;
 }) {
   return (
-    <View style={[styles.memberRow, archived && styles.archivedRow]}>
+    <View
+      testID={`member-row-${member.name}`}
+      style={[styles.memberRow, archived && styles.archivedRow]}
+    >
       <View
         style={[
           styles.emojiCircle,
@@ -277,8 +280,11 @@ export default function SettingsScreen() {
               <Text style={styles.subtitle}>
                 {t("settings.familyMembersSubtitle")}
               </Text>
-              <IconButton icon="plus" size={20} onPress={openAdd} />
+              <IconButton icon="plus" size={20} onPress={openAdd} testID="btn-add-member" />
             </View>
+
+            {/* Hidden node for QA hierarchy assertions on roster count */}
+            <View testID="roster-count" accessibilityLabel={String(activeMembers.length)} style={{ height: 0, overflow: "hidden" }} />
 
             {activeMembers.length === 0 && (
               <Text variant="bodyMedium" style={styles.emptyText}>

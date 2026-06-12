@@ -12,6 +12,7 @@
     "db:mock:user": "tsx src/scripts/mockForUser.ts",
     "db:lookup": "tsx src/scripts/lookupUser.ts",
     "reminders:backfill": "tsx src/scripts/backfillReminders.ts",
+    "qa:reset": "tsx src/scripts/qa-reset.ts",
     "dev": "tsx watch src/server.ts"
   },
   "dependencies": {

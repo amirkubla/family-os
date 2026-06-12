@@ -1,0 +1,184 @@
+# .maestro/today-screen.yaml  (iOS)
+# Run: maestro test -p iOS --reinstall-driver -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" .maestro/today-screen.yaml
+#
+# Creates event + pinned note + project, checks Today shows them all, then deletes.
+appId: com.amirkubla.familyos
+---
+# 1. Login
+- launchApp:
+    clearKeychain: true
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 30000
+- tapOn:
+    id: "input-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${QA_PASSWORD}
+- pressKey: Enter
+- runFlow:
+    when:
+      visible:
+        text: "Not Now"
+    commands:
+      - tapOn:
+          text: "Not Now"
+- extendedWaitUntil:
+    visible:
+      id: "tab-today"
+    timeout: 30000
+
+# 2. Create a family event for today (default date = today)
+- openLink: "familyos://calendar?modal=add"
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "input-event-title"
+    timeout: 8000
+- tapOn:
+    id: "input-event-title"
+- inputText: "QA Today Event"
+# Switch to one-time event so date = today (default is recurring Monday-only)
+- tapOn:
+    text: "חד פעמי"
+- waitForAnimationToEnd
+# Re-focus title input and press Enter to submit (btn-save-event may be off-screen after date picker appears)
+- tapOn:
+    id: "input-event-title"
+- pressKey: Enter
+- waitForAnimationToEnd
+# Verify event was saved (appears on calendar today view)
+- extendedWaitUntil:
+    visible:
+      id: "event-row-QA Today Event"
+    timeout: 10000
+
+# 3. Create a note and pin it
+- openLink: "familyos://home?modal=note"
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "input-note-body"
+    timeout: 8000
+- tapOn:
+    id: "input-note-body"
+- inputText: "QA today note body"
+- tapOn:
+    id: "input-note-title"
+- inputText: "QA Today Note"
+- pressKey: Enter
+- waitForAnimationToEnd
+# Pin the note
+- scrollUntilVisible:
+    element:
+      text: "note-pin-QA Today Note"
+    direction: DOWN
+# Use accessibilityLabel tap — more reliable on iOS RTL
+- tapOn:
+    text: "note-pin-QA Today Note"
+- waitForAnimationToEnd
+
+# 4. Create a project
+- openLink: "familyos://home?modal=project&status=in_progress"
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "input-project-title"
+    timeout: 8000
+- tapOn:
+    id: "input-project-title"
+- inputText: "QA Today Project"
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# 5. Navigate to Today and verify
+- openLink: "familyos://today"
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+
+# Criterion 1: event in Today unified list (use testID — XCUITest doesn't see inner Text nodes)
+- extendedWaitUntil:
+    visible:
+      id: "today-event-QA Today Event"
+    timeout: 10000
+
+# Criterion 2: pinned note in carousel
+- extendedWaitUntil:
+    visible:
+      id: "today-note-QA Today Note"
+    timeout: 10000
+
+# Criterion 3: active project in carousel (scroll to reveal — below pinned notes)
+- scroll
+- extendedWaitUntil:
+    visible:
+      id: "today-project-QA Today Project"
+    timeout: 10000
+
+- takeScreenshot: qa-reports/screenshots/today-screen
+
+# 6. Cleanup — delete event, note, project
+- openLink: "familyos://calendar"
+- waitForAnimationToEnd
+- tapOn:
+    id: "event-delete-QA Today Event"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd
+
+- openLink: "familyos://home"
+- waitForAnimationToEnd
+- scroll
+- scroll
+- tapOn:
+    id: "note-delete-QA Today Note"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd
+
+- scroll
+- tapOn:
+    id: "project-delete-QA Today Project"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd

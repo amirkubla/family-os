@@ -129,9 +129,12 @@ export default function GroceryAddModal({
           <Text style={MS.sectionLabel}>{t("groceryModal.itemName")}</Text>
         </View>
         <TextInput
+          testID="input-grocery-name"
           placeholder={t("groceryModal.itemName")}
           value={title}
           onChangeText={setTitle}
+          onSubmitEditing={handleSubmit}
+          returnKeyType="done"
           mode="outlined"
           style={MS.input}
           contentStyle={MS.inputContent}
@@ -143,9 +146,12 @@ export default function GroceryAddModal({
           <Text style={MS.sectionLabel}>{t("groceryModal.qty")}</Text>
         </View>
         <TextInput
+          testID="input-grocery-qty"
           placeholder={t("groceryModal.qty")}
           value={qty}
           onChangeText={setQty}
+          onSubmitEditing={handleSubmit}
+          returnKeyType="done"
           mode="outlined"
           style={[MS.input, { marginBottom: 0 }]}
           contentStyle={MS.inputContent}
@@ -190,6 +196,7 @@ export default function GroceryAddModal({
           {t("cancel")}
         </Button>
         <Button
+          testID="btn-save"
           mode="contained"
           onPress={handleSubmit}
           disabled={!title.trim() || submitting}

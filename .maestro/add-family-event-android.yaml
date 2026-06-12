@@ -1,0 +1,97 @@
+# .maestro/add-family-event-android.yaml  (Android)
+# Run: maestro test -p Android -e QA_EMAIL="$QA_ANDROID_EMAIL" -e QA_PASSWORD="$QA_ANDROID_PASSWORD" .maestro/add-family-event-android.yaml
+#
+# No launchApp — kills Metro URL on Android. App must already be running.
+appId: com.amirkubla.familyos
+---
+# NOTE: Do NOT use launchApp — kills Metro URL on Android.
+
+# 1. Logout (app is always logged in on Android)
+- openLink: "familyos://settings"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "הגדרות"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "התנתק"
+    direction: DOWN
+- tapOn:
+    text: "התנתק"
+- waitForAnimationToEnd
+
+# 2. Login
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 20000
+- tapOn:
+    id: "input-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${QA_PASSWORD}
+- pressKey: Enter
+- assertNotVisible:
+    id: "input-email"
+
+# 3. Open calendar with add modal
+- openLink: "familyos://calendar?modal=add"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# 4. Fill event title and save (extra wait for calendar deep link + modal animation)
+- extendedWaitUntil:
+    visible:
+      id: "input-event-title"
+    timeout: 12000
+- tapOn:
+    id: "input-event-title"
+- inputText: "QA Event"
+- pressKey: Enter    # triggers onSubmitEditing → handleSubmit(doSubmit)
+- waitForAnimationToEnd
+
+# 5. Assert event appears
+- extendedWaitUntil:
+    visible:
+      id: "event-row-QA Event"
+    timeout: 10000
+
+# 6. Tap to edit
+- tapOn:
+    id: "event-row-QA Event"
+- waitForAnimationToEnd
+
+# 7. Edit title
+- extendedWaitUntil:
+    visible:
+      id: "input-event-title"
+    timeout: 8000
+- tapOn:
+    id: "input-event-title"
+- eraseText: 30
+- inputText: "QA Event Edited"
+- pressKey: Enter    # triggers onSubmitEditing → handleSubmit(doSubmit)
+- waitForAnimationToEnd
+
+# 8. Assert edited title
+- extendedWaitUntil:
+    visible:
+      id: "event-row-QA Event Edited"
+    timeout: 10000
+
+# 9. Delete
+- tapOn:
+    id: "event-delete-QA Event Edited"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd
+
+# 10. Assert gone
+- assertNotVisible:
+    id: "event-row-QA Event Edited"
+
+- takeScreenshot: qa-reports/screenshots/add-family-event

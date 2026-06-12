@@ -160,12 +160,14 @@ interface Props {
   editProject?: Project | null;
   /** Pre-select a kid (used by the kid view's "+" button). */
   defaultKidId?: string;
+  /** Pre-select a status for new projects (used by deep links, e.g. ?status=in_progress). */
+  initialStatus?: ProjectStatus;
 }
 
-export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId }: Props) {
+export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<ProjectStatus>("idea");
+  const [status, setStatus] = useState<ProjectStatus>(initialStatus ?? "idea");
   const [progress, setProgress] = useState(0);
   const [kidId, setKidId] = useState<string | undefined>(undefined);
   // In-flight guard against rapid double-clicks (QA Pass 1 BUG #2).
@@ -183,10 +185,10 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       setProgress(editProject.progress);
       setKidId(editProject.kidId);
     } else {
-      setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);
+      setTitle(""); setDescription(""); setStatus(initialStatus ?? "idea"); setProgress(0);
       setKidId(defaultKidId);
     }
-  }, [editProject, visible, defaultKidId]);
+  }, [editProject, visible, defaultKidId, initialStatus]);
 
   const reset = () => {
     setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);
@@ -226,9 +228,12 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       </Text>
 
       <TextInput
+        testID="input-project-title"
         placeholder={t("projectModal.projectTitle")}
         value={title}
         onChangeText={setTitle}
+        onSubmitEditing={handleSubmit}
+        returnKeyType="done"
         mode="outlined"
         style={MS.input}
         contentStyle={MS.inputContent}
@@ -279,6 +284,7 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       <View style={MS.actions}>
         <Button onPress={handleDismiss}>{t("cancel")}</Button>
         <Button
+          testID="btn-save"
           mode="contained"
           onPress={handleSubmit}
           disabled={!title.trim() || submitting}

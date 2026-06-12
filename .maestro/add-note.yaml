@@ -1,0 +1,97 @@
+# .maestro/add-note.yaml — iOS
+# Run: maestro test -p iOS -e QA_EMAIL="$QA_EMAIL" -e QA_PASSWORD="$QA_PASSWORD" .maestro/add-note.yaml
+appId: com.amirkubla.familyos
+---
+# 1. Start fresh
+- launchApp:
+    clearKeychain: true
+
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+
+# 2. Login
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 30000
+- tapOn:
+    id: "input-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${QA_PASSWORD}
+- pressKey: Enter
+- runFlow:
+    when:
+      visible:
+        text: "Not Now"
+    commands:
+      - tapOn:
+          text: "Not Now"
+- extendedWaitUntil:
+    visible:
+      id: "tab-today"
+    timeout: 30000
+
+# 3. Navigate to Home tab via deep link
+- openLink: "familyos://home"
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+- waitForAnimationToEnd
+
+# 4. Add note — scroll to btn-add-note (below Kids section)
+- scrollUntilVisible:
+    element:
+      id: "btn-add-note"
+    direction: DOWN
+- tapOn:
+    id: "btn-add-note"
+- waitForAnimationToEnd
+- tapOn:
+    id: "input-note-body"
+- inputText: "QA note body"
+- tapOn:
+    id: "input-note-title"
+- inputText: "QA Note"
+- pressKey: Enter   # triggers onSubmitEditing → handleSubmit
+- waitForAnimationToEnd
+
+# 5. Assert note visible (scroll back to notes section after modal dismisses)
+- scrollUntilVisible:
+    element:
+      id: "note-card-QA Note"
+    direction: DOWN
+
+# 6. Pin the note
+- tapOn:
+    id: "note-pin-QA Note"
+- waitForAnimationToEnd
+
+# 7. Delete note
+- scrollUntilVisible:
+    element:
+      id: "note-delete-QA Note"
+    direction: DOWN
+- tapOn:
+    id: "note-delete-QA Note"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd
+
+# 8. Assert note gone
+- assertNotVisible:
+    id: "note-card-QA Note"
+
+- takeScreenshot: qa-reports/screenshots/add-note

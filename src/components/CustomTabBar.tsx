@@ -83,6 +83,7 @@ export default function CustomTabBar({
             <TabItem
               key={route.key}
               label={label}
+              routeName={name}
               iconName={iconName}
               isFocused={isFocused}
               palette={palette}
@@ -99,13 +100,14 @@ export default function CustomTabBar({
 
 interface TabItemProps {
   label: string;
+  routeName: string;
   iconName: keyof typeof Ionicons.glyphMap;
   isFocused: boolean;
   palette: { active: string; bg: string; hover: string };
   onPress: () => void;
 }
 
-function TabItem({ label, iconName, isFocused, palette, onPress }: TabItemProps) {
+function TabItem({ label, routeName, iconName, isFocused, palette, onPress }: TabItemProps) {
   const [hovered, setHovered] = useState(false);
 
   const webHover = Platform.OS === "web"
@@ -130,7 +132,7 @@ function TabItem({ label, iconName, isFocused, palette, onPress }: TabItemProps)
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: isFocused }}
-      testID={`tab-${label}`}
+      testID={`tab-${routeName}`}
       {...webHover}
     >
       <View

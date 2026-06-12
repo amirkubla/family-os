@@ -234,8 +234,9 @@ const footerLinkStyles = StyleSheet.create({
 
 export function AuthField({
   label,
+  testID,
   ...inputProps
-}: { label: string } & TextInputProps) {
+}: { label: string; testID?: string } & TextInputProps) {
   return (
     <View>
       <Text style={fieldStyles.label}>{label}</Text>
@@ -244,6 +245,7 @@ export function AuthField({
         outlineColor={C.border}
         activeOutlineColor={C.purple}
         accessibilityLabel={label}
+        testID={testID}
         {...inputProps}
         // Merge caller styles on top of ours so per-input overrides still
         // work, but force the white surface + RTL writing direction so

@@ -171,7 +171,7 @@ function ProjectCard({
 
   return (
     <View style={{ width: cardWidth, marginHorizontal: GAP / 2 }}>
-      <Pressable onPress={onPress} style={styles.projectCard}>
+      <Pressable onPress={onPress} style={styles.projectCard} testID={"today-project-" + project.title}>
         <View style={styles.topRow}>
           <Text
             variant="titleSmall"

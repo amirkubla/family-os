@@ -56,6 +56,7 @@ export default function LoginScreen() {
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
+        testID="input-email"
         right={<TextInput.Icon icon="account" />}
       />
       {usernameError ? (
@@ -69,6 +70,9 @@ export default function LoginScreen() {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        testID="input-password"
+        onSubmitEditing={handleLogin}
+        returnKeyType="go"
         right={<TextInput.Icon icon="lock" />}
       />
       {passwordError ? (
@@ -92,6 +96,7 @@ export default function LoginScreen() {
         style={styles.btn}
         contentStyle={styles.btnContent}
         labelStyle={styles.btnLabel}
+        testID="btn-login"
       >
         {t("auth.login")}
       </Button>

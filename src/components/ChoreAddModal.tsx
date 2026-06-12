@@ -67,9 +67,12 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
       </Text>
 
       <TextInput
+        testID="input-chore-title"
         placeholder={t("choreModal.whatNeedsDoing")}
         value={title}
         onChangeText={setTitle}
+        onSubmitEditing={handleSubmit}
+        returnKeyType="done"
         mode="outlined"
         style={MS.input}
         contentStyle={MS.inputContent}
@@ -108,6 +111,7 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
       <View style={MS.actions}>
         <Button onPress={handleDismiss}>{t("cancel")}</Button>
         <Button
+          testID="btn-save"
           mode="contained"
           onPress={handleSubmit}
           disabled={!title.trim() || submitting}

@@ -72,15 +72,19 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId }
       </Text>
 
       <TextInput
+        testID="input-note-title"
         placeholder={t("noteModal.titleLabel")}
         value={title}
         onChangeText={setTitle}
+        onSubmitEditing={handleSubmit}
+        returnKeyType="done"
         mode="outlined"
         style={MS.input}
         contentStyle={MS.inputContent}
       />
 
       <TextInput
+        testID="input-note-body"
         placeholder={t("noteModal.bodyLabel")}
         value={body}
         onChangeText={setBody}
@@ -96,6 +100,7 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId }
       <View style={MS.actions}>
         <Button onPress={handleDismiss}>{t("cancel")}</Button>
         <Button
+          testID="btn-save"
           mode="contained"
           onPress={handleSubmit}
           disabled={!body.trim() || submitting}

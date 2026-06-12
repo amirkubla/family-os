@@ -1,0 +1,79 @@
+# .maestro/add-project-android.yaml — Android only
+# Pre-requisite: adb reverse tcp:8081 tcp:8081
+appId: com.amirkubla.familyos
+---
+# NOTE: Do NOT use launchApp — it kills the app on Android, breaking the Metro URL.
+# The app must already be running. Start this flow with openLink to navigate.
+
+# 1. Logout then login (app must already be running; no launchApp needed)
+# Navigate to Settings via deep link
+- openLink: "familyos://settings"
+# Wait for Settings screen to confirm navigation completed
+- extendedWaitUntil:
+    visible:
+      text: "הגדרות"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "התנתק"
+    direction: DOWN
+- tapOn:
+    text: "התנתק"
+- waitForAnimationToEnd
+
+# 2. Login
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 20000
+- tapOn:
+    id: "input-email"
+- inputText: ${QA_EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${QA_PASSWORD}
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      text: "היום"
+    timeout: 30000
+
+# 3. Navigate to Home
+- openLink: "familyos://home"
+- waitForAnimationToEnd
+
+# 4. Add project — scroll to button then tap by accessibilityLabel
+- scrollUntilVisible:
+    element:
+      id: "btn-add-project"
+    direction: DOWN
+- tapOn:
+    text: "btn-add-project"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "input-project-title"
+    timeout: 8000
+- tapOn:
+    id: "input-project-title"
+- inputText: "QA Project"
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# 5. Assert project visible
+- assertVisible:
+    id: "project-card-QA Project"
+
+# 6. Delete project
+- tapOn:
+    id: "project-delete-QA Project"
+- waitForAnimationToEnd
+- tapOn:
+    text: "מחק"
+- waitForAnimationToEnd
+
+# 7. Assert project gone
+- assertNotVisible:
+    id: "project-card-QA Project"
+
+- takeScreenshot: qa-reports/screenshots/add-project
