@@ -103,6 +103,8 @@ const he = {
     nextKid: "ילד הבא",
     notes: "פתקים",
     projects: "פרויקטים",
+    notesOf: "הפתקים של {{name}}",
+    projectsOf: "הפרויקטים של {{name}}",
     noNotes: "אין פתקים",
     noProjects: "אין פרויקטים",
     addNote: "הוספת פתק",

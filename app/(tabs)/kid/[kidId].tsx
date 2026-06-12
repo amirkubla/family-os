@@ -220,14 +220,42 @@ export default function KidScheduleScreen() {
     [router],
   );
 
-  // Set header options once
+  // Set header options \u2014 title + prev/next kid arrows in the nav bar.
+  // headerRight holds both chevrons so the back button stays on headerLeft.
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: kid ? `${kid.emoji}\u2003\u2003${kid.name}` : t("kid.schedule"),
+      title: kid ? `${kid.emoji}  ${kid.name}` : t("kid.schedule"),
       headerTintColor: kidColor,
       headerBackTitle: t("tabs.today"),
+      headerRight: () =>
+        (prevKidId || nextKidId) ? (
+          <View style={{ flexDirection: "row", marginEnd: -8 }}>
+            {nextKidId ? (
+              <IconButton
+                icon="chevron-left"
+                size={24}
+                iconColor={kidColor}
+                onPress={() => goToKid(nextKidId)}
+                accessibilityLabel={t("kid.nextKid")}
+              />
+            ) : (
+              <View style={{ width: 40 }} />
+            )}
+            {prevKidId ? (
+              <IconButton
+                icon="chevron-right"
+                size={24}
+                iconColor={kidColor}
+                onPress={() => goToKid(prevKidId)}
+                accessibilityLabel={t("kid.prevKid")}
+              />
+            ) : (
+              <View style={{ width: 40 }} />
+            )}
+          </View>
+        ) : null,
     });
-  }, [navigation, kid?.name, kid?.emoji, kidColor]);
+  }, [navigation, kid?.name, kid?.emoji, kidColor, prevKidId, nextKidId, goToKid]);
 
   // Tab + calendar sub-view (month/week/day, mirroring the main /calendar)
   const [tab, setTab] = useState("calendar");
@@ -429,38 +457,6 @@ export default function KidScheduleScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
         <ScrollView contentContainerStyle={styles.container}>
-          {/* Header accent bar — with prev/next arrows to switch kids.
-              Plain "row" (not RTL_ROW) to match WeekCalendar's header — RN
-              Web auto-mirrors row in RTL, putting chevron-right on the
-              right visual edge. Arrows hide if there's only one active kid. */}
-          <View style={[styles.accentBar, { backgroundColor: kidColor + "22" }]}>
-            {prevKidId ? (
-              <IconButton
-                icon="chevron-right"
-                size={22}
-                iconColor={kidColor}
-                onPress={() => goToKid(prevKidId)}
-                accessibilityLabel={t("kid.prevKid")}
-              />
-            ) : (
-              <View style={styles.accentArrowSpacer} />
-            )}
-            <Text style={[styles.accentText, { color: kidColor }]}>
-              {kid?.emoji} {t("kid.kidSchedule", { name: kid?.name ?? "" })}
-            </Text>
-            {nextKidId ? (
-              <IconButton
-                icon="chevron-left"
-                size={22}
-                iconColor={kidColor}
-                onPress={() => goToKid(nextKidId)}
-                accessibilityLabel={t("kid.nextKid")}
-              />
-            ) : (
-              <View style={styles.accentArrowSpacer} />
-            )}
-          </View>
-
           {/* Tabs */}
           <SegmentedButtons
             value={tab}
@@ -555,7 +551,7 @@ export default function KidScheduleScreen() {
               {/* --- This kid's notes (kidId === kidId) --- */}
               <View style={styles.sectionHeaderRow}>
                 <SectionHeader
-                  label={t("kid.notes")}
+                  label={t("kid.notesOf", { name: kid?.name ?? "" })}
                   collapsible
                   expanded={notesExpanded}
                   onToggle={() => setNotesExpanded((v) => !v)}
@@ -625,7 +621,7 @@ export default function KidScheduleScreen() {
               {/* --- This kid's projects --- */}
               <View style={styles.sectionHeaderRow}>
                 <SectionHeader
-                  label={t("kid.projects")}
+                  label={t("kid.projectsOf", { name: kid?.name ?? "" })}
                   collapsible
                   expanded={projectsExpanded}
                   onToggle={() => setProjectsExpanded((v) => !v)}
