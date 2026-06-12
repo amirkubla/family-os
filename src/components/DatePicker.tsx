@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#6C63FF",
-    marginHorizontal: 2,
+    marginHorizontal: 6,
     zIndex: 2,
   },
   col: {
