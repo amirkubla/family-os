@@ -13,11 +13,9 @@ interface Props {
   visible: boolean;
   onDismiss: () => void;
   children: React.ReactNode;
-  /** Enables the wide (two-column) layout — 860 px max, 96 % width. */
-  wide?: boolean;
 }
 
-export default function ModalWrapper({ visible, onDismiss, children, wide }: Props) {
+export default function ModalWrapper({ visible, onDismiss, children }: Props) {
   if (!visible) return null;
 
   return (
@@ -33,7 +31,7 @@ export default function ModalWrapper({ visible, onDismiss, children, wide }: Pro
         style={styles.center}
         pointerEvents="box-none"
       >
-        <View style={[styles.container, wide && styles.containerWide]}>
+        <View style={styles.container}>
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -79,9 +77,5 @@ const styles = StyleSheet.create({
     ...SHADOW.lg,
     shadowOpacity: 0.2,
     shadowRadius: 24,
-  },
-  containerWide: {
-    width: "96%",
-    maxWidth: 860,
   },
 });
