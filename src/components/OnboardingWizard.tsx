@@ -29,12 +29,9 @@ import { t, memberRoleLabel } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { KID_COLOR_SWATCHES } from "@src/ui/semanticColors";
 
-const COLOR_SWATCHES = [
-  "#FF6B6B", "#4ECDC4", "#6C63FF", "#FFA726", "#AB47BC", "#42A5F5",
-  "#EC407A", "#66BB6A", "#78909C", "#FFCA28", "#7E57C2", "#26C6DA",
-  "#5C6BC0", "#00897B",
-];
+const COLOR_SWATCHES = KID_COLOR_SWATCHES;
 
 const MEMBER_EMOJIS = [
   "🤱", "👩", "👨", "🧑", "👩‍🦰", "👨‍🦱",

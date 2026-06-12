@@ -25,3 +25,43 @@ export const STATUS_COLORS: Record<ProjectStatus, string> = {
   in_progress: C.purple,
   done: C.teal,
 };
+
+/**
+ * 20 curated swatch colours for kid profiles and family members.
+ * Arranged in 4 rows of 5 — visually balanced across the full hue wheel,
+ * avoiding colours that look too similar side by side.
+ *
+ * Row 1 — warm reds / pinks / oranges
+ * Row 2 — yellows / greens / teals
+ * Row 3 — blues / purples / indigos
+ * Row 4 — neutrals / muted / earthy
+ */
+export const KID_COLOR_SWATCHES: readonly string[] = [
+  // Row 1 — warm
+  "#FF5252",  // vivid red
+  "#FF6B9D",  // hot pink
+  "#FF8C42",  // tangerine
+  "#FFCA3A",  // golden yellow
+  "#FFA726",  // amber
+
+  // Row 2 — cool-warm bridge / greens
+  "#A8E063",  // lime green
+  "#66BB6A",  // medium green
+  "#26C6DA",  // cyan
+  "#4ECDC4",  // teal mint
+  "#00897B",  // deep teal
+
+  // Row 3 — blues / purples
+  "#42A5F5",  // sky blue
+  "#5C6BC0",  // slate indigo
+  "#6C63FF",  // electric violet
+  "#AB47BC",  // amethyst
+  "#EC407A",  // rose
+
+  // Row 4 — muted / earthy / unique
+  "#78909C",  // blue-grey
+  "#8D6E63",  // mocha brown
+  "#D4AC0D",  // olive gold
+  "#F06292",  // bubblegum
+  "#7E57C2",  // lavender purple
+] as const;
