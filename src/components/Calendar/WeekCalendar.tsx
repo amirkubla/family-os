@@ -75,12 +75,19 @@ const MEMBER_COLOR = "#6C63FF";
 
 const DAY_LABELS = he.calendarDays; // ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"]
 
-const GRID_START_HOUR = 7;
-const GRID_END_HOUR = 21;
+const GRID_START_HOUR = 6;
+const GRID_END_HOUR = 29;   // 29 = 24 + 5 → 5 am next day
 const HOUR_HEIGHT = 60;
 const TIME_LABEL_WIDTH = 36;
 const DAY_NUM_SIZE = 28;
-const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_HEIGHT;
+// +1 so the last hour label has full HOUR_HEIGHT of space and isn't clipped.
+const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR + 1) * HOUR_HEIGHT;
+
+// Convert event minutes-from-midnight (0-1439) to grid minutes (360-1740).
+// Hours before 6 am (0-5 am) wrap to the "next-day" tail of the grid.
+function toGridMin(m: number): number {
+  return m < GRID_START_HOUR * 60 ? m + 24 * 60 : m;
+}
 
 // ---------------------------------------------------------------------------
 // Date helpers
@@ -390,7 +397,7 @@ export default function WeekCalendar({
             return (
               <View key={hour} style={[styles.hourRow, { top }]}>
                 <Text style={styles.hourLabel}>
-                  {pad(hour)}:00
+                  {pad(hour % 24)}:00
                 </Text>
                 <View style={styles.hourLine} />
               </View>
@@ -415,8 +422,10 @@ export default function WeekCalendar({
                 >
                   {/* Clickable half-hour slot overlays */}
                   {onSlotPress && Array.from({ length: totalSlots }, (_, si) => {
-                    const slotStart = (GRID_START_HOUR * 60) + (si * 30);
-                    const slotEnd = slotStart + 60; // 1-hour event
+                    const slotGridStart = (GRID_START_HOUR * 60) + (si * 30);
+                    // Convert grid minutes back to 0-1439 for the event modal.
+                    const actualStart = slotGridStart >= 24 * 60 ? slotGridStart - 24 * 60 : slotGridStart;
+                    const actualEnd = Math.min(actualStart + 60, 24 * 60);
                     return (
                       <Pressable
                         key={si}
@@ -425,13 +434,15 @@ export default function WeekCalendar({
                           { top: si * SLOT_HEIGHT, height: SLOT_HEIGHT },
                           hovered && styles.timeSlotHover,
                         ]}
-                        onPress={() => onSlotPress(dateStr, slotStart, Math.min(slotEnd, GRID_END_HOUR * 60))}
+                        onPress={() => onSlotPress(dateStr, actualStart, actualEnd)}
                       />
                     );
                   })}
                   {events.map((ev) => {
-                    const clampedStart = Math.max(ev.startMinutes, GRID_START_HOUR * 60);
-                    const clampedEnd = Math.min(ev.endMinutes, GRID_END_HOUR * 60);
+                    const gridStart = toGridMin(ev.startMinutes);
+                    const gridEnd = toGridMin(ev.endMinutes);
+                    const clampedStart = Math.max(gridStart, GRID_START_HOUR * 60);
+                    const clampedEnd = Math.min(gridEnd, GRID_END_HOUR * 60);
                     const top = ((clampedStart - GRID_START_HOUR * 60) / 60) * HOUR_HEIGHT;
                     const height = Math.max(
                       ((clampedEnd - clampedStart) / 60) * HOUR_HEIGHT,
