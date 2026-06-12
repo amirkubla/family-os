@@ -221,41 +221,25 @@ export default function KidScheduleScreen() {
   );
 
   // Set header options \u2014 title + prev/next kid arrows in the nav bar.
-  // headerRight holds both chevrons so the back button stays on headerLeft.
+  // headerRight — single arrow cycles to the next kid (wraps around).
+  // Hidden when there's only one active kid.
   useLayoutEffect(() => {
     navigation.setOptions({
       title: kid ? `${kid.emoji}  ${kid.name}` : t("kid.schedule"),
       headerTintColor: kidColor,
       headerBackTitle: t("tabs.today"),
       headerRight: () =>
-        (prevKidId || nextKidId) ? (
-          <View style={{ flexDirection: "row", marginEnd: -8 }}>
-            {nextKidId ? (
-              <IconButton
-                icon="chevron-left"
-                size={24}
-                iconColor={kidColor}
-                onPress={() => goToKid(nextKidId)}
-                accessibilityLabel={t("kid.nextKid")}
-              />
-            ) : (
-              <View style={{ width: 40 }} />
-            )}
-            {prevKidId ? (
-              <IconButton
-                icon="chevron-right"
-                size={24}
-                iconColor={kidColor}
-                onPress={() => goToKid(prevKidId)}
-                accessibilityLabel={t("kid.prevKid")}
-              />
-            ) : (
-              <View style={{ width: 40 }} />
-            )}
-          </View>
+        nextKidId ? (
+          <IconButton
+            icon="chevron-left"
+            size={32}
+            iconColor={kidColor}
+            onPress={() => goToKid(nextKidId)}
+            accessibilityLabel={t("kid.nextKid")}
+          />
         ) : null,
     });
-  }, [navigation, kid?.name, kid?.emoji, kidColor, prevKidId, nextKidId, goToKid]);
+  }, [navigation, kid?.name, kid?.emoji, kidColor, nextKidId, goToKid]);
 
   // Tab + calendar sub-view (month/week/day, mirroring the main /calendar)
   const [tab, setTab] = useState("calendar");
