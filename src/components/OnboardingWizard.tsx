@@ -29,15 +29,10 @@ import { t, memberRoleLabel } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { KID_COLOR_SWATCHES } from "@src/ui/semanticColors";
+import { KID_COLOR_SWATCHES, MEMBER_EMOJI_OPTIONS } from "@src/ui/semanticColors";
 
 const COLOR_SWATCHES = KID_COLOR_SWATCHES;
-
-const MEMBER_EMOJIS = [
-  "🤱", "👩", "👨", "🧑", "👩‍🦰", "👨‍🦱",
-  "🧔", "👱", "🦸", "🧕", "🤰", "🧑‍🍳",
-  "🏋️", "🎸", "🧘", "💻", "🎯", "☕",
-];
+const MEMBER_EMOJIS = MEMBER_EMOJI_OPTIONS;
 
 const KID_EMOJIS = [
   "🧸", "🦄", "🌸", "🐰", "🐣", "🌈", "🦋", "🐱",

@@ -11,19 +11,11 @@ import { t, memberRoleLabel } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
 import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
 import { RTL_ROW } from "@src/ui/rtl";
+import { KID_COLOR_SWATCHES, MEMBER_EMOJI_OPTIONS } from "@src/ui/semanticColors";
 import ModalWrapper from "./ModalWrapper";
 
-const COLOR_SWATCHES = [
-  "#FF6B6B", "#4ECDC4", "#6C63FF", "#FFA726", "#AB47BC", "#42A5F5",
-  "#EC407A", "#66BB6A", "#78909C", "#FFCA28", "#7E57C2", "#26C6DA",
-  "#5C6BC0", "#00897B",
-];
-
-const EMOJI_OPTIONS = [
-  "🤱", "👩", "👨", "🧑", "👩‍🦰", "👨‍🦱",
-  "🧔", "👱", "🦸", "🧕", "🤰", "🧑‍🍳",
-  "🏋️", "🎸", "🧘", "💻", "🎯", "☕",
-];
+const COLOR_SWATCHES = KID_COLOR_SWATCHES;
+const EMOJI_OPTIONS = MEMBER_EMOJI_OPTIONS;
 
 interface Props {
   visible: boolean;

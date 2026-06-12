@@ -7,16 +7,12 @@ import { t } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
 import { MS } from "@src/ui/modalStyles";
 import { RTL_ROW } from "@src/ui/rtl";
-import { KID_COLOR_SWATCHES } from "@src/ui/semanticColors";
+import { KID_COLOR_SWATCHES, KID_EMOJI_OPTIONS } from "@src/ui/semanticColors";
 import ModalWrapper from "./ModalWrapper";
 
 const COLOR_SWATCHES = KID_COLOR_SWATCHES;
 
-const EMOJI_OPTIONS = [
-  "🧸", "🦄", "🌸", "🐰", "🐣", "🌈", "🦋", "🐱",
-  "🐶", "🐻", "🍭", "⭐", "🎀", "🐠", "🦊", "🐝",
-  "🌻", "🍓", "👸", "🧚", "💃", "🤴", "🦸‍♂️", "🏎️",
-];
+const EMOJI_OPTIONS = KID_EMOJI_OPTIONS;
 
 interface Props {
   visible: boolean;

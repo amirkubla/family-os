@@ -27,6 +27,35 @@ export const STATUS_COLORS: Record<ProjectStatus, string> = {
 };
 
 /**
+ * Kid avatar emoji options — playful, child-friendly picks.
+ * 32 options arranged in rows of 8 for the picker grid.
+ */
+export const KID_EMOJI_OPTIONS: readonly string[] = [
+  // Animals
+  "🦄", "🐱", "🐶", "🐰", "🐻", "🦊", "🐼", "🐧",
+  // More animals / creatures
+  "🦁", "🐯", "🐸", "🦋", "🐝", "🐠", "🦖", "🐉",
+  // Nature / food / objects
+  "🌸", "🌈", "🌻", "🍓", "🍭", "⭐", "🎀", "🧸",
+  // Characters / activities
+  "👸", "🤴", "🧚", "🦸‍♂️", "🏎️", "🚀", "🎮", "⚽",
+] as const;
+
+/**
+ * Parent / adult avatar emoji options.
+ * 24 options — people, roles, and lifestyle icons.
+ */
+export const MEMBER_EMOJI_OPTIONS: readonly string[] = [
+  // People
+  "👩", "👨", "🧑", "👩‍🦰", "👨‍🦱", "🧔",
+  "👱", "🧕", "🤰", "🤱", "🧓", "👴",
+  // Roles / activities
+  "🧑‍🍳", "🧑‍💻", "🧑‍🎨", "🧑‍🏫", "🦸", "🏋️",
+  // Lifestyle / hobbies
+  "🧘", "🏃", "🎸", "🎵", "📚", "☕",
+] as const;
+
+/**
  * 20 curated swatch colours for kid profiles and family members.
  * Arranged in 4 rows of 5 — visually balanced across the full hue wheel,
  * avoiding colours that look too similar side by side.
