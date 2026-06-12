@@ -62,3 +62,13 @@ coverage/
 
 # Backend build output
 backend/dist/
+
+# Claude Code local config (skills, agents, settings — kept local only)
+.claude/skills/
+.claude/agents/
+.claude/settings.json
+
+# QA run artifacts (screenshots, logs — not committed)
+qa-reports/
+playwright-results/
+test-results/
