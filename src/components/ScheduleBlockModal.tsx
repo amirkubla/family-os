@@ -21,6 +21,7 @@ import { t, dayNameShort, blockTypeLabel } from "@src/i18n";
 import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
 import ModalWrapper from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
+import DatePicker from "./DatePicker";
 
 // ---------------------------------------------------------------------------
 // Zod schema
@@ -328,15 +329,7 @@ export default function ScheduleBlockModal({
               control={control}
               name="date"
               render={({ field: { onChange, value } }) => (
-                <TextInput
-                  value={value}
-                  onChangeText={onChange}
-                  mode="outlined"
-                  style={MS.input}
-                  contentStyle={MS.inputContent}
-                  placeholder="2026-03-15"
-                  error={!!errors.date}
-                />
+                <DatePicker value={value ?? toYMD(new Date())} onChange={onChange} />
               )}
             />
             {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
