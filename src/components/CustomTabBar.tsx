@@ -177,36 +177,20 @@ export default function CustomTabBar({
                       key={route.key}
                       onPress={() => handleSelect(route.name, route.key, isFocused)}
                       style={[
-                        styles.menuItem,
+                        styles.circle,
                         webCursor,
-                        isFocused && { backgroundColor: pal.bg, borderColor: pal.active + "55" },
+                        { backgroundColor: isFocused ? pal.active : "#FFFFFF" },
                       ]}
                       accessibilityRole="button"
                       accessibilityLabel={label}
                       accessibilityState={{ selected: isFocused }}
                       testID={`tab-${route.name}`}
                     >
-                      <Text
-                        style={[
-                          styles.menuLabel,
-                          { color: isFocused ? pal.active : "#3A3A4A", fontWeight: isFocused ? "800" : "600" },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {label}
-                      </Text>
-                      <View
-                        style={[
-                          styles.menuIconWrap,
-                          { backgroundColor: isFocused ? pal.active : pal.bg },
-                        ]}
-                      >
-                        <Ionicons
-                          name={TAB_ICONS[route.name] ?? "ellipse-outline"}
-                          size={18}
-                          color={isFocused ? "#FFFFFF" : pal.active}
-                        />
-                      </View>
+                      <Ionicons
+                        name={TAB_ICONS[route.name] ?? "ellipse-outline"}
+                        size={24}
+                        color={isFocused ? "#FFFFFF" : pal.active}
+                      />
                     </Pressable>
                   );
                 })}
@@ -215,17 +199,12 @@ export default function CustomTabBar({
                 {activeKids.length > 0 && (
                   <Pressable
                     onPress={() => setView("kids")}
-                    style={[styles.menuItem, webCursor]}
+                    style={[styles.circle, webCursor]}
                     accessibilityRole="button"
                     accessibilityLabel={t("home.kids")}
                     testID="nav-kids"
                   >
-                    <Text style={[styles.menuLabel, { color: "#3A3A4A", fontWeight: "600" }]} numberOfLines={1}>
-                      {t("home.kids")}
-                    </Text>
-                    <View style={[styles.menuIconWrap, { backgroundColor: KIDS_PAL.bg }]}>
-                      <Ionicons name="happy-outline" size={18} color={KIDS_PAL.active} />
-                    </View>
+                    <Ionicons name="happy-outline" size={24} color={KIDS_PAL.active} />
                   </Pressable>
                 )}
               </>
@@ -237,17 +216,12 @@ export default function CustomTabBar({
                     <Pressable
                       key={kid.id}
                       onPress={() => handleKidSelect(kid.id)}
-                      style={[styles.menuItem, webCursor]}
+                      style={[styles.circle, webCursor, { borderColor: color, borderWidth: 2 }]}
                       accessibilityRole="button"
                       accessibilityLabel={kid.name}
                       testID={`nav-kid-${kid.id}`}
                     >
-                      <Text style={[styles.menuLabel, { color: "#3A3A4A", fontWeight: "700" }]} numberOfLines={1}>
-                        {kid.name}
-                      </Text>
-                      <View style={[styles.menuIconWrap, { backgroundColor: color + "22" }]}>
-                        <Text style={{ fontSize: 18 }}>{kid.emoji ?? "🧒"}</Text>
-                      </View>
+                      <Text style={styles.kidEmoji}>{kid.emoji ?? "🧒"}</Text>
                     </Pressable>
                   );
                 })}
@@ -255,17 +229,12 @@ export default function CustomTabBar({
                 {/* Back to the main layer */}
                 <Pressable
                   onPress={() => setView("main")}
-                  style={[styles.menuItem, webCursor]}
+                  style={[styles.circle, webCursor]}
                   accessibilityRole="button"
                   accessibilityLabel={t("nav.back")}
                   testID="nav-kids-back"
                 >
-                  <Text style={[styles.menuLabel, { color: C_TEXT_MUTED, fontWeight: "600" }]} numberOfLines={1}>
-                    {t("nav.back")}
-                  </Text>
-                  <View style={[styles.menuIconWrap, { backgroundColor: "#EEF0F4" }]}>
-                    <Ionicons name="chevron-back" size={18} color={C_TEXT_MUTED} />
-                  </View>
+                  <Ionicons name="chevron-back" size={24} color={C_TEXT_MUTED} />
                 </Pressable>
               </>
             )}
@@ -306,38 +275,31 @@ const styles = StyleSheet.create({
     // bottom set inline from safe-area inset
   },
   menu: {
-    alignItems: "flex-end",
-    gap: 10,
-    marginBottom: 12,
-  },
-  menuItem: {
-    flexDirection: "row", // label (left) + icon circle (right, near edge)
+    width: 56, // match the FAB width so the circles centre over it
     alignItems: "center",
-    gap: 10,
+    gap: 12,
+    marginBottom: 14,
+  },
+  // Icon-only circular menu button (no text labels — icons are intuitive).
+  circle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#FFFFFF",
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    paddingStart: 16,
-    borderRadius: 999,
     borderWidth: 1,
-    borderColor: "rgba(226, 232, 240, 0.7)",
+    borderColor: "rgba(226, 232, 240, 0.8)",
     shadowColor: "#1E293B",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 6,
   },
-  menuLabel: {
-    fontSize: 14,
-    writingDirection: "rtl",
-    textAlign: "right",
-  },
-  menuIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
+  kidEmoji: {
+    fontSize: 22,
+    lineHeight: 26,
+    textAlign: "center",
   },
   fab: {
     width: 56,
