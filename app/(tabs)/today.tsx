@@ -22,6 +22,7 @@ import { toYMD } from "@src/utils/date";
 import { syncAll } from "@src/lib/sync/syncEngine";
 import {
   toggleChoreDoneRemote,
+  deleteChoreRemote,
   updateFamilyEventRemote,
   updateScheduleBlockRemote,
 } from "@src/lib/sync/remoteCrud";
@@ -37,6 +38,8 @@ import FamilyEventModal from "@src/components/FamilyEventModal";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
+import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
+import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -93,6 +96,7 @@ export default function TodayScreen() {
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
   const router = useRouter();
 
   const pinnedNotesList = useMemo(
@@ -334,6 +338,14 @@ export default function TodayScreen() {
                         </Text>
                       ) : null}
                     </Pressable>
+                    <IconButton
+                      icon="trash-can-outline"
+                      size={18}
+                      iconColor={C.textMuted}
+                      style={styles.choreCheck}
+                      testID={`today-chore-delete-${chore.title}`}
+                      onPress={() => requestDelete(() => deleteChoreRemote(chore.id))}
+                    />
                   </View>
                 );
               })}
@@ -467,6 +479,12 @@ export default function TodayScreen() {
           setEditingProject(null);
         }}
         editProject={editingProject}
+      />
+
+      <ConfirmDeleteModal
+        visible={confirmVisible}
+        onConfirm={confirmDelete}
+        onDismiss={dismissConfirm}
       />
       </View>
     </SafeAreaView>
