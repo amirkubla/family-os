@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import {
   ScrollViewContainer,
@@ -117,6 +117,7 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
 }
 
 export default function ChoresScreen() {
+  const insets = useSafeAreaInsets();
   const { modal } = useLocalSearchParams<{ modal?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -239,7 +240,7 @@ export default function ChoresScreen() {
         icon="plus"
         testID="btn-add-chore"
         accessibilityLabel="btn-add-chore"
-        style={[styles.fab, { backgroundColor: CHORE_COLORS.accent }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: CHORE_COLORS.accent }]}
         color="#FFF"
         onPress={() => {
           setEditingChore(null);

@@ -14,7 +14,7 @@ import {
   SegmentedButtons,
   FAB,
 } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 
@@ -186,6 +186,7 @@ function KidEventRow({
 // ---------------------------------------------------------------------------
 
 export default function KidScheduleScreen() {
+  const insets = useSafeAreaInsets();
   const { kidId } = useLocalSearchParams<{ kidId: string }>();
   const storeKids = useFamilyStore((s) => s.kids);
 
@@ -748,7 +749,7 @@ export default function KidScheduleScreen() {
         {/* FAB */}
         <FAB
           icon="plus"
-          style={[styles.fab, { backgroundColor: kidColor }]}
+          style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: kidColor }]}
           color="#FFF"
           onPress={() => openAdd()}
         />

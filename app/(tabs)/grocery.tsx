@@ -10,7 +10,7 @@ import {
   SegmentedButtons,
   FAB,
 } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
@@ -66,6 +66,7 @@ const EMPTY_KEYS: Record<ShoppingCategory, string> = {
 };
 
 export default function GroceryScreen() {
+  const insets = useSafeAreaInsets();
   const grocery = useFamilyStore((s) => s.grocery);
   const customizations = useFamilyStore((s) => s.customizations);
   const [modalOpen, setModalOpen] = useState(false);
@@ -280,7 +281,7 @@ export default function GroceryScreen() {
           list, which disappeared on long lists; a FAB stays visible. */}
       <FAB
         icon="plus"
-        style={styles.fab}
+        style={[styles.fab, { bottom: insets.bottom + S.lg }]}
         color="#FFF"
         onPress={() => setModalOpen(true)}
         accessibilityRole="button"

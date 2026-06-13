@@ -14,7 +14,7 @@ import {
   FAB,
   SegmentedButtons,
 } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -185,6 +185,7 @@ function KidBlockRow({
 type CalendarView = "month" | "week" | "day";
 
 export default function CalendarScreen() {
+  const insets = useSafeAreaInsets();
   const { modal } = useLocalSearchParams<{ modal?: string }>();
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
@@ -393,7 +394,7 @@ export default function CalendarScreen() {
       {/* FAB */}
       <FAB
         icon="plus"
-        style={styles.fab}
+        style={[styles.fab, { bottom: insets.bottom + S.lg }]}
         color="#FFF"
         onPress={openAdd}
         // a11y + automation hooks (QA Pass 2 BUG #8 — FAB had zero a11y props,

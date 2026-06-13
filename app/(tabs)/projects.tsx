@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import ReorderableList, {
   useReorderableDrag,
@@ -109,6 +109,7 @@ function ProjectCard({
 }
 
 export default function ProjectsScreen() {
+  const insets = useSafeAreaInsets();
   const { modal, status: initialStatus } = useLocalSearchParams<{ modal?: string; status?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -182,7 +183,7 @@ export default function ProjectsScreen() {
         icon="plus"
         testID="btn-add-project"
         accessibilityLabel="btn-add-project"
-        style={[styles.fab, { backgroundColor: PROJECT_COLORS.accent }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: PROJECT_COLORS.accent }]}
         color="#FFF"
         onPress={() => {
           setEditingProject(null);

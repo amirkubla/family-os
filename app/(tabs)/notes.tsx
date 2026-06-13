@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import ReorderableList, {
   useReorderableDrag,
@@ -100,6 +100,7 @@ function NoteCard({
 }
 
 export default function NotesScreen() {
+  const insets = useSafeAreaInsets();
   const { modal } = useLocalSearchParams<{ modal?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -161,7 +162,7 @@ export default function NotesScreen() {
       <FAB
         icon="plus"
         testID="btn-add-note"
-        style={[styles.fab, { backgroundColor: NOTE_COLORS.accent }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: NOTE_COLORS.accent }]}
         color="#FFF"
         onPress={() => {
           setEditingNote(null);
