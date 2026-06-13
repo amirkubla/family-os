@@ -49,7 +49,6 @@ import WeekCalendar from "@src/components/Calendar/WeekCalendar";
 import DayCalendar from "@src/components/Calendar/DayCalendar";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
-import FamilyBadge from "@src/components/FamilyBadge";
 import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -314,9 +313,6 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{t("calendar.title")}</Text>
-        <FamilyBadge />
-
         {/* Month / Week toggle */}
         <SegmentedButtons
           value={calendarView}
@@ -452,13 +448,6 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.xxl },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: C.textPrimary,
-    marginBottom: S.lg,
-    textAlign: TEXT_RIGHT,
-  },
 
   viewToggle: { marginBottom: S.md },
   card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },

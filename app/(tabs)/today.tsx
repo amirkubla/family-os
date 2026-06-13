@@ -30,7 +30,6 @@ import { minutesToHHMM } from "@src/utils/time";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, S, R } from "@src/ui/tokens";
 import { formatDateHe } from "@src/components/DatePicker";
-import FamilyBadge from "@src/components/FamilyBadge";
 import PinnedNotesCarousel from "@src/components/PinnedNotesCarousel";
 import ActiveProjectsCarousel from "@src/components/ActiveProjectsCarousel";
 import NoteModal from "@src/components/NoteModal";
@@ -172,12 +171,10 @@ export default function TodayScreen() {
           does not expose testID to UIAutomator on Android */}
       <View testID="roster-screen" style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{t("today.title")}</Text>
         {/* Hidden node for QA hierarchy assertions — not rendered visually */}
         {session?.user.username ? (
           <View testID="user-header-name" accessibilityLabel={session.user.username} style={{ height: 0, overflow: "hidden" }} />
         ) : null}
-        <FamilyBadge />
 
         {/* ── Unified Today Card ── */}
         <Card style={styles.todayCard} mode="elevated">
@@ -484,13 +481,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
 
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: C.textPrimary,
-    marginBottom: S.lg,
-    textAlign: TEXT_RIGHT,
-  },
 
   // ── Unified Today card ────────────────────────────────────────────────────
   todayCard: {

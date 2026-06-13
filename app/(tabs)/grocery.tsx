@@ -20,7 +20,6 @@ import {
   clearAllCategoryRemote,
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
-import FamilyBadge from "@src/components/FamilyBadge";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import { SHOPPING_CATEGORIES } from "@src/models/grocery";
@@ -132,9 +131,6 @@ export default function GroceryScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{t("grocery.title")}</Text>
-        <FamilyBadge />
-
         {/* Category tabs */}
         <SegmentedButtons
           value={selectedCategory}
@@ -305,13 +301,6 @@ export default function GroceryScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: C.textPrimary,
-    marginBottom: S.lg,
-    textAlign: TEXT_RIGHT,
-  },
   segments: { marginBottom: S.md },
   countRow: {
     flexDirection: RTL_ROW,
