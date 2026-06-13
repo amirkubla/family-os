@@ -371,8 +371,8 @@ const styles = StyleSheet.create({
   // web and bottom-right on iOS — consistent with the other tabs).
   fab: {
     position: "absolute",
-    left: S.xl,
-    bottom: S.xl,
+    left: S.lg,
+    bottom: S.lg,
     borderRadius: R.lg,
     backgroundColor: C.purple,
   },

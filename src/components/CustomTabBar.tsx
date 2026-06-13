@@ -28,12 +28,13 @@ import { t } from "@src/i18n";
 
 // ── Per-tab accent colours ──────────────────────────────────────────────────
 
+// Settings is intentionally absent — it's reached via the gear on the home
+// dashboard, so it doesn't need a slot in the floating nav.
 const TAB_COLORS: Record<string, { active: string; bg: string }> = {
   today:    { active: "#C49A2A", bg: "#FBF5E4" },  // honey gold
   calendar: { active: "#3A7BD5", bg: "#E8F0FB" },  // sapphire blue
   grocery:  { active: "#2D9F6F", bg: "#E6F6EF" },  // emerald green
   home:     { active: "#2AACB4", bg: "#E4F6F7" },  // ocean teal
-  settings: { active: "#8E7CC3", bg: "#F0ECF8" },  // dusty violet
 };
 
 const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -41,7 +42,6 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   calendar: "calendar-outline",
   grocery:  "cart-outline",
   home:     "home-outline",
-  settings: "settings-outline",
 };
 
 // "ילדים" entry + its nested kid layer.
@@ -60,7 +60,9 @@ export default function CustomTabBar({
   navigation,
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(insets.bottom, 12);
+  // Match the page add-FABs, which sit at inset + 16 (S.lg) from the screen
+  // bottom — so the nav FAB and a page's "+" FAB align horizontally.
+  const bottomPad = insets.bottom + 16;
   const router = useRouter();
 
   // Active kids drive the nested "ילדים" layer.

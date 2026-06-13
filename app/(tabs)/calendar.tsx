@@ -503,8 +503,8 @@ const styles = StyleSheet.create({
 
   fab: {
     position: "absolute",
-    left: S.xl,
-    bottom: S.xl,
+    left: S.lg,
+    bottom: S.lg,
     borderRadius: R.lg,
     backgroundColor: C.purple,
   },
