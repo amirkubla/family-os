@@ -10,9 +10,7 @@ import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import {
-  ScrollViewContainer,
-  NestedReorderableList,
+import ReorderableList, {
   useReorderableDrag,
   reorderItems,
   type ReorderableListReorderEvent,
@@ -121,15 +119,12 @@ export default function ChoresScreen() {
   const { modal } = useLocalSearchParams<{ modal?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
-  const chores = useFamilyStore((s) => s.chores);
-  const byOrder = (a: Chore, b: Chore) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-  const selectedChores = useMemo(
-    () => chores.filter((c) => c.selectedForToday).sort(byOrder),
-    [chores],
-  );
-  const backlogChores = useMemo(
-    () => chores.filter((c) => !c.selectedForToday).sort(byOrder),
-    [chores],
+  const allChores = useFamilyStore((s) => s.chores);
+  // Single manual-ordered list (drag-to-reorder). The ⭐ badge + sun toggle
+  // still mark "selected for today"; the Today screen still groups by it.
+  const chores = useMemo(
+    () => [...allChores].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [allChores],
   );
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -147,18 +142,11 @@ export default function ChoresScreen() {
     setModalOpen(true);
   };
 
-  // Each section reorders independently (its own ids → index-based sortOrder).
-  const onReorderSelected = useCallback(
+  const handleReorder = useCallback(
     ({ from, to }: ReorderableListReorderEvent) => {
-      reorderChoresRemote(reorderItems(selectedChores, from, to).map((c) => c.id));
+      reorderChoresRemote(reorderItems(chores, from, to).map((c) => c.id));
     },
-    [selectedChores],
-  );
-  const onReorderBacklog = useCallback(
-    ({ from, to }: ReorderableListReorderEvent) => {
-      reorderChoresRemote(reorderItems(backlogChores, from, to).map((c) => c.id));
-    },
-    [backlogChores],
+    [chores],
   );
 
   const renderChore = useCallback(
@@ -175,66 +163,31 @@ export default function ChoresScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("home.chores")} />
-      <ScrollViewContainer contentContainerStyle={styles.container}>
-        {chores.length > 0 && (
-          <View style={styles.statsRow}>
-            <View style={styles.statsPill}>
-              <Text style={styles.statsText}>
-                {chores.filter((c) => c.done).length}/{chores.length} ✓
-              </Text>
+      <ReorderableList
+        data={chores}
+        keyExtractor={(item) => item.id}
+        renderItem={renderChore}
+        onReorder={handleReorder}
+        style={styles.list}
+        contentContainerStyle={styles.container}
+        ListHeaderComponent={
+          chores.length > 0 ? (
+            <View style={styles.statsRow}>
+              <View style={styles.statsPill}>
+                <Text style={styles.statsText}>
+                  {chores.filter((c) => c.done).length}/{chores.length} ✓
+                </Text>
+              </View>
             </View>
-          </View>
-        )}
-
-        {chores.length === 0 && (
+          ) : null
+        }
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 32 }}>🎉</Text>
             <Text style={styles.emptyText}>{t("home.allClear")}</Text>
           </View>
-        )}
-
-        {selectedChores.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionDot} />
-              <Text style={styles.sectionTitle}>{t("home.selectedForToday")}</Text>
-              <Text style={styles.sectionCount}>{selectedChores.length}</Text>
-            </View>
-            <NestedReorderableList
-              data={selectedChores}
-              keyExtractor={(item) => item.id}
-              renderItem={renderChore}
-              onReorder={onReorderSelected}
-              scrollable={false}
-            />
-          </>
-        )}
-
-        {selectedChores.length > 0 && backlogChores.length > 0 && (
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-          </View>
-        )}
-
-        {backlogChores.length > 0 && (
-          <>
-            {selectedChores.length > 0 && (
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionDot, { backgroundColor: C.textMuted }]} />
-                <Text style={[styles.sectionTitle, { color: C.textSecondary }]}>{t("home.backlog")}</Text>
-                <Text style={styles.sectionCount}>{backlogChores.length}</Text>
-              </View>
-            )}
-            <NestedReorderableList
-              data={backlogChores}
-              keyExtractor={(item) => item.id}
-              renderItem={renderChore}
-              onReorder={onReorderBacklog}
-              scrollable={false}
-            />
-          </>
-        )}
-      </ScrollViewContainer>
+        }
+      />
 
       <FAB
         icon="plus"
@@ -263,6 +216,7 @@ export default function ChoresScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
+  list: { flex: 1 },
   container: { padding: S.lg, paddingBottom: S.xxl + S.xxl, gap: S.xs },
   statsRow: { flexDirection: RTL_ROW, alignItems: "center", marginBottom: S.sm },
   statsPill: {
