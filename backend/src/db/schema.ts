@@ -176,6 +176,8 @@ export const notes = pgTable(
     title: text("title"),
     body: text("body").notNull(),
     pinned: boolean("pinned").default(false).notNull(),
+    // Manual drag-to-reorder position; lower sorts first.
+    sortOrder: integer("sort_order").default(0).notNull(),
     ...timestamps,
   },
   (t) => [

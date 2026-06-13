@@ -42,6 +42,7 @@ export interface ApiNote {
   title: string | null;
   body: string;
   pinned: boolean;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }

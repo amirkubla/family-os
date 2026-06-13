@@ -64,6 +64,7 @@ export function apiToLocalNote(a: ApiNote): Note {
     title: a.title ?? undefined,
     body: a.body,
     pinned: a.pinned,
+    sortOrder: a.sortOrder ?? 0,
     kidId: a.kidId ?? undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
@@ -76,6 +77,7 @@ export function localToApiNote(item: Note) {
     title: item.title ?? null,
     body: item.body,
     pinned: item.pinned,
+    sortOrder: item.sortOrder ?? 0,
     // Send explicit null so the backend's upsert sees the key and can
     // unassign on the conflict-update branch. JSON.stringify drops
     // undefined values; null is preserved.

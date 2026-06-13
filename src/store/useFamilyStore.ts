@@ -130,6 +130,8 @@ interface FamilyState {
   // Notes actions
   addNote: (input: { title?: string; body: string; kidId?: string }) => Note;
   updateNote: (id: string, patch: Partial<Pick<Note, "title" | "body" | "kidId">>) => void;
+  /** Reassign note sortOrder from the given top-to-bottom id order. */
+  reorderNotes: (ids: string[]) => void;
   toggleNotePinned: (id: string) => void;
   deleteNote: (id: string) => void;
 
@@ -352,11 +354,13 @@ export const useFamilyStore = create<FamilyState>()(
 
       addNote: ({ title, body, kidId }) => {
         const now = Date.now();
+        const minOrder = get().notes.reduce((m, n) => Math.min(m, n.sortOrder ?? 0), 0);
         const item: Note = {
           id: makeId(),
           title,
           body,
           pinned: false,
+          sortOrder: minOrder - 1, // prepend → sorts first
           kidId,
           updatedAt: now,
           createdAt: now,
@@ -383,6 +387,16 @@ export const useFamilyStore = create<FamilyState>()(
         set((s) => ({
           notes: s.notes.filter((n) => n.id !== id),
         })),
+
+      reorderNotes: (ids) =>
+        set((s) => {
+          const pos = new Map(ids.map((id, i) => [id, i]));
+          return {
+            notes: s.notes.map((n) =>
+              pos.has(n.id) ? { ...n, sortOrder: pos.get(n.id)!, updatedAt: Date.now() } : n
+            ),
+          };
+        }),
 
       /* ── Chores ── */
 
@@ -613,7 +627,7 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 13,
+      version: 14,
       storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => (_state, error) => {
         // Last-line-of-defense: if anything else in the rehydrate path throws
@@ -734,6 +748,13 @@ export const useFamilyStore = create<FamilyState>()(
           persisted.projects = (persisted.projects ?? []).map((p: any, i: number) => ({
             ...p,
             sortOrder: p.sortOrder ?? i,
+          }));
+        }
+        if (version < 14) {
+          // Add sortOrder to notes (drag-to-reorder), seeded from array index.
+          persisted.notes = (persisted.notes ?? []).map((n: any, i: number) => ({
+            ...n,
+            sortOrder: n.sortOrder ?? i,
           }));
         }
         return persisted;

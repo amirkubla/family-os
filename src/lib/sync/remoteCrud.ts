@@ -239,6 +239,23 @@ export function deleteNoteRemote(id: string) {
   );
 }
 
+/** Persist a new note order (ids top-to-bottom). PATCHes each item's sortOrder. */
+export function reorderNotesRemote(ids: string[]) {
+  useFamilyStore.getState().reorderNotes(ids);
+  const notes = useFamilyStore.getState().notes;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      Promise.all(
+        ids.map((id) => {
+          const n = notes.find((x) => x.id === id);
+          return n ? notesApi.update(fid, id, { sortOrder: n.sortOrder }) : null;
+        }),
+      ),
+    ),
+    "Reorder notes",
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Chores
 // ---------------------------------------------------------------------------
