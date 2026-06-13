@@ -95,6 +95,7 @@ export function apiToLocalChore(a: ApiChore): Chore {
     assignedToMemberId: a.assignedToMemberId ?? undefined,
     done: a.done,
     selectedForToday: a.selectedForToday,
+    sortOrder: a.sortOrder ?? 0,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -108,6 +109,7 @@ export function localToApiChore(item: Chore) {
     assignedToMemberId: item.assignedToMemberId ?? null,
     done: item.done,
     selectedForToday: item.selectedForToday,
+    sortOrder: item.sortOrder ?? 0,
   };
 }
 
@@ -122,6 +124,7 @@ export function apiToLocalProject(a: ApiProject): Project {
     description: a.description ?? undefined,
     status: a.status,
     progress: a.progress,
+    sortOrder: a.sortOrder ?? 0,
     kidId: a.kidId ?? undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
@@ -135,6 +138,7 @@ export function localToApiProject(item: Project) {
     description: item.description ?? null,
     status: item.status,
     progress: item.progress,
+    sortOrder: item.sortOrder ?? 0,
     kidId: item.kidId ?? null,
   };
 }

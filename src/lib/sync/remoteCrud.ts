@@ -305,6 +305,23 @@ export function deleteChoreRemote(id: string) {
   );
 }
 
+/** Persist a new chore order (ids top-to-bottom). PATCHes each item's sortOrder. */
+export function reorderChoresRemote(ids: string[]) {
+  useFamilyStore.getState().reorderChores(ids);
+  const chores = useFamilyStore.getState().chores;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      Promise.all(
+        ids.map((id) => {
+          const c = chores.find((x) => x.id === id);
+          return c ? choresApi.update(fid, id, { sortOrder: c.sortOrder }) : null;
+        }),
+      ),
+    ),
+    "Reorder chores",
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Projects
 // ---------------------------------------------------------------------------
@@ -354,6 +371,23 @@ export function deleteProjectRemote(id: string) {
   fireAndForget(
     getFamilyId().then((fid) => projectsApi.delete(fid, id)),
     "Delete project",
+  );
+}
+
+/** Persist a new project order (ids top-to-bottom). PATCHes each item's sortOrder. */
+export function reorderProjectsRemote(ids: string[]) {
+  useFamilyStore.getState().reorderProjects(ids);
+  const projects = useFamilyStore.getState().projects;
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      Promise.all(
+        ids.map((id) => {
+          const p = projects.find((x) => x.id === id);
+          return p ? projectsApi.update(fid, id, { sortOrder: p.sortOrder }) : null;
+        }),
+      ),
+    ),
+    "Reorder projects",
   );
 }
 

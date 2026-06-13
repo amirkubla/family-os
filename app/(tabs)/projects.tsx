@@ -5,15 +5,20 @@
  * ?modal=add deep link; ?status=in_progress pre-selects a status.
  */
 
-import React, { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, Pressable, ScrollView, Platform } from "react-native";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
+import ReorderableList, {
+  useReorderableDrag,
+  reorderItems,
+  type ReorderableListReorderEvent,
+} from "react-native-reorderable-list";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Project } from "@src/models/project";
-import { deleteProjectRemote } from "@src/lib/sync/remoteCrud";
+import { deleteProjectRemote, reorderProjectsRemote } from "@src/lib/sync/remoteCrud";
 import ProjectModal from "@src/components/ProjectModal";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
@@ -30,12 +35,100 @@ const PROJECT_COLORS = {
   hover: "#EEEAFF",
 } as const;
 
+// Single project card. Long-press anywhere on it starts a drag-to-reorder.
+function ProjectCard({
+  proj,
+  onEdit,
+  onDelete,
+}: {
+  proj: Project;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const drag = useReorderableDrag();
+  const statusColor = STATUS_COLORS[proj.status];
+  const statusEmoji = proj.status === "done" ? "✅" : proj.status === "in_progress" ? "🔨" : "💡";
+  return (
+    <Pressable
+      testID={"project-card-" + proj.title}
+      onPress={onEdit}
+      onLongPress={drag}
+      delayLongPress={250}
+      style={({ pressed, hovered }: any) => [
+        styles.projectCard,
+        hovered && styles.projectCardHover,
+        pressed && { transform: [{ scale: 0.98 }] },
+      ]}
+    >
+      <View style={[styles.projectStripe, { backgroundColor: statusColor }]} />
+      <View style={styles.projectBody}>
+        <View style={styles.projectTopRow}>
+          <View style={[styles.projectStatusChip, { backgroundColor: statusColor + "18" }]}>
+            <Text style={{ fontSize: 12 }}>{statusEmoji}</Text>
+            <Text style={[styles.projectStatusText, { color: statusColor }]}>
+              {statusLabel(proj.status)}
+            </Text>
+          </View>
+          <View style={{ flex: 1 }} />
+          <IconButton
+            testID={"project-delete-" + proj.title}
+            icon="trash-can-outline"
+            size={16}
+            iconColor={C.textMuted}
+            style={styles.projectActionBtn}
+            onPress={onDelete}
+          />
+        </View>
+
+        <Text style={styles.projectTitle} numberOfLines={1}>
+          {proj.title}
+        </Text>
+
+        {proj.description ? (
+          <Text style={styles.projDesc} numberOfLines={2}>
+            {proj.description}
+          </Text>
+        ) : null}
+
+        <View style={styles.projectProgressRow}>
+          <View style={styles.projectProgressTrack}>
+            <View
+              style={[
+                styles.projectProgressFill,
+                { backgroundColor: statusColor, width: `${proj.progress}%` as any },
+              ]}
+            />
+          </View>
+          <Text style={[styles.projectProgressLabel, { color: statusColor }]}>
+            {proj.progress}%
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 export default function ProjectsScreen() {
   const { modal, status: initialStatus } = useLocalSearchParams<{ modal?: string; status?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   const allProjects = useFamilyStore((s) => s.projects);
-  const projects = useMemo(() => allProjects.filter((p) => !p.kidId), [allProjects]);
+  // Family-wide projects, sorted by manual drag order.
+  const projects = useMemo(
+    () =>
+      allProjects
+        .filter((p) => !p.kidId)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [allProjects],
+  );
+
+  const handleReorder = useCallback(
+    ({ from, to }: ReorderableListReorderEvent) => {
+      const next = reorderItems(projects, from, to);
+      reorderProjectsRemote(next.map((p) => p.id));
+    },
+    [projects],
+  );
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -50,89 +143,40 @@ export default function ProjectsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("home.projects")} />
-      <ScrollView contentContainerStyle={styles.container}>
-        {projects.length > 0 && (
-          <View style={styles.statsRow}>
-            <View style={styles.statsPill}>
-              <Text style={styles.statsText}>
-                {projects.filter((p) => p.status === "in_progress").length} {t("today.activeProjects").toLowerCase()}
-              </Text>
+      <ReorderableList
+        data={projects}
+        keyExtractor={(item) => item.id}
+        onReorder={handleReorder}
+        style={styles.list}
+        contentContainerStyle={styles.container}
+        ListHeaderComponent={
+          projects.length > 0 ? (
+            <View style={styles.statsRow}>
+              <View style={styles.statsPill}>
+                <Text style={styles.statsText}>
+                  {projects.filter((p) => p.status === "in_progress").length} {t("today.activeProjects").toLowerCase()}
+                </Text>
+              </View>
             </View>
-          </View>
-        )}
-
-        {projects.length === 0 && (
+          ) : null
+        }
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 32 }}>🚀</Text>
             <Text style={styles.emptyText}>{t("home.noProjects")}</Text>
           </View>
+        }
+        renderItem={({ item }) => (
+          <ProjectCard
+            proj={item}
+            onEdit={() => {
+              setEditingProject(item);
+              setModalOpen(true);
+            }}
+            onDelete={() => requestDelete(() => deleteProjectRemote(item.id))}
+          />
         )}
-
-        {projects.map((proj) => {
-          const statusColor = STATUS_COLORS[proj.status];
-          const statusEmoji = proj.status === "done" ? "✅" : proj.status === "in_progress" ? "🔨" : "💡";
-          return (
-            <Pressable
-              key={proj.id}
-              testID={"project-card-" + proj.title}
-              style={({ pressed, hovered }: any) => [
-                styles.projectCard,
-                hovered && styles.projectCardHover,
-                pressed && { transform: [{ scale: 0.98 }] },
-              ]}
-              onPress={() => {
-                setEditingProject(proj);
-                setModalOpen(true);
-              }}
-            >
-              <View style={[styles.projectStripe, { backgroundColor: statusColor }]} />
-              <View style={styles.projectBody}>
-                <View style={styles.projectTopRow}>
-                  <View style={[styles.projectStatusChip, { backgroundColor: statusColor + "18" }]}>
-                    <Text style={{ fontSize: 12 }}>{statusEmoji}</Text>
-                    <Text style={[styles.projectStatusText, { color: statusColor }]}>
-                      {statusLabel(proj.status)}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }} />
-                  <IconButton
-                    testID={"project-delete-" + proj.title}
-                    icon="trash-can-outline"
-                    size={16}
-                    iconColor={C.textMuted}
-                    style={styles.projectActionBtn}
-                    onPress={() => requestDelete(() => deleteProjectRemote(proj.id))}
-                  />
-                </View>
-
-                <Text style={styles.projectTitle} numberOfLines={1}>
-                  {proj.title}
-                </Text>
-
-                {proj.description ? (
-                  <Text style={styles.projDesc} numberOfLines={2}>
-                    {proj.description}
-                  </Text>
-                ) : null}
-
-                <View style={styles.projectProgressRow}>
-                  <View style={styles.projectProgressTrack}>
-                    <View
-                      style={[
-                        styles.projectProgressFill,
-                        { backgroundColor: statusColor, width: `${proj.progress}%` as any },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.projectProgressLabel, { color: statusColor }]}>
-                    {proj.progress}%
-                  </Text>
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      />
 
       <FAB
         icon="plus"
@@ -162,6 +206,7 @@ export default function ProjectsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
+  list: { flex: 1 },
   container: { padding: S.lg, paddingBottom: S.xxl + S.xxl, gap: S.xs },
   statsRow: { flexDirection: RTL_ROW, alignItems: "center", marginBottom: S.sm },
   statsPill: {

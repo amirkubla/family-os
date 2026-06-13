@@ -54,6 +54,7 @@ export interface ApiChore {
   assignedToMemberId: string | null;
   done: boolean;
   selectedForToday: boolean;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -79,6 +80,7 @@ export interface ApiProject {
   description: string | null;
   status: "idea" | "in_progress" | "done";
   progress: number;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }

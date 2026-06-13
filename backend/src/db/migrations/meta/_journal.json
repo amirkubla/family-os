@@ -134,6 +134,13 @@
       "when": 1780000100000,
       "tag": "0018_projects_kid_id",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1780000200000,
+      "tag": "0019_chore_project_sort_order",
+      "breakpoints": true
     }
   ]
 }

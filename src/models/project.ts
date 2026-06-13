@@ -6,6 +6,8 @@ export interface Project {
   description?: string;
   status: ProjectStatus;
   progress: number; // 0–100
+  /** Manual drag-to-reorder position; lower sorts first. */
+  sortOrder: number;
   /**
    * Optional kid ownership. undefined = family-wide project (shown on /home).
    * Non-null = project belongs to that kid (shown on /kid/[kidId]).

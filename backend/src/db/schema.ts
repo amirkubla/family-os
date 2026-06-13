@@ -208,6 +208,8 @@ export const chores = pgTable(
     assignedToMemberId: uuid("assigned_to_member_id"),
     done: boolean("done").default(false).notNull(),
     selectedForToday: boolean("selected_for_today").default(false).notNull(),
+    // Manual sort position within the list (drag-to-reorder). Lower = first.
+    sortOrder: integer("sort_order").default(0).notNull(),
     ...timestamps,
   },
   (t) => [
@@ -244,6 +246,8 @@ export const projects = pgTable(
       .default("idea")
       .notNull(),
     progress: integer("progress").default(0).notNull(),
+    // Manual sort position within the list (drag-to-reorder). Lower = first.
+    sortOrder: integer("sort_order").default(0).notNull(),
     ...timestamps,
   },
   (t) => [

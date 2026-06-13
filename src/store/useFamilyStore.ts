@@ -142,6 +142,8 @@ interface FamilyState {
   toggleChoreDone: (id: string) => void;
   toggleChoreSelectedForToday: (id: string) => void;
   deleteChore: (id: string) => void;
+  /** Reassign chore sortOrder from the given top-to-bottom id order. */
+  reorderChores: (ids: string[]) => void;
 
   // Kids actions
   addKid: (input: { name: string; emoji: string; color: string }) => Kid;
@@ -168,6 +170,8 @@ interface FamilyState {
     patch: Partial<Pick<Project, "title" | "description" | "status" | "progress" | "kidId">>
   ) => void;
   deleteProject: (id: string) => void;
+  /** Reassign project sortOrder from the given top-to-bottom id order. */
+  reorderProjects: (ids: string[]) => void;
 
   // Family Events actions
   addFamilyEvent: (input: {
@@ -384,6 +388,7 @@ export const useFamilyStore = create<FamilyState>()(
 
       addChore: ({ title, assignedTo, assignedToMemberId }) => {
         const now = Date.now();
+        const minOrder = get().chores.reduce((m, c) => Math.min(m, c.sortOrder ?? 0), 0);
         const item: Chore = {
           id: makeId(),
           title,
@@ -391,6 +396,7 @@ export const useFamilyStore = create<FamilyState>()(
           assignedToMemberId,
           done: false,
           selectedForToday: false,
+          sortOrder: minOrder - 1, // prepend → sorts first
           updatedAt: now,
           createdAt: now,
         };
@@ -432,12 +438,14 @@ export const useFamilyStore = create<FamilyState>()(
 
       addProject: ({ title, description, kidId }) => {
         const now = Date.now();
+        const minOrder = get().projects.reduce((m, p) => Math.min(m, p.sortOrder ?? 0), 0);
         const item: Project = {
           id: makeId(),
           title,
           description,
           status: "idea" as ProjectStatus,
           progress: 0,
+          sortOrder: minOrder - 1, // prepend → sorts first
           kidId,
           updatedAt: now,
           createdAt: now,
@@ -457,6 +465,28 @@ export const useFamilyStore = create<FamilyState>()(
         set((s) => ({
           projects: s.projects.filter((p) => p.id !== id),
         })),
+
+      // Drag-to-reorder: assign sortOrder by position in the given id list.
+      // ids is the new top-to-bottom order; lower index → lower sortOrder.
+      reorderChores: (ids) =>
+        set((s) => {
+          const pos = new Map(ids.map((id, i) => [id, i]));
+          return {
+            chores: s.chores.map((c) =>
+              pos.has(c.id) ? { ...c, sortOrder: pos.get(c.id)!, updatedAt: Date.now() } : c
+            ),
+          };
+        }),
+
+      reorderProjects: (ids) =>
+        set((s) => {
+          const pos = new Map(ids.map((id, i) => [id, i]));
+          return {
+            projects: s.projects.map((p) =>
+              pos.has(p.id) ? { ...p, sortOrder: pos.get(p.id)!, updatedAt: Date.now() } : p
+            ),
+          };
+        }),
 
       /* ── Family Events ── */
 
@@ -583,7 +613,7 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 12,
+      version: 13,
       storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => (_state, error) => {
         // Last-line-of-defense: if anything else in the rehydrate path throws
@@ -693,6 +723,18 @@ export const useFamilyStore = create<FamilyState>()(
           // Add customizations blob — empty means "use Hebrew defaults".
           // pullAll will overwrite with the server's value on next sync.
           persisted.customizations = persisted.customizations ?? {};
+        }
+        if (version < 13) {
+          // Add sortOrder to chores + projects (drag-to-reorder). Seed from
+          // current array index so existing order is preserved until reordered.
+          persisted.chores = (persisted.chores ?? []).map((c: any, i: number) => ({
+            ...c,
+            sortOrder: c.sortOrder ?? i,
+          }));
+          persisted.projects = (persisted.projects ?? []).map((p: any, i: number) => ({
+            ...p,
+            sortOrder: p.sortOrder ?? i,
+          }));
         }
         return persisted;
       },
