@@ -5,11 +5,18 @@
  * ?modal=add deep link.
  */
 
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, ScrollView, Platform } from "react-native";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
+import {
+  ScrollViewContainer,
+  NestedReorderableList,
+  useReorderableDrag,
+  reorderItems,
+  type ReorderableListReorderEvent,
+} from "react-native-reorderable-list";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Chore } from "@src/models/chore";
@@ -17,6 +24,7 @@ import {
   toggleChoreDoneRemote,
   toggleChoreSelectedForTodayRemote,
   deleteChoreRemote,
+  reorderChoresRemote,
 } from "@src/lib/sync/remoteCrud";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import PageHeader from "@src/components/PageHeader";
@@ -50,6 +58,8 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
     ? `${assignedMember.avatarEmoji ?? ""} ${assignedMember.name}`
     : chore.assignedTo;
 
+  const drag = useReorderableDrag();
+
   return (
     <Pressable
       testID={"chore-row-" + chore.title}
@@ -60,6 +70,8 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
         pressed && { transform: [{ scale: 0.98 }] },
       ]}
       onPress={onEdit}
+      onLongPress={drag}
+      delayLongPress={250}
     >
       <Pressable
         testID={"chore-check-" + chore.title}
@@ -109,8 +121,15 @@ export default function ChoresScreen() {
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   const chores = useFamilyStore((s) => s.chores);
-  const selectedChores = chores.filter((c) => c.selectedForToday);
-  const backlogChores = chores.filter((c) => !c.selectedForToday);
+  const byOrder = (a: Chore, b: Chore) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+  const selectedChores = useMemo(
+    () => chores.filter((c) => c.selectedForToday).sort(byOrder),
+    [chores],
+  );
+  const backlogChores = useMemo(
+    () => chores.filter((c) => !c.selectedForToday).sort(byOrder),
+    [chores],
+  );
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
@@ -127,10 +146,35 @@ export default function ChoresScreen() {
     setModalOpen(true);
   };
 
+  // Each section reorders independently (its own ids → index-based sortOrder).
+  const onReorderSelected = useCallback(
+    ({ from, to }: ReorderableListReorderEvent) => {
+      reorderChoresRemote(reorderItems(selectedChores, from, to).map((c) => c.id));
+    },
+    [selectedChores],
+  );
+  const onReorderBacklog = useCallback(
+    ({ from, to }: ReorderableListReorderEvent) => {
+      reorderChoresRemote(reorderItems(backlogChores, from, to).map((c) => c.id));
+    },
+    [backlogChores],
+  );
+
+  const renderChore = useCallback(
+    ({ item }: { item: Chore }) => (
+      <ChoreRow
+        chore={item}
+        onEdit={() => openEdit(item)}
+        onDelete={() => requestDelete(() => deleteChoreRemote(item.id))}
+      />
+    ),
+    [requestDelete],
+  );
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("home.chores")} />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollViewContainer contentContainerStyle={styles.container}>
         {chores.length > 0 && (
           <View style={styles.statsRow}>
             <View style={styles.statsPill}>
@@ -155,14 +199,13 @@ export default function ChoresScreen() {
               <Text style={styles.sectionTitle}>{t("home.selectedForToday")}</Text>
               <Text style={styles.sectionCount}>{selectedChores.length}</Text>
             </View>
-            {selectedChores.map((chore) => (
-              <ChoreRow
-                key={chore.id}
-                chore={chore}
-                onEdit={() => openEdit(chore)}
-                onDelete={() => requestDelete(() => deleteChoreRemote(chore.id))}
-              />
-            ))}
+            <NestedReorderableList
+              data={selectedChores}
+              keyExtractor={(item) => item.id}
+              renderItem={renderChore}
+              onReorder={onReorderSelected}
+              scrollable={false}
+            />
           </>
         )}
 
@@ -181,17 +224,16 @@ export default function ChoresScreen() {
                 <Text style={styles.sectionCount}>{backlogChores.length}</Text>
               </View>
             )}
-            {backlogChores.map((chore) => (
-              <ChoreRow
-                key={chore.id}
-                chore={chore}
-                onEdit={() => openEdit(chore)}
-                onDelete={() => requestDelete(() => deleteChoreRemote(chore.id))}
-              />
-            ))}
+            <NestedReorderableList
+              data={backlogChores}
+              keyExtractor={(item) => item.id}
+              renderItem={renderChore}
+              onReorder={onReorderBacklog}
+              scrollable={false}
+            />
           </>
         )}
-      </ScrollView>
+      </ScrollViewContainer>
 
       <FAB
         icon="plus"
