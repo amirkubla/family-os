@@ -21,6 +21,10 @@ import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { useRouter } from "expo-router";
+
+import { useFamilyStore } from "@src/store/useFamilyStore";
+import { t } from "@src/i18n";
 
 // ── Per-tab accent colours ──────────────────────────────────────────────────
 
@@ -40,6 +44,11 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   settings: "settings-outline",
 };
 
+// "ילדים" entry + its nested kid layer.
+const KIDS_PAL = { active: "#E0699B", bg: "#FBE9F1" };
+
+const C_TEXT_MUTED = "#A8A3B8";
+
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
 
@@ -52,29 +61,53 @@ export default function CustomTabBar({
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 12);
+  const router = useRouter();
+
+  // Active kids drive the nested "ילדים" layer.
+  const kids = useFamilyStore((s) => s.kids);
+  const activeKids = kids.filter((k) => k.isActive);
 
   const [expanded, setExpanded] = useState(false);
+  // Which menu layer is showing: the main tabs, or the nested kid list.
+  const [view, setView] = useState<"main" | "kids">("main");
   const anim = useRef(new Animated.Value(0)).current;
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Native driver is unsupported on web (react-native-web warns + no-ops);
   // fall back to JS-driven animation there.
   const SPRING = { useNativeDriver: !isWeb, tension: 240, friction: 22 };
 
   const expand = useCallback(() => {
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    setView("main"); // always open on the main layer
     setExpanded(true);
     Animated.spring(anim, { toValue: 1, ...SPRING }).start();
   }, [anim]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const collapse = useCallback(() => {
-    Animated.spring(anim, { toValue: 0, ...SPRING }).start(({ finished }) => {
-      if (finished) setExpanded(false);
-    });
+    Animated.spring(anim, { toValue: 0, ...SPRING }).start();
+    // Flip state on a timer rather than the spring's `finished` callback —
+    // a navigation re-render (router.push) can deliver finished:false and
+    // strand the menu open. The timer is cleared by expand() on rapid re-open.
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    collapseTimer.current = setTimeout(() => {
+      setExpanded(false);
+      setView("main"); // reset so the next open starts on the main layer
+    }, 240);
   }, [anim]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = useCallback(() => {
     if (expanded) collapse();
     else expand();
   }, [expanded, expand, collapse]);
+
+  const handleKidSelect = useCallback(
+    (kidId: string) => {
+      router.push(`/kid/${kidId}`);
+      collapse();
+    },
+    [router, collapse],
+  );
 
   // Active tab → FAB colour + icon
   const activeRoute = state.routes[state.index];
@@ -130,49 +163,110 @@ export default function CustomTabBar({
             ]}
             pointerEvents="auto"
           >
-            {navRoutes.map((route) => {
-              const idx = state.routes.indexOf(route);
-              const isFocused = state.index === idx;
-              const pal = TAB_COLORS[route.name];
-              const label = descriptors[route.key]?.options?.title ?? route.name;
-              return (
+            {view === "main" ? (
+              <>
+                {navRoutes.map((route) => {
+                  const idx = state.routes.indexOf(route);
+                  const isFocused = state.index === idx;
+                  const pal = TAB_COLORS[route.name];
+                  const label = descriptors[route.key]?.options?.title ?? route.name;
+                  return (
+                    <Pressable
+                      key={route.key}
+                      onPress={() => handleSelect(route.name, route.key, isFocused)}
+                      style={[
+                        styles.menuItem,
+                        webCursor,
+                        isFocused && { backgroundColor: pal.bg, borderColor: pal.active + "55" },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={label}
+                      accessibilityState={{ selected: isFocused }}
+                      testID={`tab-${route.name}`}
+                    >
+                      <Text
+                        style={[
+                          styles.menuLabel,
+                          { color: isFocused ? pal.active : "#3A3A4A", fontWeight: isFocused ? "800" : "600" },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {label}
+                      </Text>
+                      <View
+                        style={[
+                          styles.menuIconWrap,
+                          { backgroundColor: isFocused ? pal.active : pal.bg },
+                        ]}
+                      >
+                        <Ionicons
+                          name={TAB_ICONS[route.name] ?? "ellipse-outline"}
+                          size={18}
+                          color={isFocused ? "#FFFFFF" : pal.active}
+                        />
+                      </View>
+                    </Pressable>
+                  );
+                })}
+
+                {/* "ילדים" — opens the nested kid layer (does not navigate) */}
+                {activeKids.length > 0 && (
+                  <Pressable
+                    onPress={() => setView("kids")}
+                    style={[styles.menuItem, webCursor]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("home.kids")}
+                    testID="nav-kids"
+                  >
+                    <Text style={[styles.menuLabel, { color: "#3A3A4A", fontWeight: "600" }]} numberOfLines={1}>
+                      {t("home.kids")}
+                    </Text>
+                    <View style={[styles.menuIconWrap, { backgroundColor: KIDS_PAL.bg }]}>
+                      <Ionicons name="happy-outline" size={18} color={KIDS_PAL.active} />
+                    </View>
+                  </Pressable>
+                )}
+              </>
+            ) : (
+              <>
+                {activeKids.map((kid) => {
+                  const color = kid.color ?? KIDS_PAL.active;
+                  return (
+                    <Pressable
+                      key={kid.id}
+                      onPress={() => handleKidSelect(kid.id)}
+                      style={[styles.menuItem, webCursor]}
+                      accessibilityRole="button"
+                      accessibilityLabel={kid.name}
+                      testID={`nav-kid-${kid.id}`}
+                    >
+                      <Text style={[styles.menuLabel, { color: "#3A3A4A", fontWeight: "700" }]} numberOfLines={1}>
+                        {kid.name}
+                      </Text>
+                      <View style={[styles.menuIconWrap, { backgroundColor: color + "22" }]}>
+                        <Text style={{ fontSize: 18 }}>{kid.emoji ?? "🧒"}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+
+                {/* Back to the main layer */}
                 <Pressable
-                  key={route.key}
-                  onPress={() => handleSelect(route.name, route.key, isFocused)}
-                  style={[
-                    styles.menuItem,
-                    webCursor,
-                    isFocused && { backgroundColor: pal.bg, borderColor: pal.active + "55" },
-                  ]}
+                  onPress={() => setView("main")}
+                  style={[styles.menuItem, webCursor]}
                   accessibilityRole="button"
-                  accessibilityLabel={label}
-                  accessibilityState={{ selected: isFocused }}
-                  testID={`tab-${route.name}`}
+                  accessibilityLabel={t("nav.back")}
+                  testID="nav-kids-back"
                 >
-                  <Text
-                    style={[
-                      styles.menuLabel,
-                      { color: isFocused ? pal.active : "#3A3A4A", fontWeight: isFocused ? "800" : "600" },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {label}
+                  <Text style={[styles.menuLabel, { color: C_TEXT_MUTED, fontWeight: "600" }]} numberOfLines={1}>
+                    {t("nav.back")}
                   </Text>
-                  <View
-                    style={[
-                      styles.menuIconWrap,
-                      { backgroundColor: isFocused ? pal.active : pal.bg },
-                    ]}
-                  >
-                    <Ionicons
-                      name={TAB_ICONS[route.name] ?? "ellipse-outline"}
-                      size={18}
-                      color={isFocused ? "#FFFFFF" : pal.active}
-                    />
+                  <View style={[styles.menuIconWrap, { backgroundColor: "#EEF0F4" }]}>
+                    <Ionicons name="chevron-back" size={18} color={C_TEXT_MUTED} />
                   </View>
                 </Pressable>
-              );
-            })}
+              </>
+            )}
           </Animated.View>
         )}
 

@@ -23,6 +23,11 @@ const he = {
     settings: "הגדרות",
   },
 
+  // ── Floating nav ──
+  nav: {
+    back: "חזרה",
+  },
+
   // ── Today screen ──
   today: {
     title: "היום",
