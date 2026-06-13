@@ -214,9 +214,8 @@ export default function HomeScreen() {
       notes: notes.length,
       chores: chores.filter((c) => !c.done).length,
       projects: projects.filter((p) => p.status !== "done").length,
-      kids: activeKids.length,
     };
-  }, [familyEvents, grocery, chores, notes, projects, activeKids]);
+  }, [familyEvents, grocery, chores, notes, projects]);
 
   // ── Scroll-to-section: tiles for notes/chores/projects/kids expand the
   //    matching section below and scroll it into view. ──
@@ -226,8 +225,8 @@ export default function HomeScreen() {
     sectionY.current[key] = e.nativeEvent.layout.y;
   };
   const jumpTo = useCallback(
-    (key: "kids" | "notes" | "chores" | "projects") => {
-      if (key !== "kids" && !homeSections[key]) toggleHomeSection(key);
+    (key: "notes" | "chores" | "projects") => {
+      if (!homeSections[key]) toggleHomeSection(key);
       // Defer so an expanding section has laid out before we scroll.
       setTimeout(() => {
         const y = sectionY.current[key];
@@ -333,11 +332,6 @@ export default function HomeScreen() {
             onPress={() => router.push("/today")} testID="tile-today"
           />
           <FeatureTile
-            title={t("home.kids")} emoji="🧒" accent={TILE.kids}
-            subtitle={sub(counts.kids, "home.tileKids", "home.tileKidsZero")}
-            onPress={() => jumpTo("kids")} testID="tile-kids"
-          />
-          <FeatureTile
             title={t("home.notes")} emoji="📝" accent={TILE.notes}
             subtitle={sub(counts.notes, "home.tileNotes", "home.tileNotesZero")}
             onPress={() => jumpTo("notes")} testID="tile-notes"
@@ -352,67 +346,31 @@ export default function HomeScreen() {
             subtitle={sub(counts.projects, "home.tileProjects", "home.tileProjectsZero")}
             onPress={() => jumpTo("projects")} testID="tile-projects"
           />
-        </View>
 
-        {/* -- Kids -- */}
-        <View onLayout={captureY("kids")} />
-        <SectionHeader label={t("home.kids")} />
-        <View style={styles.kidsContainer}>
-          <View style={styles.kidsHeaderRow}>
-            <View style={{ flex: 1 }} />
-            <IconButton
-              icon="plus"
-              size={20}
-              style={styles.kidsAddBtn}
-              onPress={() => {
-                setEditingKid(null);
-                setKidModalOpen(true);
-              }}
+          {/* Each active kid is its own launcher tile → opens their schedule */}
+          {activeKids.map((kid) => (
+            <FeatureTile
+              key={kid.id}
+              title={kid.name}
+              emoji={kid.emoji ?? "🧒"}
+              accent={kid.color ?? TILE.kids}
+              subtitle={t("home.viewSchedule")}
+              onPress={() => router.push(`/kid/${kid.id}`)}
+              testID={`tile-kid-${kid.id}`}
             />
-          </View>
+          ))}
 
-          {activeKids.length === 0 && (
-            <Text variant="bodyMedium" style={{ color: C.textMuted, textAlign: TEXT_RIGHT, fontSize: 14, paddingVertical: S.xs }}>
-              {t("home.noKids")}
-            </Text>
-          )}
-
-          <View style={styles.kidsRow}>
-            {activeKids.map((kid) => (
-              <Pressable
-                key={kid.id}
-                style={({ pressed, hovered }: any) => [
-                  styles.kidCard,
-                  {
-                    backgroundColor: kid.color + "10",
-                    borderColor: kid.color + "30",
-                  },
-                  hovered && {
-                    backgroundColor: kid.color + "20",
-                    borderColor: kid.color + "50",
-                    transform: [{ translateY: -2 }],
-                    ...SHADOW.md,
-                  },
-                  pressed && {
-                    backgroundColor: kid.color + "28",
-                    transform: [{ scale: 0.97 }],
-                  },
-                ]}
-                onPress={() => router.push(`/kid/${kid.id}`)}
-              >
-                <View style={[styles.kidAvatarCircle, { backgroundColor: kid.color + "18" }]}>
-                  <Text style={styles.kidEmoji}>{kid.emoji}</Text>
-                </View>
-                <View style={styles.kidInfo}>
-                  <Text style={[styles.kidName, { color: C.textPrimary }]}>{kid.name}</Text>
-                  <Text style={[styles.kidScheduleHint, { color: kid.color }]}>
-                    {t("home.viewSchedule")}
-                  </Text>
-                </View>
-                <Text style={[styles.kidArrow, { color: kid.color + "90" }]}>‹</Text>
-              </Pressable>
-            ))}
-          </View>
+          {/* Add-kid tile */}
+          <FeatureTile
+            title={t("home.addKid")}
+            emoji="➕"
+            accent={C.textMuted}
+            onPress={() => {
+              setEditingKid(null);
+              setKidModalOpen(true);
+            }}
+            testID="tile-add-kid"
+          />
         </View>
 
         {/* -- Notes -- */}
@@ -835,51 +793,6 @@ const styles = StyleSheet.create({
     gap: S.sm,
     marginBottom: S.xl,
   },
-
-  // Kids
-  kidsContainer: {
-    gap: S.xs,
-  },
-  kidsHeaderRow: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    marginBottom: S.xs,
-  },
-  kidsAddBtn: {
-    margin: 0,
-  },
-  kidsRow: {
-    flexDirection: RTL_ROW,
-    flexWrap: "wrap",
-    gap: S.md,
-  },
-  kidCard: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    paddingVertical: S.lg,
-    paddingHorizontal: S.lg + 4,
-    borderRadius: R.lg,
-    borderWidth: 1,
-    gap: S.md,
-    ...(Platform.OS === "web"
-      ? { minWidth: 160, flex: 1, cursor: "pointer" as any, transition: "all 0.2s ease", ...SHADOW.sm }
-      : { width: "100%" as any }),
-  },
-  kidAvatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  kidEmoji: { fontSize: 26 },
-  kidInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  kidName: { fontWeight: "700", fontSize: 16 },
-  kidScheduleHint: { fontSize: 12, fontWeight: "500" },
-  kidArrow: { fontSize: 20, fontWeight: "700" },
 
   // Notes
   notesContainer: {
