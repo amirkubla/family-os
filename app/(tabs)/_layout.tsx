@@ -14,6 +14,18 @@ export default function TabLayout() {
       <Tabs.Screen name="home" options={{ title: t("tabs.home") }} />
       <Tabs.Screen name="settings" options={{ title: t("tabs.settings") }} />
       <Tabs.Screen
+        name="notes"
+        options={{ href: null, headerShown: true, title: t("home.notes") }}
+      />
+      <Tabs.Screen
+        name="chores"
+        options={{ href: null, headerShown: true, title: t("home.chores") }}
+      />
+      <Tabs.Screen
+        name="projects"
+        options={{ href: null, headerShown: true, title: t("home.projects") }}
+      />
+      <Tabs.Screen
         name="kid/[kidId]"
         options={{
           href: null,
