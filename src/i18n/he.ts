@@ -65,6 +65,23 @@ const he = {
     kids: "ילדים",
     noKids: "אין ילדים — לחצו על + כדי להוסיף",
     viewSchedule: "צפייה במערכת",
+    // Dashboard launcher tiles
+    quickAccess: "גישה מהירה",
+    tileEventsWeek: "{{count}} אירועים השבוע",
+    tileEventsWeekZero: "אין אירועים השבוע",
+    tileGrocery: "{{count}} פריטים לקנייה",
+    tileGroceryZero: "הרשימה ריקה",
+    tileToday: "{{count}} משימות להיום",
+    tileTodayZero: "אין משימות להיום",
+    tileNotes: "{{count}} פתקים",
+    tileNotesZero: "אין פתקים",
+    tileChores: "{{count}} משימות פתוחות",
+    tileChoresZero: "הכל בוצע",
+    tileProjects: "{{count}} פרויקטים פעילים",
+    tileProjectsZero: "אין פרויקטים פעילים",
+    tileKids: "{{count}} ילדים",
+    tileKidsZero: "הוסיפו ילד/ה",
+    greeting: "שלום 👋",
   },
 
   // ── Grocery screen ──

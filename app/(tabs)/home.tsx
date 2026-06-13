@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
 import {
   Text,
@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { useAuthStore } from "@src/auth/useAuthStore";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
@@ -27,11 +28,22 @@ import KidModal from "@src/components/KidModal";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t, statusLabel } from "@src/i18n";
-import FamilyBadge from "@src/components/FamilyBadge";
 import SectionHeader from "@src/components/SectionHeader";
+import FeatureTile from "@src/components/FeatureTile";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { STATUS_COLORS } from "@src/ui/semanticColors";
+
+// Tile accent palette — mirrors the nav tab colours for a cohesive feel.
+const TILE = {
+  calendar: "#3A7BD5",
+  grocery: "#2D9F6F",
+  today: "#C49A2A",
+  notes: "#D97706",
+  chores: "#0D9488",
+  projects: "#6C63FF",
+  kids: "#E0699B",
+};
 
 // Note section colors (warm amber/yellow palette)
 const NOTE_COLORS = {
@@ -168,9 +180,62 @@ export default function HomeScreen() {
   const kids = useFamilyStore((s) => s.kids);
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
 
+  // Extra reads for the dashboard tile live-counts.
+  const grocery = useFamilyStore((s) => s.grocery);
+  const familyEvents = useFamilyStore((s) => s.familyEvents);
+  const familyName = useFamilyStore((s) => s.familyName);
+  const username = useAuthStore((s) => s.session?.user?.username ?? "");
+
   // Collapse/expand state for home sections (persisted in the store).
   const homeSections = useFamilyStore((s) => s.homeSections);
   const toggleHomeSection = useFamilyStore((s) => s.toggleHomeSection);
+
+  // ── Live counts for the launcher tiles ──
+  const counts = useMemo(() => {
+    const today = new Date();
+    const weekEnd = new Date(today);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const ymd = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const todayYMD = ymd(today);
+    const weekEndYMD = ymd(weekEnd);
+
+    // Events this week: all recurring (they fire weekly) + one-time within 7 days.
+    const eventsWeek = familyEvents.filter((e) =>
+      e.isRecurring
+        ? true
+        : !!e.date && e.date >= todayYMD && e.date <= weekEndYMD,
+    ).length;
+
+    return {
+      eventsWeek,
+      grocery: grocery.filter((g) => !g.isBought).length,
+      todayTasks: chores.filter((c) => c.selectedForToday && !c.done).length,
+      notes: notes.length,
+      chores: chores.filter((c) => !c.done).length,
+      projects: projects.filter((p) => p.status !== "done").length,
+      kids: activeKids.length,
+    };
+  }, [familyEvents, grocery, chores, notes, projects, activeKids]);
+
+  // ── Scroll-to-section: tiles for notes/chores/projects/kids expand the
+  //    matching section below and scroll it into view. ──
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionY = useRef<Record<string, number>>({});
+  const captureY = (key: string) => (e: any) => {
+    sectionY.current[key] = e.nativeEvent.layout.y;
+  };
+  const jumpTo = useCallback(
+    (key: "kids" | "notes" | "chores" | "projects") => {
+      if (key !== "kids" && !homeSections[key]) toggleHomeSection(key);
+      // Defer so an expanding section has laid out before we scroll.
+      setTimeout(() => {
+        const y = sectionY.current[key];
+        if (y != null) scrollRef.current?.scrollTo({ y: Math.max(y - 12, 0), animated: true });
+      }, 80);
+    },
+    [homeSections, toggleHomeSection],
+  );
 
   // Modals
   const [noteModalOpen, setNoteModalOpen] = useState(false);
@@ -217,13 +282,80 @@ export default function HomeScreen() {
   const selectedChores = chores.filter((c) => c.selectedForToday);
   const backlogChores = chores.filter((c) => !c.selectedForToday);
 
+  // Tile subtitle helper: "{n} …" or a friendly zero-state string.
+  const sub = (n: number, key: string, zeroKey: string) =>
+    n > 0 ? t(key, { count: n }) : t(zeroKey);
+
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{t("home.title")}</Text>
-        <FamilyBadge />
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
+        {/* ── Header: avatar · family name · settings ── */}
+        <View style={styles.headerRow}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {(username || "·").slice(0, 2)}
+            </Text>
+          </View>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerGreeting}>{t("home.greeting")}</Text>
+            {!!familyName && (
+              <Text style={styles.headerFamily} numberOfLines={1}>
+                {t("familyBadge.prefix")} {familyName}
+              </Text>
+            )}
+          </View>
+          <IconButton
+            icon="cog-outline"
+            size={24}
+            iconColor={C.textSecondary}
+            onPress={() => router.push("/settings")}
+            accessibilityLabel={t("tabs.settings")}
+            testID="home-settings"
+          />
+        </View>
+
+        {/* ── Launcher tile grid ── */}
+        <Text style={styles.gridLabel}>{t("home.quickAccess")}</Text>
+        <View style={styles.grid}>
+          <FeatureTile
+            title={t("tabs.calendar")} emoji="📅" accent={TILE.calendar}
+            subtitle={sub(counts.eventsWeek, "home.tileEventsWeek", "home.tileEventsWeekZero")}
+            onPress={() => router.push("/calendar")} testID="tile-calendar"
+          />
+          <FeatureTile
+            title={t("tabs.grocery")} emoji="🛒" accent={TILE.grocery}
+            subtitle={sub(counts.grocery, "home.tileGrocery", "home.tileGroceryZero")}
+            onPress={() => router.push("/grocery")} testID="tile-grocery"
+          />
+          <FeatureTile
+            title={t("tabs.today")} emoji="☀️" accent={TILE.today}
+            subtitle={sub(counts.todayTasks, "home.tileToday", "home.tileTodayZero")}
+            onPress={() => router.push("/today")} testID="tile-today"
+          />
+          <FeatureTile
+            title={t("home.kids")} emoji="🧒" accent={TILE.kids}
+            subtitle={sub(counts.kids, "home.tileKids", "home.tileKidsZero")}
+            onPress={() => jumpTo("kids")} testID="tile-kids"
+          />
+          <FeatureTile
+            title={t("home.notes")} emoji="📝" accent={TILE.notes}
+            subtitle={sub(counts.notes, "home.tileNotes", "home.tileNotesZero")}
+            onPress={() => jumpTo("notes")} testID="tile-notes"
+          />
+          <FeatureTile
+            title={t("home.chores")} emoji="✅" accent={TILE.chores}
+            subtitle={sub(counts.chores, "home.tileChores", "home.tileChoresZero")}
+            onPress={() => jumpTo("chores")} testID="tile-chores"
+          />
+          <FeatureTile
+            title={t("home.projects")} emoji="🚀" accent={TILE.projects}
+            subtitle={sub(counts.projects, "home.tileProjects", "home.tileProjectsZero")}
+            onPress={() => jumpTo("projects")} testID="tile-projects"
+          />
+        </View>
 
         {/* -- Kids -- */}
+        <View onLayout={captureY("kids")} />
         <SectionHeader label={t("home.kids")} />
         <View style={styles.kidsContainer}>
           <View style={styles.kidsHeaderRow}>
@@ -284,6 +416,7 @@ export default function HomeScreen() {
         </View>
 
         {/* -- Notes -- */}
+        <View onLayout={captureY("notes")} />
         <SectionHeader
           label={t("home.notes")}
           collapsible
@@ -388,6 +521,7 @@ export default function HomeScreen() {
         )}
 
         {/* -- Chores -- */}
+        <View onLayout={captureY("chores")} />
         <SectionHeader
           label={t("home.chores")}
           collapsible
@@ -488,6 +622,7 @@ export default function HomeScreen() {
         )}
 
         {/* -- Projects -- */}
+        <View onLayout={captureY("projects")} />
         <SectionHeader
           label={t("home.projects")}
           collapsible
@@ -647,13 +782,60 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
-  title: {
-    fontSize: 28,
+  // ── Dashboard header ──
+  headerRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.sm,
+    marginBottom: S.lg,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#2AACB4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  headerCenter: {
+    flex: 1,
+  },
+  headerGreeting: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  headerFamily: {
+    fontSize: 19,
     fontWeight: "800",
     color: C.textPrimary,
-    marginBottom: S.lg,
     textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
+
+  // ── Launcher grid ──
+  gridLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: C.textMuted,
+    letterSpacing: 0.6,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    marginBottom: S.sm,
+  },
+  grid: {
+    flexDirection: RTL_ROW,
+    flexWrap: "wrap",
+    gap: S.sm,
+    marginBottom: S.xl,
+  },
+
   // Kids
   kidsContainer: {
     gap: S.xs,
