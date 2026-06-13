@@ -12,7 +12,6 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
-import type { Kid } from "@src/models/kid";
 import {
   toggleNotePinnedRemote,
   deleteNoteRemote,
@@ -24,7 +23,6 @@ import {
 import NoteModal from "@src/components/NoteModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
-import KidModal from "@src/components/KidModal";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t, statusLabel } from "@src/i18n";
@@ -243,8 +241,6 @@ export default function HomeScreen() {
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [kidModalOpen, setKidModalOpen] = useState(false);
-  const [editingKid, setEditingKid] = useState<Kid | null>(null);
   const [showAllNotes, setShowAllNotes] = useState(false);
 
   // Deep-link modal opener: familyos://home?modal=chore|note|project
@@ -346,32 +342,28 @@ export default function HomeScreen() {
             subtitle={sub(counts.projects, "home.tileProjects", "home.tileProjectsZero")}
             onPress={() => jumpTo("projects")} testID="tile-projects"
           />
-
-          {/* Each active kid is its own launcher tile → opens their schedule */}
-          {activeKids.map((kid) => (
-            <FeatureTile
-              key={kid.id}
-              title={kid.name}
-              emoji={kid.emoji ?? "🧒"}
-              accent={kid.color ?? TILE.kids}
-              subtitle={t("home.viewSchedule")}
-              onPress={() => router.push(`/kid/${kid.id}`)}
-              testID={`tile-kid-${kid.id}`}
-            />
-          ))}
-
-          {/* Add-kid tile */}
-          <FeatureTile
-            title={t("home.addKid")}
-            emoji="➕"
-            accent={C.textMuted}
-            onPress={() => {
-              setEditingKid(null);
-              setKidModalOpen(true);
-            }}
-            testID="tile-add-kid"
-          />
         </View>
+
+        {/* ── Kids — clickable tiles, each opens their schedule.
+              Adding/editing kids lives in Settings. ── */}
+        {activeKids.length > 0 && (
+          <>
+            <Text style={styles.gridLabel}>{t("home.kids")}</Text>
+            <View style={styles.grid}>
+              {activeKids.map((kid) => (
+                <FeatureTile
+                  key={kid.id}
+                  title={kid.name}
+                  emoji={kid.emoji ?? "🧒"}
+                  accent={kid.color ?? TILE.kids}
+                  subtitle={t("home.viewSchedule")}
+                  onPress={() => router.push(`/kid/${kid.id}`)}
+                  testID={`tile-kid-${kid.id}`}
+                />
+              ))}
+            </View>
+          </>
+        )}
 
         {/* -- Notes -- */}
         <View onLayout={captureY("notes")} />
@@ -719,14 +711,6 @@ export default function HomeScreen() {
         }}
         editProject={editingProject}
         initialStatus={!editingProject && initialStatus ? (initialStatus as any) : undefined}
-      />
-      <KidModal
-        visible={kidModalOpen}
-        onDismiss={() => {
-          setKidModalOpen(false);
-          setEditingKid(null);
-        }}
-        editKid={editingKid}
       />
       <ConfirmDeleteModal
         visible={confirmVisible}

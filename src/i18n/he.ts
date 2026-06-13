@@ -79,7 +79,6 @@ const he = {
     tileChoresZero: "הכל בוצע",
     tileProjects: "{{count}} פרויקטים פעילים",
     tileProjectsZero: "אין פרויקטים פעילים",
-    addKid: "הוספת ילד/ה",
     greeting: "שלום 👋",
   },
 
