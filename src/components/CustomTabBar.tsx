@@ -1,36 +1,36 @@
 /**
- * CustomTabBar — Premium floating tab bar with per-tab colored highlights.
+ * CustomTabBar — space-saving navigation, all platforms.
  *
- * Features a frosted-glass elevated bar with smooth pill transitions,
- * subtle gradients, and polished hover/active states.
+ * A small circular FAB floats in the bottom-RIGHT corner (screen FABs live
+ * bottom-left, so no collision). Tapping it fans a vertical speed-dial menu
+ * UP over the content; a dimmed backdrop + the FAB (now an ✕) both collapse
+ * it. The bar's root is `position: absolute`, so it is removed from the flex
+ * flow and screens fill the whole height — nothing is permanently reserved
+ * at the bottom.
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Pressable,
   StyleSheet,
   Platform,
+  Animated,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
-// ── Per-tab accent colours ──
+// ── Per-tab accent colours ──────────────────────────────────────────────────
 
-// Premium jewel-tone palette — muted enough for luxury, vivid enough to pop.
-// Designed as a cohesive set: warm gold → cool sapphire → natural emerald
-//   → soft coral → dusty violet. Equal visual weight, no two adjacent clash.
-const TAB_COLORS: Record<string, { active: string; bg: string; hover: string }> = {
-  today:    { active: "#C49A2A", bg: "#FBF5E4", hover: "#FDF9F0" },  // honey gold
-  calendar: { active: "#3A7BD5", bg: "#E8F0FB", hover: "#F2F7FD" },  // sapphire blue
-  grocery:  { active: "#2D9F6F", bg: "#E6F6EF", hover: "#F1FAF6" },  // emerald green
-  home:     { active: "#2AACB4", bg: "#E4F6F7", hover: "#F0FAFB" },  // ocean teal
-  settings: { active: "#8E7CC3", bg: "#F0ECF8", hover: "#F7F5FB" },  // dusty violet
+const TAB_COLORS: Record<string, { active: string; bg: string }> = {
+  today:    { active: "#C49A2A", bg: "#FBF5E4" },  // honey gold
+  calendar: { active: "#3A7BD5", bg: "#E8F0FB" },  // sapphire blue
+  grocery:  { active: "#2D9F6F", bg: "#E6F6EF" },  // emerald green
+  home:     { active: "#2AACB4", bg: "#E4F6F7" },  // ocean teal
+  settings: { active: "#8E7CC3", bg: "#F0ECF8" },  // dusty violet
 };
-
-const INACTIVE_COLOR = "#A8A3B8";
 
 const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   today:    "sunny-outline",
@@ -40,182 +40,219 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   settings: "settings-outline",
 };
 
-// ── Component ──
+const isWeb = Platform.OS === "web";
+const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
+
+// ── Component ─────────────────────────────────────────────────────────────
 
 export default function CustomTabBar({
   state,
   descriptors,
   navigation,
 }: BottomTabBarProps) {
-  // Bottom inset = height of the system navigation area (3-button bar on
-  // Xiaomi/Redmi/Pixel-button-mode, or gesture handle in gesture mode, or the
-  // home indicator on iOS). Without adding it to paddingBottom, the tab bar
-  // visually overlaps with the system buttons when edgeToEdgeEnabled is true.
   const insets = useSafeAreaInsets();
-  // Keep a small floor so the tab bar still has some breathing room on
-  // devices that report 0 insets (e.g. older Androids without a system nav
-  // bar, or web).
-  const bottomPad = Math.max(insets.bottom, Platform.OS === "ios" ? 16 : 6);
+  const bottomPad = Math.max(insets.bottom, 12);
+
+  const [expanded, setExpanded] = useState(false);
+  const anim = useRef(new Animated.Value(0)).current;
+
+  // Native driver is unsupported on web (react-native-web warns + no-ops);
+  // fall back to JS-driven animation there.
+  const SPRING = { useNativeDriver: !isWeb, tension: 240, friction: 22 };
+
+  const expand = useCallback(() => {
+    setExpanded(true);
+    Animated.spring(anim, { toValue: 1, ...SPRING }).start();
+  }, [anim]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const collapse = useCallback(() => {
+    Animated.spring(anim, { toValue: 0, ...SPRING }).start(({ finished }) => {
+      if (finished) setExpanded(false);
+    });
+  }, [anim]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggle = useCallback(() => {
+    if (expanded) collapse();
+    else expand();
+  }, [expanded, expand, collapse]);
+
+  // Active tab → FAB colour + icon
+  const activeRoute = state.routes[state.index];
+  const activeName = activeRoute?.name ?? "home";
+  const activePal = TAB_COLORS[activeName] ?? TAB_COLORS.home;
+  const activeIcon = TAB_ICONS[activeName] ?? "ellipse-outline";
+
+  const handleSelect = useCallback(
+    (routeName: string, routeKey: string, isFocused: boolean) => {
+      const event = navigation.emit({
+        type: "tabPress",
+        target: routeKey,
+        canPreventDefault: true,
+      });
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(routeName);
+      }
+      collapse();
+    },
+    [navigation, collapse],
+  );
+
+  // Only the real tabs (skip href:null screens like kid/customization)
+  const navRoutes = state.routes.filter((r) => r.name in TAB_COLORS);
+
+  const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
+  const menuOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.4, 1] });
+  const menuTranslate = anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
+
   return (
-    <View style={[styles.barOuter, { paddingBottom: bottomPad }]}>
-      <View style={styles.bar}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          if (!(route.name in TAB_COLORS)) return null;
-          const label = options.title ?? route.name;
-          const isFocused = state.index === index;
-          const name = route.name;
-          const palette = TAB_COLORS[name];
-          const iconName = TAB_ICONS[name] ?? "ellipse-outline";
+    <View
+      style={[StyleSheet.absoluteFill, isWeb && ({ position: "fixed" } as any)]}
+      pointerEvents="box-none"
+    >
+      {/* Backdrop — only intercepts touches while expanded */}
+      {expanded && (
+        <Animated.View
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
+          pointerEvents="auto"
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={collapse} />
+        </Animated.View>
+      )}
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: "tabPress",
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
+      {/* Bottom-right anchored column: menu items + FAB */}
+      <View style={[styles.anchor, { bottom: bottomPad }]} pointerEvents="box-none">
+        {/* Speed-dial menu items (above the FAB) */}
+        {expanded && (
+          <Animated.View
+            style={[
+              styles.menu,
+              { opacity: menuOpacity, transform: [{ translateY: menuTranslate }] },
+            ]}
+            pointerEvents="auto"
+          >
+            {navRoutes.map((route) => {
+              const idx = state.routes.indexOf(route);
+              const isFocused = state.index === idx;
+              const pal = TAB_COLORS[route.name];
+              const label = descriptors[route.key]?.options?.title ?? route.name;
+              return (
+                <Pressable
+                  key={route.key}
+                  onPress={() => handleSelect(route.name, route.key, isFocused)}
+                  style={[
+                    styles.menuItem,
+                    webCursor,
+                    isFocused && { backgroundColor: pal.bg, borderColor: pal.active + "55" },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                  accessibilityState={{ selected: isFocused }}
+                  testID={`tab-${route.name}`}
+                >
+                  <Text
+                    style={[
+                      styles.menuLabel,
+                      { color: isFocused ? pal.active : "#3A3A4A", fontWeight: isFocused ? "800" : "600" },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {label}
+                  </Text>
+                  <View
+                    style={[
+                      styles.menuIconWrap,
+                      { backgroundColor: isFocused ? pal.active : pal.bg },
+                    ]}
+                  >
+                    <Ionicons
+                      name={TAB_ICONS[route.name] ?? "ellipse-outline"}
+                      size={18}
+                      color={isFocused ? "#FFFFFF" : pal.active}
+                    />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </Animated.View>
+        )}
 
-          return (
-            <TabItem
-              key={route.key}
-              label={label}
-              routeName={name}
-              iconName={iconName}
-              isFocused={isFocused}
-              palette={palette}
-              onPress={onPress}
-            />
-          );
-        })}
+        {/* The FAB — toggles open/close */}
+        <Pressable
+          onPress={toggle}
+          style={[
+            styles.fab,
+            webCursor,
+            { backgroundColor: expanded ? "#3A3A4A" : activePal.active },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={expanded ? "סגור תפריט ניווט" : "פתח תפריט ניווט"}
+          accessibilityState={{ expanded }}
+          testID="nav-fab"
+        >
+          <Ionicons name={expanded ? "close" : activeIcon} size={26} color="#FFFFFF" />
+        </Pressable>
       </View>
     </View>
   );
 }
 
-// ── Single tab item ──
-
-interface TabItemProps {
-  label: string;
-  routeName: string;
-  iconName: keyof typeof Ionicons.glyphMap;
-  isFocused: boolean;
-  palette: { active: string; bg: string; hover: string };
-  onPress: () => void;
-}
-
-function TabItem({ label, routeName, iconName, isFocused, palette, onPress }: TabItemProps) {
-  const [hovered, setHovered] = useState(false);
-
-  const webHover = Platform.OS === "web"
-    ? {
-        onMouseEnter: () => setHovered(true),
-        onMouseLeave: () => setHovered(false),
-      }
-    : {};
-
-  const pillBg = isFocused
-    ? palette.bg
-    : hovered
-      ? palette.hover
-      : "transparent";
-
-  const iconColor = isFocused || hovered ? palette.active : INACTIVE_COLOR;
-  const textColor = isFocused ? palette.active : hovered ? palette.active : INACTIVE_COLOR;
-  return (
-    <Pressable
-      onPress={onPress}
-      style={styles.tabWrapper}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: isFocused }}
-      testID={`tab-${routeName}`}
-      {...webHover}
-    >
-      <View
-        style={[
-          styles.pill,
-          { backgroundColor: pillBg },
-          isFocused && styles.pillActive,
-          hovered && !isFocused && styles.pillHover,
-        ]}
-      >
-        <Ionicons name={iconName} size={22} color={iconColor} />
-        <Text
-          style={[
-            styles.label,
-            {
-              color: textColor,
-              fontWeight: isFocused ? "700" : "500",
-              opacity: isFocused ? 1 : hovered ? 0.9 : 0.7,
-            },
-          ]}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-// ── Styles ──
+// ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  barOuter: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 8,
-    // paddingBottom is set dynamically per device — see useSafeAreaInsets()
-    // in the component above.
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15,15,30,0.18)",
   },
-  bar: {
-    flexDirection: "row",
+  anchor: {
+    position: "absolute",
+    right: 16,
+    alignItems: "flex-end",
+    // bottom set inline from safe-area inset
+  },
+  menu: {
+    alignItems: "flex-end",
+    gap: 10,
+    marginBottom: 12,
+  },
+  menuItem: {
+    flexDirection: "row", // label (left) + icon circle (right, near edge)
+    alignItems: "center",
+    gap: 10,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    // Elevated shadow
-    shadowColor: "#1E293B",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 12,
-    // Subtle top border
-    borderWidth: 1,
-    borderColor: "rgba(226, 232, 240, 0.6)",
-  },
-  tabWrapper: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
-  },
-  pill: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingStart: 16,
     borderRadius: 999,
-    width: "90%",
-    overflow: "hidden",
-    gap: 3,
-    ...(Platform.OS === "web"
-      ? { transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)" } as any
-      : {}),
+    borderWidth: 1,
+    borderColor: "rgba(226, 232, 240, 0.7)",
+    shadowColor: "#1E293B",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  pillActive: {
-    transform: [{ scale: 1.05 }],
+  menuLabel: {
+    fontSize: 14,
+    writingDirection: "rtl",
+    textAlign: "right",
   },
-  pillHover: {
-    transform: [{ scale: 1.02 }],
+  menuIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  label: {
-    fontSize: 11,
-    letterSpacing: 0.2,
-    textAlign: "center",
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#1E293B",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 12,
   },
 });
