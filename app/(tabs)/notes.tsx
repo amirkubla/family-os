@@ -15,6 +15,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
 import { toggleNotePinnedRemote, deleteNoteRemote } from "@src/lib/sync/remoteCrud";
 import NoteModal from "@src/components/NoteModal";
+import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t } from "@src/i18n";
@@ -54,7 +55,8 @@ export default function NotesScreen() {
   }, [modal]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+      <PageHeader title={t("home.notes")} />
       <ScrollView contentContainerStyle={styles.container}>
         {notes.length === 0 && (
           <View style={styles.emptyState}>

@@ -15,6 +15,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Project } from "@src/models/project";
 import { deleteProjectRemote } from "@src/lib/sync/remoteCrud";
 import ProjectModal from "@src/components/ProjectModal";
+import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t, statusLabel } from "@src/i18n";
@@ -47,7 +48,8 @@ export default function ProjectsScreen() {
   }, [modal]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+      <PageHeader title={t("home.projects")} />
       <ScrollView contentContainerStyle={styles.container}>
         {projects.length > 0 && (
           <View style={styles.statsRow}>

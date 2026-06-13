@@ -19,6 +19,7 @@ import {
   deleteChoreRemote,
 } from "@src/lib/sync/remoteCrud";
 import ChoreAddModal from "@src/components/ChoreAddModal";
+import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t } from "@src/i18n";
@@ -127,7 +128,8 @@ export default function ChoresScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+      <PageHeader title={t("home.chores")} />
       <ScrollView contentContainerStyle={styles.container}>
         {chores.length > 0 && (
           <View style={styles.statsRow}>
