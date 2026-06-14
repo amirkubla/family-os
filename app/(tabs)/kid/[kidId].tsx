@@ -37,6 +37,8 @@ import {
   deleteFamilyEventRemote,
   deleteNoteRemote,
   deleteProjectRemote,
+  reorderNotesRemote,
+  reorderProjectsRemote,
 } from "@src/lib/sync/remoteCrud";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
@@ -315,16 +317,46 @@ export default function KidScheduleScreen() {
   const [notesExpanded, setNotesExpanded] = useState(true);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
 
-  // This kid's notes + projects (kidId === kidId).
+  // This kid's notes + projects (kidId === kidId), in manual sortOrder.
   const allNotes = useFamilyStore((s) => s.notes);
   const kidNotes = useMemo(
-    () => allNotes.filter((n) => n.kidId === kidId),
+    () =>
+      allNotes
+        .filter((n) => n.kidId === kidId)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [allNotes, kidId],
   );
   const allProjects = useFamilyStore((s) => s.projects);
   const kidProjects = useMemo(
-    () => allProjects.filter((p) => p.kidId === kidId),
+    () =>
+      allProjects
+        .filter((p) => p.kidId === kidId)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [allProjects, kidId],
+  );
+
+  // Up/down reorder for the kid's notes/projects. (Drag isn't used here —
+  // these lists are nested in the calendar scroll, where nested drag is
+  // unreliable; arrows work regardless of layout.)
+  const moveKidNote = useCallback(
+    (index: number, dir: -1 | 1) => {
+      const j = index + dir;
+      if (j < 0 || j >= kidNotes.length) return;
+      const next = [...kidNotes];
+      [next[index], next[j]] = [next[j], next[index]];
+      reorderNotesRemote(next.map((n) => n.id));
+    },
+    [kidNotes],
+  );
+  const moveKidProject = useCallback(
+    (index: number, dir: -1 | 1) => {
+      const j = index + dir;
+      if (j < 0 || j >= kidProjects.length) return;
+      const next = [...kidProjects];
+      [next[index], next[j]] = [next[j], next[index]];
+      reorderProjectsRemote(next.map((p) => p.id));
+    },
+    [kidProjects],
   );
 
   const openAdd = (dayOfWeek?: number) => {
@@ -558,7 +590,7 @@ export default function KidScheduleScreen() {
                   <Text style={styles.emptyText}>{t("kid.noNotes")}</Text>
                 ) : (
                   <View style={styles.notesGrid}>
-                    {kidNotes.map((note) => (
+                    {kidNotes.map((note, index) => (
                       <Pressable
                         key={note.id}
                         style={({ pressed, hovered }: any) => [
@@ -571,12 +603,28 @@ export default function KidScheduleScreen() {
                           setNoteModalOpen(true);
                         }}
                       >
-                        {/* Top row: 📝 icon + delete */}
+                        {/* Top row: 📝 icon + reorder + delete */}
                         <View style={styles.noteTopRow}>
                           <View style={styles.noteIcon}>
                             <Text style={{ fontSize: 18 }}>📝</Text>
                           </View>
                           <View style={{ flex: 1 }} />
+                          <IconButton
+                            icon="chevron-up"
+                            size={16}
+                            disabled={index === 0}
+                            iconColor={C.textMuted}
+                            style={styles.noteActionBtn}
+                            onPress={() => moveKidNote(index, -1)}
+                          />
+                          <IconButton
+                            icon="chevron-down"
+                            size={16}
+                            disabled={index === kidNotes.length - 1}
+                            iconColor={C.textMuted}
+                            style={styles.noteActionBtn}
+                            onPress={() => moveKidNote(index, 1)}
+                          />
                           <IconButton
                             icon="trash-can-outline"
                             size={16}
@@ -628,7 +676,7 @@ export default function KidScheduleScreen() {
                   <Text style={styles.emptyText}>{t("kid.noProjects")}</Text>
                 ) : (
                   <View style={styles.projectsContainer}>
-                    {kidProjects.map((proj) => {
+                    {kidProjects.map((proj, index) => {
                       const statusColor = STATUS_COLORS[proj.status];
                       const statusEmoji = proj.status === "done" ? "✅" : proj.status === "in_progress" ? "🔨" : "💡";
                       return (
@@ -657,6 +705,22 @@ export default function KidScheduleScreen() {
                                 </Text>
                               </View>
                               <View style={{ flex: 1 }} />
+                              <IconButton
+                                icon="chevron-up"
+                                size={16}
+                                disabled={index === 0}
+                                iconColor={C.textMuted}
+                                style={styles.projectActionBtn}
+                                onPress={() => moveKidProject(index, -1)}
+                              />
+                              <IconButton
+                                icon="chevron-down"
+                                size={16}
+                                disabled={index === kidProjects.length - 1}
+                                iconColor={C.textMuted}
+                                style={styles.projectActionBtn}
+                                onPress={() => moveKidProject(index, 1)}
+                              />
                               <IconButton
                                 icon="trash-can-outline"
                                 size={16}
