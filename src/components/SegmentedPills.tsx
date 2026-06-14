@@ -1,18 +1,18 @@
 /**
- * SegmentedPills — modern iOS/Linear-style segmented control.
+ * SegmentedPills — modern category selector, "colored chips" style (Option B).
  *
- * A soft rounded track with the active segment rendered as a clean white
- * pill (subtle shadow). Optional emoji per option. RTL-aware.
- *
- * Built generic (string values) so it can replace the Paper SegmentedButtons
- * across the app — grocery categories, calendar month/week/day, etc.
+ * Each option is its own rounded pill. The active one fills with its category
+ * colour (light tint + matching strong text/icon); inactive pills are ghosted
+ * (transparent + hairline border + muted text). Optional emoji per option.
+ * RTL-aware and generic (string values) so it can replace the Paper
+ * SegmentedButtons across the app.
  */
 
 import React from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { Text } from "react-native-paper";
 
-import { C, R, S, SHADOW } from "@src/ui/tokens";
+import { C, S } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 
 export interface SegmentOption {
@@ -20,6 +20,8 @@ export interface SegmentOption {
   label: string;
   /** Optional leading emoji (e.g. "🛒"). */
   emoji?: string;
+  /** Strong accent colour for the active state. Falls back to a default. */
+  color?: string;
 }
 
 interface Props {
@@ -30,14 +32,14 @@ interface Props {
   testIDPrefix?: string;
 }
 
-// Track sits just below the page bg so the white active pill pops.
-const TRACK_BG = "#E8E8EE";
+const DEFAULT_COLOR = C.selectText;
 
 export default function SegmentedPills({ value, onChange, options, testIDPrefix }: Props) {
   return (
-    <View style={styles.track}>
+    <View style={styles.row}>
       {options.map((opt) => {
         const active = opt.value === value;
+        const accent = opt.color ?? DEFAULT_COLOR;
         return (
           <Pressable
             key={opt.value}
@@ -47,15 +49,20 @@ export default function SegmentedPills({ value, onChange, options, testIDPrefix 
             accessibilityLabel={opt.label}
             testID={testIDPrefix ? `${testIDPrefix}-${opt.value}` : undefined}
             style={({ pressed, hovered }: any) => [
-              styles.segment,
-              active && styles.segmentActive,
-              hovered && !active && styles.segmentHover,
+              styles.chip,
+              active
+                ? { backgroundColor: accent + "22", borderColor: accent + "55" }
+                : { borderColor: C.border },
+              hovered && !active && { backgroundColor: C.hoverBg },
               pressed && { opacity: 0.85 },
             ]}
           >
             {opt.emoji ? <Text style={styles.emoji}>{opt.emoji}</Text> : null}
             <Text
-              style={[styles.label, active ? styles.labelActive : styles.labelInactive]}
+              style={[
+                styles.label,
+                { color: active ? accent : C.textSecondary, fontWeight: active ? "700" : "500" },
+              ]}
               numberOfLines={1}
             >
               {opt.label}
@@ -68,31 +75,22 @@ export default function SegmentedPills({ value, onChange, options, testIDPrefix 
 }
 
 const styles = StyleSheet.create({
-  track: {
+  row: {
     flexDirection: RTL_ROW,
-    backgroundColor: TRACK_BG,
-    borderRadius: 999,
-    padding: 4,
-    gap: 2,
+    gap: S.sm,
   },
-  segment: {
+  chip: {
     flex: 1,
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderRadius: 999,
+    borderWidth: 1,
     ...(Platform.OS === "web"
-      ? ({ cursor: "pointer", transition: "background-color 0.15s ease" } as any)
+      ? ({ cursor: "pointer", transition: "all 0.15s ease" } as any)
       : {}),
-  },
-  segmentActive: {
-    backgroundColor: C.surface,
-    ...SHADOW.sm,
-  },
-  segmentHover: {
-    backgroundColor: "rgba(255,255,255,0.45)",
   },
   emoji: {
     fontSize: 15,
@@ -101,13 +99,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
-  },
-  labelActive: {
-    color: C.textPrimary,
-    fontWeight: "700",
-  },
-  labelInactive: {
-    color: C.textSecondary,
-    fontWeight: "500",
   },
 });

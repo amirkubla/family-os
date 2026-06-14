@@ -127,10 +127,16 @@ export default function GroceryScreen() {
     health: "💊",
     home: "🏠",
   };
+  const CATEGORY_COLOR: Record<ShoppingCategory, string> = {
+    grocery: "#2D9F6F", // green
+    health: "#2AACB4",  // teal
+    home: "#D97706",    // amber
+  };
   const segmentOptions = SHOPPING_CATEGORIES.map((cat) => ({
     value: cat,
     label: shoppingCategoryLabel(cat),
     emoji: CATEGORY_EMOJI[cat],
+    color: CATEGORY_COLOR[cat],
   }));
 
   return (
