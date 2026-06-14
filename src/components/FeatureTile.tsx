@@ -90,9 +90,9 @@ const styles = StyleSheet.create({
     borderRadius: R.lg,
     borderWidth: 1,
     borderColor: "rgba(226, 232, 240, 0.7)",
-    paddingVertical: S.md,
+    paddingVertical: S.lg,
     paddingHorizontal: S.md,
-    minHeight: 84,
+    minHeight: 120,
     ...SHADOW.sm,
     ...(Platform.OS === "web"
       ? ({ cursor: "pointer", transition: "all 0.18s ease" } as any)
@@ -125,13 +125,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   iconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
   emoji: {
-    fontSize: 26,
+    fontSize: 30,
   },
 });
