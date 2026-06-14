@@ -23,16 +23,19 @@ import { syncAll } from "@src/lib/sync/syncEngine";
 import {
   toggleChoreDoneRemote,
   deleteChoreRemote,
+  toggleNotePinnedRemote,
+  deleteNoteRemote,
+  deleteProjectRemote,
   updateFamilyEventRemote,
   updateScheduleBlockRemote,
 } from "@src/lib/sync/remoteCrud";
-import { t, LOCALE, blockTypeLabel, assigneeTypeLabel } from "@src/i18n";
+import { t, LOCALE, blockTypeLabel, assigneeTypeLabel, statusLabel } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { C, S, R } from "@src/ui/tokens";
+import { C, S, R, SHADOW } from "@src/ui/tokens";
+import { STATUS_COLORS } from "@src/ui/semanticColors";
 import { formatDateHe } from "@src/components/DatePicker";
-import PinnedNotesCarousel from "@src/components/PinnedNotesCarousel";
-import ActiveProjectsCarousel from "@src/components/ActiveProjectsCarousel";
+import SectionHeader from "@src/components/SectionHeader";
 import NoteModal from "@src/components/NoteModal";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
@@ -56,6 +59,19 @@ const ASSIGNEE_COLORS: Record<AssigneeType, string> = {
 
 // Header background — soft sky blue inspired by the reference app
 const HEADER_BG = "#D6ECFA";
+
+// Note + project card palettes (mirror the dedicated pages).
+const NOTE_COLORS = {
+  accent: "#D97706",
+  bg: "#FFFBF0",
+  border: "#F5E6C8",
+  barDefault: "#E8D5B0",
+} as const;
+const PROJECT_COLORS = {
+  accent: "#6C63FF",
+  bg: "#F8F7FF",
+  border: "#E8E5FF",
+} as const;
 
 // ---------------------------------------------------------------------------
 // Unified item type for the merged list
@@ -86,6 +102,8 @@ export default function TodayScreen() {
   const lastSyncedAt = useFamilyStore((s) => s.lastSyncedAt);
 
   const [syncing, setSyncing] = useState(false);
+  const [notesExpanded, setNotesExpanded] = useState(true);
+  const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [eventModalOpen, setEventModalOpen] = useState(false);
@@ -354,47 +372,138 @@ export default function TodayScreen() {
           </View>
         </Card>
 
-        {/* ── Pinned notes carousel ── */}
+        {/* ── Pinned notes — collapsible, single column ── */}
         {pinnedNotesList.length > 0 && (
           <>
-            <View style={styles.premiumHeader}>
-              <View style={[styles.premiumAccent, { backgroundColor: C.amber }]} />
-              <Text style={styles.premiumLabel}>{t("today.pinnedNotes")}</Text>
-              <View style={styles.premiumLine} />
-            </View>
-            <PinnedNotesCarousel
-              notes={pinnedNotesList}
-              onNotePress={(note) => {
-                setEditingNote(note);
-                setNoteModalOpen(true);
-              }}
-              onAddPress={() => {
-                setEditingNote(null);
-                setNoteModalOpen(true);
-              }}
+            <SectionHeader
+              label={t("today.pinnedNotes")}
+              collapsible
+              expanded={notesExpanded}
+              onToggle={() => setNotesExpanded((v) => !v)}
             />
+            {notesExpanded && (
+              <View style={styles.cardCol}>
+                {pinnedNotesList.map((note) => (
+                  <Pressable
+                    key={note.id}
+                    style={({ pressed, hovered }: any) => [
+                      styles.noteCard,
+                      hovered && styles.cardHover,
+                      pressed && { transform: [{ scale: 0.98 }] },
+                    ]}
+                    onPress={() => {
+                      setEditingNote(note);
+                      setNoteModalOpen(true);
+                    }}
+                  >
+                    <View style={styles.noteTopRow}>
+                      <View style={styles.noteIcon}>
+                        <Text style={{ fontSize: 18 }}>📌</Text>
+                      </View>
+                      <View style={{ flex: 1 }} />
+                      <IconButton
+                        icon="pin-off"
+                        size={16}
+                        iconColor={NOTE_COLORS.accent}
+                        style={styles.cardActionBtn}
+                        onPress={() => toggleNotePinnedRemote(note.id)}
+                      />
+                      <IconButton
+                        icon="trash-can-outline"
+                        size={16}
+                        iconColor={C.textMuted}
+                        style={styles.cardActionBtn}
+                        onPress={() => requestDelete(() => deleteNoteRemote(note.id))}
+                      />
+                    </View>
+                    <Text style={styles.noteTitle} numberOfLines={1}>
+                      {note.title || t("home.note")}
+                    </Text>
+                    {note.body ? (
+                      <Text style={styles.noteBody} numberOfLines={3}>
+                        {note.body}
+                      </Text>
+                    ) : null}
+                    <View style={styles.noteAccentBar} />
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </>
         )}
 
-        {/* ── Active projects carousel ── */}
+        {/* ── Active projects — collapsible, single column ── */}
         {activeProjectsList.length > 0 && (
           <>
-            <View style={styles.premiumHeader}>
-              <View style={[styles.premiumAccent, { backgroundColor: C.purple }]} />
-              <Text style={styles.premiumLabel}>{t("today.activeProjects")}</Text>
-              <View style={styles.premiumLine} />
-            </View>
-            <ActiveProjectsCarousel
-              projects={activeProjectsList}
-              onProjectPress={(project) => {
-                setEditingProject(project);
-                setProjectModalOpen(true);
-              }}
-              onAddPress={() => {
-                setEditingProject(null);
-                setProjectModalOpen(true);
-              }}
+            <SectionHeader
+              label={t("today.activeProjects")}
+              collapsible
+              expanded={projectsExpanded}
+              onToggle={() => setProjectsExpanded((v) => !v)}
             />
+            {projectsExpanded && (
+              <View style={styles.cardCol}>
+                {activeProjectsList.map((proj) => {
+                  const statusColor = STATUS_COLORS[proj.status];
+                  const statusEmoji = proj.status === "done" ? "✅" : proj.status === "in_progress" ? "🔨" : "💡";
+                  return (
+                    <Pressable
+                      key={proj.id}
+                      style={({ pressed, hovered }: any) => [
+                        styles.projectCard,
+                        hovered && styles.cardHover,
+                        pressed && { transform: [{ scale: 0.98 }] },
+                      ]}
+                      onPress={() => {
+                        setEditingProject(proj);
+                        setProjectModalOpen(true);
+                      }}
+                    >
+                      <View style={[styles.projectStripe, { backgroundColor: statusColor }]} />
+                      <View style={styles.projectBody}>
+                        <View style={styles.projectTopRow}>
+                          <View style={[styles.projectStatusChip, { backgroundColor: statusColor + "18" }]}>
+                            <Text style={{ fontSize: 12 }}>{statusEmoji}</Text>
+                            <Text style={[styles.projectStatusText, { color: statusColor }]}>
+                              {statusLabel(proj.status)}
+                            </Text>
+                          </View>
+                          <View style={{ flex: 1 }} />
+                          <IconButton
+                            icon="trash-can-outline"
+                            size={16}
+                            iconColor={C.textMuted}
+                            style={styles.cardActionBtn}
+                            onPress={() => requestDelete(() => deleteProjectRemote(proj.id))}
+                          />
+                        </View>
+                        <Text style={styles.projectTitle} numberOfLines={1}>
+                          {proj.title}
+                        </Text>
+                        {proj.description ? (
+                          <Text style={styles.projDesc} numberOfLines={2}>
+                            {proj.description}
+                          </Text>
+                        ) : null}
+                        <View style={styles.projectProgressRow}>
+                          <View style={styles.projectProgressTrack}>
+                            <View
+                              style={[
+                                styles.projectProgressFill,
+                                { backgroundColor: statusColor, width: `${proj.progress}%` as any },
+                              ]}
+                            />
+                          </View>
+                          <Text style={[styles.projectProgressLabel, { color: statusColor }]}>
+                            {proj.progress}%
+                          </Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
           </>
         )}
 
@@ -598,6 +707,97 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: C.border,
   },
+
+  // ── Notes / projects cards (single column, mirror dedicated pages) ──
+  cardCol: { gap: S.md, marginBottom: S.md },
+  cardHover: { transform: [{ translateY: -2 }], ...SHADOW.md },
+  cardActionBtn: { margin: 0, width: 28, height: 28 },
+  noteCard: {
+    backgroundColor: NOTE_COLORS.bg,
+    borderWidth: 1,
+    borderColor: NOTE_COLORS.border,
+    borderRadius: R.lg,
+    padding: S.lg,
+    overflow: "hidden",
+    ...SHADOW.sm,
+    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+  },
+  noteTopRow: { flexDirection: RTL_ROW, alignItems: "center", marginBottom: S.sm },
+  noteIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: NOTE_COLORS.accent + "14",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noteTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    marginBottom: 4,
+  },
+  noteBody: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    lineHeight: 19,
+  },
+  noteAccentBar: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: NOTE_COLORS.barDefault,
+    marginTop: S.md,
+  },
+  projectCard: {
+    flexDirection: RTL_ROW,
+    backgroundColor: PROJECT_COLORS.bg,
+    borderWidth: 1,
+    borderColor: PROJECT_COLORS.border,
+    borderRadius: R.lg,
+    overflow: "hidden",
+    ...SHADOW.sm,
+    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+  },
+  projectStripe: { width: 5, alignSelf: "stretch" },
+  projectBody: { flex: 1, padding: S.lg, gap: S.xs },
+  projectTopRow: { flexDirection: RTL_ROW, alignItems: "center", marginBottom: S.xs },
+  projectStatusChip: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: S.sm + 2,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  projectStatusText: { fontSize: 11, fontWeight: "700" },
+  projectTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  projDesc: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    lineHeight: 19,
+  },
+  projectProgressRow: { flexDirection: RTL_ROW, alignItems: "center", gap: S.sm, marginTop: S.sm },
+  projectProgressTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: PROJECT_COLORS.accent + "15",
+    overflow: "hidden",
+  },
+  projectProgressFill: { height: 6, borderRadius: 3 },
+  projectProgressLabel: { fontSize: 12, fontWeight: "700", minWidth: 36, textAlign: "left" },
 
   // ── Chores divider ─────────────────────────────────────────────────────────
   choresDivider: {
