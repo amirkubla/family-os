@@ -129,7 +129,7 @@ export default function MonthCalendar({
       {/* Day-of-week labels */}
       <View style={styles.weekRow}>
         {DAY_LABELS.map((d, i) => (
-          <View key={i} style={styles.cell}>
+          <View key={i} style={styles.labelCell}>
             <Text variant="labelSmall" style={styles.dayLabel}>
               {d}
             </Text>
@@ -150,33 +150,32 @@ export default function MonthCalendar({
             const mark = markedDates?.[cell.ymd];
 
             return (
-              <Pressable
-                key={ci}
-                style={[
-                  styles.cell,
-                  styles.dayCell,
-                  isSelected && { backgroundColor: accentColor },
-                  isToday && !isSelected && styles.todayCell,
-                ]}
-                onPress={() => onSelectDate(cell.ymd)}
-              >
-                <Text
+              <Pressable key={ci} style={styles.cell} onPress={() => onSelectDate(cell.ymd)}>
+                <View
                   style={[
-                    styles.dayNum,
-                    isSelected && styles.selectedText,
-                    isToday && !isSelected && { color: accentColor },
+                    styles.daySquare,
+                    isSelected && { backgroundColor: accentColor },
+                    isToday && !isSelected && styles.todayCell,
                   ]}
                 >
-                  {cell.day}
-                </Text>
-                {mark && (
-                  <View
+                  <Text
                     style={[
-                      styles.dot,
-                      { backgroundColor: mark.dotColor ?? accentColor },
+                      styles.dayNum,
+                      isSelected && styles.selectedText,
+                      isToday && !isSelected && { color: accentColor },
                     ]}
-                  />
-                )}
+                  >
+                    {cell.day}
+                  </Text>
+                  {mark && (
+                    <View
+                      style={[
+                        styles.dot,
+                        { backgroundColor: mark.dotColor ?? accentColor },
+                      ]}
+                    />
+                  )}
+                </View>
               </Pressable>
             );
           })}
@@ -186,7 +185,12 @@ export default function MonthCalendar({
   );
 }
 
-const CELL_SIZE = 40;
+// Taller rows so the month grid fills ~the same height as the week/day
+// time grids. The selected/today indicator is a fixed-size circle centred
+// in each (taller) row, so enlarging rows doesn't bloat the indicator.
+const ROW_HEIGHT = 72;
+const LABEL_HEIGHT = 28;
+const DAY_SIZE = 42;
 
 const styles = StyleSheet.create({
   root: { paddingHorizontal: 4 },
@@ -198,23 +202,35 @@ const styles = StyleSheet.create({
   },
   monthLabel: { fontWeight: "700", color: "#1A1A2E", textAlign: "center" },
   weekRow: { flexDirection: RTL_ROW },
+  labelCell: {
+    flex: 1,
+    height: LABEL_HEIGHT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   cell: {
     flex: 1,
-    height: CELL_SIZE,
+    height: ROW_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
   },
   dayLabel: { color: "#8E8BA8", fontWeight: "600", textAlign: "center" },
-  dayCell: { borderRadius: CELL_SIZE / 2, marginVertical: 1 },
+  daySquare: {
+    width: DAY_SIZE,
+    height: DAY_SIZE,
+    borderRadius: DAY_SIZE / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   todayCell: {
     borderWidth: 1.5,
     borderColor: "#6C63FF",
   },
-  dayNum: { fontSize: 14, fontWeight: "500", color: "#1A1A2E", textAlign: "center" },
+  dayNum: { fontSize: 15, fontWeight: "500", color: "#1A1A2E", textAlign: "center" },
   selectedText: { color: "#FFFFFF", fontWeight: "700" },
   dot: {
     position: "absolute",
-    bottom: 4,
+    bottom: 3,
     width: 5,
     height: 5,
     borderRadius: 2.5,
