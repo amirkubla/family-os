@@ -125,13 +125,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   iconBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   emoji: {
-    fontSize: 30,
+    fontSize: 26,
   },
 });
