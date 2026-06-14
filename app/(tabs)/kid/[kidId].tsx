@@ -11,10 +11,10 @@ import {
   Card,
   IconButton,
   Chip,
-  SegmentedButtons,
   FAB,
 } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import SegmentedPills from "@src/components/SegmentedPills";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 
@@ -475,31 +475,34 @@ export default function KidScheduleScreen() {
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
         <ScrollView contentContainerStyle={styles.container}>
           {/* Tabs */}
-          <SegmentedButtons
-            value={tab}
-            onValueChange={setTab}
-            buttons={[
-              { value: "calendar", label: t("kid.calendar") },
-              { value: "template", label: t("kid.template") },
-            ]}
-            style={styles.tabs}
-          />
+          <View style={styles.tabs}>
+            <SegmentedPills
+              value={tab}
+              onChange={setTab}
+              options={[
+                { value: "calendar", label: t("kid.calendar"), color: kidColor },
+                { value: "template", label: t("kid.template"), color: kidColor },
+              ]}
+              testIDPrefix="kid-tab"
+            />
+          </View>
 
           {/* --- Calendar View (month / week / day) --- */}
           {tab === "calendar" && (
             <>
               {/* Month / Week / Day sub-toggle — mirrors the main /calendar */}
-              <SegmentedButtons
-                value={calendarView}
-                onValueChange={(v) => setCalendarView(v as CalendarView)}
-                buttons={[
-                  { value: "month", label: t("calendar.monthView"), checkedColor: C.selectText, uncheckedColor: C.textSecondary },
-                  { value: "week", label: t("calendar.weekView"), checkedColor: C.selectText, uncheckedColor: C.textSecondary },
-                  { value: "day", label: t("calendar.dayView"), checkedColor: C.selectText, uncheckedColor: C.textSecondary },
-                ]}
-                style={styles.viewToggle}
-                theme={{ colors: { secondaryContainer: C.selectBg, onSecondaryContainer: C.selectText } }}
-              />
+              <View style={styles.viewToggle}>
+                <SegmentedPills
+                  value={calendarView}
+                  onChange={(v) => setCalendarView(v as CalendarView)}
+                  options={[
+                    { value: "month", label: t("calendar.monthView"), color: kidColor },
+                    { value: "week", label: t("calendar.weekView"), color: kidColor },
+                    { value: "day", label: t("calendar.dayView"), color: kidColor },
+                  ]}
+                  testIDPrefix="kid-view"
+                />
+              </View>
 
               <Card style={styles.card} mode="elevated">
                 <Card.Content>

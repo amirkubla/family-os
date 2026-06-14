@@ -5,7 +5,8 @@
 
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Text, TextInput, Button, SegmentedButtons } from "react-native-paper";
+import { Text, TextInput, Button } from "react-native-paper";
+import SegmentedPills from "@src/components/SegmentedPills";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,7 +19,7 @@ import { RTL_ROW } from "@src/ui/rtl";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, blockTypeLabel } from "@src/i18n";
-import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
+import { MS } from "@src/ui/modalStyles";
 import ModalWrapper from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
 import DatePicker from "./DatePicker";
@@ -266,16 +267,16 @@ export default function ScheduleBlockModal({
           <Text style={MS.sectionIcon}>{isRecurring ? "🔄" : "1️⃣"}</Text>
           <Text style={MS.sectionLabel}>{t("blockModal.schedule")}</Text>
         </View>
-        <SegmentedButtons
-          value={isRecurring ? "recurring" : "oneTime"}
-          onValueChange={(v) => setValue("isRecurring", v === "recurring")}
-          buttons={[
-            { value: "recurring", label: t("blockModal.recurring"), ...SEGMENT_COLORS },
-            { value: "oneTime", label: t("blockModal.oneTime"), ...SEGMENT_COLORS },
-          ]}
-          style={MS.segmented}
-          theme={SEGMENT_THEME}
-        />
+        <View style={MS.segmented}>
+          <SegmentedPills
+            value={isRecurring ? "recurring" : "oneTime"}
+            onChange={(v) => setValue("isRecurring", v === "recurring")}
+            options={[
+              { value: "recurring", label: t("blockModal.recurring") },
+              { value: "oneTime", label: t("blockModal.oneTime") },
+            ]}
+          />
+        </View>
 
         {isRecurring && (
           <>

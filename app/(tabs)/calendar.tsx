@@ -12,9 +12,9 @@ import {
   Text,
   IconButton,
   FAB,
-  SegmentedButtons,
 } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import SegmentedPills from "@src/components/SegmentedPills";
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -314,18 +314,19 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Month / Week toggle */}
-        <SegmentedButtons
-          value={calendarView}
-          onValueChange={(v) => setCalendarView(v as CalendarView)}
-          buttons={[
-            { value: "month", label: t("calendar.monthView"), checkedColor: C.selectText, uncheckedColor: C.textSecondary },
-            { value: "week", label: t("calendar.weekView"), checkedColor: C.selectText, uncheckedColor: C.textSecondary },
-            { value: "day", label: t("calendar.dayView"), checkedColor: C.selectText, uncheckedColor: C.textSecondary },
-          ]}
-          style={styles.viewToggle}
-          theme={{ colors: { secondaryContainer: C.selectBg, onSecondaryContainer: C.selectText } }}
-        />
+        {/* Month / Week / Day toggle */}
+        <View style={styles.viewToggle}>
+          <SegmentedPills
+            value={calendarView}
+            onChange={(v) => setCalendarView(v as CalendarView)}
+            options={[
+              { value: "month", label: t("calendar.monthView") },
+              { value: "week", label: t("calendar.weekView") },
+              { value: "day", label: t("calendar.dayView") },
+            ]}
+            testIDPrefix="calendar-view"
+          />
+        </View>
 
         {/* Calendar */}
         <Card style={styles.card} mode="elevated">

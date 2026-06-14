@@ -5,7 +5,8 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { View } from "react-native";
-import { Text, TextInput, Button, SegmentedButtons } from "react-native-paper";
+import { Text, TextInput, Button } from "react-native-paper";
+import SegmentedPills from "@src/components/SegmentedPills";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +16,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, assigneeTypeLabel } from "@src/i18n";
-import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
+import { MS } from "@src/ui/modalStyles";
 import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
@@ -252,20 +253,20 @@ export default function FamilyEventModal({
           <Text style={MS.sectionIcon}>👥</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.assignee")}</Text>
         </View>
-        <SegmentedButtons
-          value={assigneeType}
-          onValueChange={(v) => {
-            setValue("assigneeType", v as "family" | "member" | "kid");
-            setValue("assigneeId", undefined);
-          }}
-          buttons={[
-            { value: "family", label: assigneeTypeLabel("family"), ...SEGMENT_COLORS },
-            { value: "member", label: assigneeTypeLabel("member"), ...SEGMENT_COLORS },
-            { value: "kid", label: assigneeTypeLabel("kid"), ...SEGMENT_COLORS },
-          ]}
-          style={MS.segmented}
-          theme={SEGMENT_THEME}
-        />
+        <View style={MS.segmented}>
+          <SegmentedPills
+            value={assigneeType}
+            onChange={(v) => {
+              setValue("assigneeType", v as "family" | "member" | "kid");
+              setValue("assigneeId", undefined);
+            }}
+            options={[
+              { value: "family", label: assigneeTypeLabel("family") },
+              { value: "member", label: assigneeTypeLabel("member") },
+              { value: "kid", label: assigneeTypeLabel("kid") },
+            ]}
+          />
+        </View>
 
         {assigneeType === "member" && activeMembers.length > 0 && (
           <View style={MS.chipRow}>
@@ -319,16 +320,16 @@ export default function FamilyEventModal({
           <Text style={MS.sectionIcon}>{isRecurring ? "🔄" : "1️⃣"}</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.schedule")}</Text>
         </View>
-        <SegmentedButtons
-          value={isRecurring ? "recurring" : "oneTime"}
-          onValueChange={(v) => setValue("isRecurring", v === "recurring")}
-          buttons={[
-            { value: "recurring", label: t("eventModal.recurring"), ...SEGMENT_COLORS },
-            { value: "oneTime", label: t("eventModal.oneTime"), ...SEGMENT_COLORS },
-          ]}
-          style={MS.segmented}
-          theme={SEGMENT_THEME}
-        />
+        <View style={MS.segmented}>
+          <SegmentedPills
+            value={isRecurring ? "recurring" : "oneTime"}
+            onChange={(v) => setValue("isRecurring", v === "recurring")}
+            options={[
+              { value: "recurring", label: t("eventModal.recurring") },
+              { value: "oneTime", label: t("eventModal.oneTime") },
+            ]}
+          />
+        </View>
 
         {isRecurring && (
           <>

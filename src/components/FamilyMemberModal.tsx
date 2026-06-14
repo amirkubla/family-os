@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Text, TextInput, Button, SegmentedButtons } from "react-native-paper";
+import { Text, TextInput, Button } from "react-native-paper";
 import {
   addFamilyMemberRemote,
   updateFamilyMemberRemote,
@@ -9,7 +9,8 @@ import { MEMBER_ROLES } from "@src/models/familyMember";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import { t, memberRoleLabel } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
-import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
+import { MS } from "@src/ui/modalStyles";
+import SegmentedPills from "./SegmentedPills";
 import { RTL_ROW } from "@src/ui/rtl";
 import { KID_COLOR_SWATCHES, MEMBER_EMOJI_OPTIONS } from "@src/ui/semanticColors";
 import ModalWrapper from "./ModalWrapper";
@@ -62,7 +63,7 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
     onDismiss();
   };
 
-  const roleButtons = MEMBER_ROLES.map((r) => ({ value: r, label: memberRoleLabel(r), ...SEGMENT_COLORS }));
+  const roleButtons = MEMBER_ROLES.map((r) => ({ value: r, label: memberRoleLabel(r) }));
 
   return (
     <ModalWrapper visible={visible} onDismiss={onDismiss}>
@@ -86,13 +87,13 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
       {nameError ? <Text style={MS.error}>{nameError}</Text> : null}
 
       <Text style={MS.label}>{t("settings.memberRole")}</Text>
-      <SegmentedButtons
-        value={role}
-        onValueChange={(v) => setRole(v as MemberRole)}
-        buttons={roleButtons}
-        style={MS.segmented}
-        theme={SEGMENT_THEME}
-      />
+      <View style={MS.segmented}>
+        <SegmentedPills
+          value={role}
+          onChange={(v) => setRole(v as MemberRole)}
+          options={roleButtons}
+        />
+      </View>
 
       <Text style={MS.label}>{t("settings.memberEmoji")}</Text>
       <View style={styles.pickerRow}>

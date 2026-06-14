@@ -10,7 +10,8 @@ import {
   Alert,
   Share,
 } from "react-native";
-import { Text, TextInput, Button, SegmentedButtons } from "react-native-paper";
+import { Text, TextInput, Button } from "react-native-paper";
+import SegmentedPills from "./SegmentedPills";
 import * as Clipboard from "expo-clipboard";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useAuthStore } from "@src/auth/useAuthStore";
@@ -27,7 +28,7 @@ import { MEMBER_ROLES } from "@src/models/familyMember";
 import type { MemberRole } from "@src/models/familyMember";
 import { t, memberRoleLabel } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
-import { MS, SEGMENT_THEME, SEGMENT_COLORS } from "@src/ui/modalStyles";
+import { MS } from "@src/ui/modalStyles";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { KID_COLOR_SWATCHES, MEMBER_EMOJI_OPTIONS } from "@src/ui/semanticColors";
 
@@ -295,7 +296,6 @@ function Step2AboutYou({
   const roleButtons = MEMBER_ROLES.map((r) => ({
     value: r,
     label: memberRoleLabel(r),
-    ...SEGMENT_COLORS,
   }));
 
   return (
@@ -328,13 +328,13 @@ function Step2AboutYou({
           {nameError ? <Text style={MS.error}>{nameError}</Text> : null}
 
           <Text style={MS.label}>{t("settings.memberRole")}</Text>
-          <SegmentedButtons
-            value={role}
-            onValueChange={(v) => setRole(v as MemberRole)}
-            buttons={roleButtons}
-            style={MS.segmented}
-            theme={SEGMENT_THEME}
-          />
+          <View style={MS.segmented}>
+            <SegmentedPills
+              value={role}
+              onChange={(v) => setRole(v as MemberRole)}
+              options={roleButtons}
+            />
+          </View>
 
           <Text style={MS.label}>{t("settings.memberEmoji")}</Text>
           <View style={styles.pickerRow}>
@@ -407,13 +407,13 @@ function Step2AboutYou({
           {partnerNameError ? <Text style={MS.error}>{partnerNameError}</Text> : null}
 
           <Text style={MS.label}>{t("settings.memberRole")}</Text>
-          <SegmentedButtons
-            value={partnerRole}
-            onValueChange={(v) => setPartnerRole(v as MemberRole)}
-            buttons={roleButtons}
-            style={MS.segmented}
-            theme={SEGMENT_THEME}
-          />
+          <View style={MS.segmented}>
+            <SegmentedPills
+              value={partnerRole}
+              onChange={(v) => setPartnerRole(v as MemberRole)}
+              options={roleButtons}
+            />
+          </View>
 
           <Text style={MS.label}>{t("settings.memberEmoji")}</Text>
           <View style={styles.pickerRow}>
