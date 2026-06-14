@@ -90,9 +90,9 @@ const styles = StyleSheet.create({
     borderRadius: R.lg,
     borderWidth: 1,
     borderColor: "rgba(226, 232, 240, 0.7)",
-    paddingVertical: S.lg,
+    paddingVertical: S.md,
     paddingHorizontal: S.md,
-    minHeight: 120,
+    minHeight: 84,
     ...SHADOW.sm,
     ...(Platform.OS === "web"
       ? ({ cursor: "pointer", transition: "all 0.18s ease" } as any)
