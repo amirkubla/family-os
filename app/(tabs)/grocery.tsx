@@ -7,9 +7,9 @@ import {
   Checkbox,
   IconButton,
   Divider,
-  SegmentedButtons,
   FAB,
 } from "react-native-paper";
+import SegmentedPills from "@src/components/SegmentedPills";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -122,24 +122,29 @@ export default function GroceryScreen() {
       .filter((g) => g.items.length > 0);
   }, [unbought, customizations, selectedCategory]);
 
-  const segmentButtons = SHOPPING_CATEGORIES.map((cat) => ({
+  const CATEGORY_EMOJI: Record<ShoppingCategory, string> = {
+    grocery: "🛒",
+    health: "💊",
+    home: "🏠",
+  };
+  const segmentOptions = SHOPPING_CATEGORIES.map((cat) => ({
     value: cat,
     label: shoppingCategoryLabel(cat),
-    checkedColor: C.selectText,
-    uncheckedColor: C.textSecondary,
+    emoji: CATEGORY_EMOJI[cat],
   }));
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         {/* Category tabs */}
-        <SegmentedButtons
-          value={selectedCategory}
-          onValueChange={(v) => setSelectedCategory(v as ShoppingCategory)}
-          buttons={segmentButtons}
-          style={styles.segments}
-          theme={{ colors: { secondaryContainer: C.selectBg, onSecondaryContainer: C.selectText } }}
-        />
+        <View style={styles.segments}>
+          <SegmentedPills
+            value={selectedCategory}
+            onChange={(v) => setSelectedCategory(v as ShoppingCategory)}
+            options={segmentOptions}
+            testIDPrefix="grocery-cat"
+          />
+        </View>
 
         {/* Item count + clear all */}
         <View style={styles.countRow}>
