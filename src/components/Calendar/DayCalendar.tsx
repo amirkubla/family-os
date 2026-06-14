@@ -367,7 +367,10 @@ const styles = StyleSheet.create({
   },
 
   gridScroll: {
-    height: 400,
+    // Taller than the week grid's 400 to compensate for the day-of-week
+    // header row that the week view has and the day view doesn't — so the
+    // day calendar card ends up the same height as the week card.
+    height: 450,
   },
   gridContainer: {
     height: GRID_HEIGHT,

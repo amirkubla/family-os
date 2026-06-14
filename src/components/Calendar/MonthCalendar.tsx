@@ -188,7 +188,7 @@ export default function MonthCalendar({
 // Taller rows so the month grid fills ~the same height as the week/day
 // time grids. The selected/today indicator is a fixed-size circle centred
 // in each (taller) row, so enlarging rows doesn't bloat the indicator.
-const ROW_HEIGHT = 72;
+const ROW_HEIGHT = 85;
 const LABEL_HEIGHT = 28;
 const DAY_SIZE = 42;
 
