@@ -19,6 +19,7 @@ import type { FamilyMember } from "@src/models/familyMember";
 import type { Kid } from "@src/models/kid";
 import { t, memberRoleLabel } from "@src/i18n";
 import SectionHeader from "@src/components/SectionHeader";
+import PageHeader from "@src/components/PageHeader";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 
@@ -248,8 +249,8 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <PageHeader title={t("settings.title")} />
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{t("settings.title")}</Text>
 
         {/* ── Family Name card ── */}
         <SectionHeader label={t("settings.familyName")} />
