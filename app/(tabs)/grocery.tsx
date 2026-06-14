@@ -124,7 +124,7 @@ export default function GroceryScreen() {
 
   const CATEGORY_EMOJI: Record<ShoppingCategory, string> = {
     grocery: "🛒",
-    health: "💊",
+    health: "🧴",
     home: "🏠",
   };
   const CATEGORY_COLOR: Record<ShoppingCategory, string> = {
