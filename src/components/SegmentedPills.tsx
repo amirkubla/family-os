@@ -1,18 +1,17 @@
 /**
- * SegmentedPills — modern category selector, "colored chips" style (Option B).
+ * SegmentedPills — modern category selector, "underline tabs" style (Option C).
  *
- * Each option is its own rounded pill. The active one fills with its category
- * colour (light tint + matching strong text/icon); inactive pills are ghosted
- * (transparent + hairline border + muted text). Optional emoji per option.
- * RTL-aware and generic (string values) so it can replace the Paper
- * SegmentedButtons across the app.
+ * Minimal tabs (emoji + label) sharing a hairline baseline; the active tab
+ * gets a 2px coloured underline + matching coloured text. Optional emoji and
+ * per-option colour. RTL-aware, generic (string values) so it can replace the
+ * Paper SegmentedButtons across the app.
  */
 
 import React from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { Text } from "react-native-paper";
 
-import { C, S } from "@src/ui/tokens";
+import { C } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 
 export interface SegmentOption {
@@ -20,7 +19,7 @@ export interface SegmentOption {
   label: string;
   /** Optional leading emoji (e.g. "🛒"). */
   emoji?: string;
-  /** Strong accent colour for the active state. Falls back to a default. */
+  /** Strong accent colour for the active underline + text. Falls back to default. */
   color?: string;
 }
 
@@ -49,12 +48,10 @@ export default function SegmentedPills({ value, onChange, options, testIDPrefix 
             accessibilityLabel={opt.label}
             testID={testIDPrefix ? `${testIDPrefix}-${opt.value}` : undefined}
             style={({ pressed, hovered }: any) => [
-              styles.chip,
-              active
-                ? { backgroundColor: accent + "22", borderColor: accent + "55" }
-                : { borderColor: C.border },
-              hovered && !active && { backgroundColor: C.hoverBg },
-              pressed && { opacity: 0.85 },
+              styles.tab,
+              { borderBottomColor: active ? accent : "transparent" },
+              hovered && !active && { borderBottomColor: C.border },
+              pressed && { opacity: 0.7 },
             ]}
           >
             {opt.emoji ? <Text style={styles.emoji}>{opt.emoji}</Text> : null}
@@ -77,19 +74,21 @@ export default function SegmentedPills({ value, onChange, options, testIDPrefix 
 const styles = StyleSheet.create({
   row: {
     flexDirection: RTL_ROW,
-    gap: S.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.border,
   },
-  chip: {
+  tab: {
     flex: 1,
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
     paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+    marginBottom: -StyleSheet.hairlineWidth,
     ...(Platform.OS === "web"
-      ? ({ cursor: "pointer", transition: "all 0.15s ease" } as any)
+      ? ({ cursor: "pointer", transition: "border-bottom-color 0.15s ease" } as any)
       : {}),
   },
   emoji: {
