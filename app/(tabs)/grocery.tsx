@@ -127,16 +127,14 @@ export default function GroceryScreen() {
     health: "🧴",
     home: "🏠",
   };
-  const CATEGORY_COLOR: Record<ShoppingCategory, string> = {
-    grocery: "#2D9F6F", // green
-    health: "#2AACB4",  // teal
-    home: "#D97706",    // amber
-  };
+  // Single accent for the active underline — the פארם (pharm) teal — used
+  // across all three categories rather than a per-category colour.
+  const PHARM_ACCENT = "#2AACB4";
   const segmentOptions = SHOPPING_CATEGORIES.map((cat) => ({
     value: cat,
     label: shoppingCategoryLabel(cat),
     emoji: CATEGORY_EMOJI[cat],
-    color: CATEGORY_COLOR[cat],
+    color: PHARM_ACCENT,
   }));
 
   return (
