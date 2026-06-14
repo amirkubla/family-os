@@ -42,7 +42,14 @@ export default function HomeScreen() {
   const familyEvents = useFamilyStore((s) => s.familyEvents);
   const kids = useFamilyStore((s) => s.kids);
   const familyName = useFamilyStore((s) => s.familyName);
-  const username = useAuthStore((s) => s.session?.user?.username ?? "");
+  const familyMembers = useFamilyStore((s) => s.familyMembers);
+  const userId = useAuthStore((s) => s.session?.user?.id);
+
+  // The family member linked to the logged-in user → header avatar.
+  const me = useMemo(
+    () => familyMembers.find((m) => m.userId === userId),
+    [familyMembers, userId],
+  );
 
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
 
@@ -83,11 +90,10 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {/* ── Header: avatar · family name · settings ── */}
         <View style={styles.headerRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{(username || "·").slice(0, 2)}</Text>
+          <View style={[styles.avatar, { backgroundColor: (me?.color ?? "#2AACB4") + "22" }]}>
+            <Text style={styles.avatarEmoji}>{me?.avatarEmoji ?? "👤"}</Text>
           </View>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerGreeting}>{t("home.greeting")}</Text>
             {!!familyName && (
               <Text style={styles.headerFamily} numberOfLines={1}>
                 {t("familyBadge.prefix")} {familyName}
@@ -178,18 +184,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#2AACB4",
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+  avatarEmoji: { fontSize: 24 },
   headerCenter: { flex: 1 },
-  headerGreeting: {
-    fontSize: 13,
-    color: C.textSecondary,
-    textAlign: TEXT_RIGHT,
-    writingDirection: "rtl",
-  },
   headerFamily: {
     fontSize: 19,
     fontWeight: "800",
