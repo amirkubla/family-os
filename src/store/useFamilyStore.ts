@@ -817,9 +817,8 @@ export const useFamilyStore = create<FamilyState>()(
           }));
         }
         if (version < 15) {
-          // Add budget feature arrays (pulled fresh from server on next sync).
-          persisted.budgetCategories = persisted.budgetCategories ?? [];
           persisted.expenses = persisted.expenses ?? [];
+          persisted.budgetCategories = persisted.budgetCategories ?? [];
         }
         return persisted;
       },

@@ -430,6 +430,7 @@ const he = {
     duplicateError: "תת-קטגוריה בשם הזה כבר קיימת",
     emptyNameError: "שם לא יכול להיות ריק",
     otherCategoryLocked: "תת-הקטגוריה \"אחר\" קבועה — היא מאחסנת פריטים שלא קיבלו קטגוריה",
+    budgetCategoriesHint: "ניהול קטגוריות ההוצאות — שם, אייקון, צבע ותקציב חודשי.",
   },
 
   // ── Onboarding ──

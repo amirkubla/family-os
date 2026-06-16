@@ -32,3 +32,14 @@ export function parseILS(input: string): number {
   const n = parseFloat(input.replace(/,/g, ""));
   return isNaN(n) ? 0 : Math.round(n * 100);
 }
+
+/** Default budget categories — mirrors the server-side auto-seed. */
+export const DEFAULT_BUDGET_CATEGORIES: { name: string; icon: string; color: string; sortOrder: number }[] = [
+  { name: "מזון וקניות",   icon: "🛒", color: "#2D9F6F", sortOrder: 0 },
+  { name: "בית ושירותים",  icon: "🏠", color: "#3A7BD5", sortOrder: 1 },
+  { name: "ילדים וחוגים",  icon: "👶", color: "#E0699B", sortOrder: 2 },
+  { name: "תחבורה",        icon: "🚗", color: "#F59E0B", sortOrder: 3 },
+  { name: "בילויים",       icon: "🎉", color: "#9B59B6", sortOrder: 4 },
+  { name: "בריאות",        icon: "💊", color: "#EF4444", sortOrder: 5 },
+  { name: "אחר",           icon: "📦", color: "#888888", sortOrder: 6 },
+];

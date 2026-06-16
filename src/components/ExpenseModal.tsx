@@ -37,6 +37,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
   const [date, setDate] = useState(today);
   const [note, setNote] = useState("");
   const [amountError, setAmountError] = useState("");
+  const [categoryError, setCategoryError] = useState("");
 
   useEffect(() => {
     if (!visible) return;
@@ -54,6 +55,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       setNote("");
     }
     setAmountError("");
+    setCategoryError("");
   }, [visible, editExpense, budgetCategories, today]);
 
   const handleSave = () => {
@@ -63,8 +65,10 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       return;
     }
     if (!categoryName) {
+      setCategoryError("יש לבחור קטגוריה");
       return;
     }
+    setCategoryError("");
     onSave({ amount, categoryName, payerMemberId, date, note: note.trim() || undefined });
     onDismiss();
   };
@@ -93,7 +97,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         {budgetCategories.map((cat) => (
           <Pressable
             key={cat.id}
-            onPress={() => setCategoryName(cat.name)}
+            onPress={() => { setCategoryName(cat.name); setCategoryError(""); }}
             style={[
               styles.catChip,
               categoryName === cat.name && { backgroundColor: cat.color },
@@ -105,6 +109,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           </Pressable>
         ))}
       </View>
+      {categoryError ? <Text style={MS.error}>{categoryError}</Text> : null}
 
       {/* Payer */}
       {familyMembers.length > 0 && (
