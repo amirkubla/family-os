@@ -30,6 +30,8 @@ import {
   familyMembersApi,
   familyEventsApi,
   customizationsApi,
+  budgetCategoriesApi,
+  expensesApi,
 } from "../api/endpoints";
 import {
   localToApiGrocery,
@@ -41,6 +43,8 @@ import {
   localToApiFamilyMember,
   localToApiFamilyEvent,
   apiToLocalFamilyMember,
+  localToApiBudgetCategory,
+  localToApiExpense,
 } from "../api/mappers";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
@@ -49,6 +53,7 @@ import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
+import type { BudgetCategory, Expense } from "@src/models/budget";
 
 // ---------------------------------------------------------------------------
 // Error handler — set by UI (Snackbar)
@@ -652,5 +657,82 @@ export function deleteFamilyEventRemote(id: string) {
   fireAndForget(
     getFamilyId().then((fid) => familyEventsApi.delete(fid, id)),
     "Delete family event",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Budget Categories
+// ---------------------------------------------------------------------------
+
+export function addBudgetCategoryRemote(input: {
+  name: string;
+  icon: string;
+  color: string;
+  monthlyCap?: number;
+  sortOrder?: number;
+}): BudgetCategory {
+  const item = useFamilyStore.getState().addBudgetCategory(input);
+  fireAndForget(
+    getFamilyId().then((fid) => budgetCategoriesApi.upsert(fid, localToApiBudgetCategory(item))),
+    "Add budget category",
+  );
+  return item;
+}
+
+export function updateBudgetCategoryRemote(
+  id: string,
+  patch: Partial<Pick<BudgetCategory, "name" | "icon" | "color" | "monthlyCap" | "sortOrder">>,
+) {
+  useFamilyStore.getState().updateBudgetCategory(id, patch);
+  fireAndForget(
+    getFamilyId().then((fid) => budgetCategoriesApi.update(fid, id, patch as any)),
+    "Update budget category",
+  );
+}
+
+export function deleteBudgetCategoryRemote(id: string) {
+  useFamilyStore.getState().deleteBudgetCategory(id);
+  fireAndForget(
+    getFamilyId().then((fid) => budgetCategoriesApi.delete(fid, id)),
+    "Delete budget category",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Expenses
+// ---------------------------------------------------------------------------
+
+export function addExpenseRemote(input: {
+  amount: number;
+  categoryName: string;
+  payerMemberId?: string;
+  kidId?: string;
+  date: string;
+  note?: string;
+}): Expense {
+  const item = useFamilyStore.getState().addExpense(input);
+  fireAndForget(
+    getFamilyId().then((fid) => expensesApi.upsert(fid, localToApiExpense(item))),
+    "Add expense",
+  );
+  return item;
+}
+
+export function updateExpenseRemote(
+  id: string,
+  patch: Partial<Pick<Expense, "amount" | "categoryName" | "payerMemberId" | "kidId" | "date" | "note">>,
+) {
+  useFamilyStore.getState().updateExpense(id, patch);
+  fireAndForget(
+    getFamilyId().then((fid) => expensesApi.update(fid, id, patch as any)),
+    "Update expense",
+  );
+}
+
+export function deleteExpenseRemote(id: string) {
+  useFamilyStore.getState().deleteExpense(id);
+  fireAndForget(
+    getFamilyId().then((fid) => expensesApi.delete(fid, id)),
+    "Delete expense",
   );
 }

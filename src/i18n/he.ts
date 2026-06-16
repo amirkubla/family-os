@@ -20,6 +20,7 @@ const he = {
     grocery: "קניות",
     calendar: "לוח שנה",
     home: "בית",
+    budget: "תקציב",
     settings: "הגדרות",
   },
 
@@ -464,6 +465,39 @@ const he = {
     inviteGenerating: "יוצר קוד הזמנה...",
     inviteReady: "הקוד מוכן!",
   },
+  // ── Budget screen ──
+  budget: {
+    title: "תקציב",
+    thisMonth: "החודש",
+    totalSpent: "הוצאות {{month}}",
+    ofBudget: "מתוך {{cap}} תקציב",
+    noCap: "ללא מגבלה",
+    remaining: "נותרו {{amount}}",
+    categories: "קטגוריות",
+    recentExpenses: "הוצאות אחרונות",
+    noExpenses: "אין עדיין הוצאות — לחצו + כדי להוסיף",
+    addExpense: "הוצאה חדשה",
+    editExpense: "עריכת הוצאה",
+    amount: "סכום (₪)",
+    amountPlaceholder: "0",
+    category: "קטגוריה",
+    payer: "מי שילם",
+    anyone: "מישהו מהמשפחה",
+    date: "תאריך",
+    note: "הערה (אופציונלי)",
+    notePlaceholder: "לדוגמה: קניות ביג",
+    manageCategories: "ניהול קטגוריות",
+    addCategory: "קטגוריה חדשה",
+    editCategory: "עריכת קטגוריה",
+    categoryName: "שם הקטגוריה",
+    categoryNamePlaceholder: "לדוגמה: מזון",
+    categoryIcon: "אייקון",
+    categoryColor: "צבע",
+    monthlyCap: "תקציב חודשי (₪, אופציונלי)",
+    monthlyCapPlaceholder: "ללא מגבלה",
+    deleteCategoryConfirm: "מחיקת הקטגוריה לא תמחק את ההוצאות הקשורות אליה.",
+  },
+
 } as const;
 
 export default he;

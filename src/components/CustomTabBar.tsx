@@ -35,6 +35,7 @@ const TAB_COLORS: Record<string, { active: string; bg: string }> = {
   calendar: { active: "#3A7BD5", bg: "#E8F0FB" },  // sapphire blue
   grocery:  { active: "#2D9F6F", bg: "#E6F6EF" },  // emerald green
   home:     { active: "#2AACB4", bg: "#E4F6F7" },  // ocean teal
+  budget:   { active: "#9B59B6", bg: "#F3EBF9" },  // violet purple
 };
 
 const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -42,6 +43,7 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   calendar: "calendar-outline",
   grocery:  "cart-outline",
   home:     "home-outline",
+  budget:   "wallet-outline",
 };
 
 // "ילדים" entry + its nested kid layer.

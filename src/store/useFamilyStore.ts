@@ -10,6 +10,7 @@ import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { FamilyCustomizations } from "@src/models/customization";
+import type { BudgetCategory, Expense } from "@src/models/budget";
 import { makeId } from "@src/utils/id";
 
 /**
@@ -73,6 +74,8 @@ interface FamilyState {
   scheduleBlocks: ScheduleBlock[];
   familyMembers: FamilyMember[];
   familyEvents: FamilyEvent[];
+  budgetCategories: BudgetCategory[];
+  expenses: Expense[];
 
   // Onboarding
   onboardingComplete: boolean;
@@ -111,6 +114,8 @@ interface FamilyState {
   setScheduleBlocks: (items: ScheduleBlock[]) => void;
   setFamilyMembers: (items: FamilyMember[]) => void;
   setFamilyEvents: (items: FamilyEvent[]) => void;
+  setBudgetCategories: (items: BudgetCategory[]) => void;
+  setExpenses: (items: Expense[]) => void;
   setSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setLastSyncedAt: (ts: number) => void;
 
@@ -224,6 +229,16 @@ interface FamilyState {
     >
   ) => void;
   deleteScheduleBlock: (id: string) => void;
+
+  // Budget Categories actions
+  addBudgetCategory: (input: { name: string; icon: string; color: string; monthlyCap?: number; sortOrder?: number }) => BudgetCategory;
+  updateBudgetCategory: (id: string, patch: Partial<Pick<BudgetCategory, "name" | "icon" | "color" | "monthlyCap" | "sortOrder">>) => void;
+  deleteBudgetCategory: (id: string) => void;
+
+  // Expense actions
+  addExpense: (input: { amount: number; categoryName: string; payerMemberId?: string; kidId?: string; date: string; note?: string }) => Expense;
+  updateExpense: (id: string, patch: Partial<Pick<Expense, "amount" | "categoryName" | "payerMemberId" | "kidId" | "date" | "note">>) => void;
+  deleteExpense: (id: string) => void;
 }
 
 /* ─── Store ─── */
@@ -240,6 +255,8 @@ export const useFamilyStore = create<FamilyState>()(
       scheduleBlocks: [],
       familyMembers: [],
       familyEvents: [],
+      budgetCategories: [],
+      expenses: [],
 
       onboardingComplete: false,
 
@@ -285,6 +302,8 @@ export const useFamilyStore = create<FamilyState>()(
       setScheduleBlocks: (items) => set({ scheduleBlocks: items }),
       setFamilyMembers: (items) => set({ familyMembers: items }),
       setFamilyEvents: (items) => set({ familyEvents: items }),
+      setBudgetCategories: (items) => set({ budgetCategories: items }),
+      setExpenses: (items) => set({ expenses: items }),
       setSyncStatus: (status, error = null) =>
         set({ syncStatus: status, syncError: error }),
       setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
@@ -624,10 +643,48 @@ export const useFamilyStore = create<FamilyState>()(
             m.id === id ? { ...m, isActive, updatedAt: Date.now() } : m
           ),
         })),
+
+      /* ── Budget Categories ── */
+
+      addBudgetCategory: ({ name, icon, color, monthlyCap, sortOrder = 0 }) => {
+        const now = Date.now();
+        const item: BudgetCategory = { id: makeId(), name, icon, color, monthlyCap, sortOrder, updatedAt: now, createdAt: now };
+        set((s) => ({ budgetCategories: [...s.budgetCategories, item] }));
+        return item;
+      },
+
+      updateBudgetCategory: (id, patch) =>
+        set((s) => ({
+          budgetCategories: s.budgetCategories.map((c) =>
+            c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c
+          ),
+        })),
+
+      deleteBudgetCategory: (id) =>
+        set((s) => ({ budgetCategories: s.budgetCategories.filter((c) => c.id !== id) })),
+
+      /* ── Expenses ── */
+
+      addExpense: ({ amount, categoryName, payerMemberId, kidId, date, note }) => {
+        const now = Date.now();
+        const item: Expense = { id: makeId(), amount, categoryName, payerMemberId, kidId, date, note, updatedAt: now, createdAt: now };
+        set((s) => ({ expenses: [...s.expenses, item] }));
+        return item;
+      },
+
+      updateExpense: (id, patch) =>
+        set((s) => ({
+          expenses: s.expenses.map((e) =>
+            e.id === id ? { ...e, ...patch, updatedAt: Date.now() } : e
+          ),
+        })),
+
+      deleteExpense: (id) =>
+        set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
     }),
     {
       name: "family-os-store-v2",
-      version: 14,
+      version: 15,
       storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => (_state, error) => {
         // Last-line-of-defense: if anything else in the rehydrate path throws
@@ -654,6 +711,8 @@ export const useFamilyStore = create<FamilyState>()(
         onboardingComplete: state.onboardingComplete,
         homeSections: state.homeSections,
         customizations: state.customizations,
+        budgetCategories: state.budgetCategories,
+        expenses: state.expenses,
       }),
       migrate: (persisted: any, version: number) => {
         if (version < 2) {
@@ -756,6 +815,11 @@ export const useFamilyStore = create<FamilyState>()(
             ...n,
             sortOrder: n.sortOrder ?? i,
           }));
+        }
+        if (version < 15) {
+          // Add budget feature arrays (pulled fresh from server on next sync).
+          persisted.budgetCategories = persisted.budgetCategories ?? [];
+          persisted.expenses = persisted.expenses ?? [];
         }
         return persisted;
       },

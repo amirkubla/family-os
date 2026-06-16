@@ -19,6 +19,8 @@ import {
   familyMembersApi,
   familyEventsApi,
   customizationsApi,
+  budgetCategoriesApi,
+  expensesApi,
 } from "../api/endpoints";
 import {
   apiToLocalGrocery,
@@ -29,6 +31,8 @@ import {
   apiToLocalScheduleBlock,
   apiToLocalFamilyMember,
   apiToLocalFamilyEvent,
+  apiToLocalBudgetCategory,
+  apiToLocalExpense,
   localToApiGrocery,
   localToApiNote,
   localToApiChore,
@@ -37,6 +41,8 @@ import {
   localToApiScheduleBlock,
   localToApiFamilyMember,
   localToApiFamilyEvent,
+  localToApiBudgetCategory,
+  localToApiExpense,
 } from "../api/mappers";
 
 // ---------------------------------------------------------------------------
@@ -62,6 +68,8 @@ export async function pullAll(familyIdOverride?: string): Promise<void> {
       familyMembersApi.list(fid),
       familyEventsApi.list(fid),
       customizationsApi.get(fid),
+      budgetCategoriesApi.list(fid),
+      expensesApi.list(fid),
     ]);
 
     // Log any failures and figure out which endpoints succeeded.
@@ -70,7 +78,7 @@ export async function pullAll(familyIdOverride?: string): Promise<void> {
     // which silently *wiped* the local cache for any failed resource — a flaky
     // network hop would erase your grocery list / events / etc. instead of
     // showing the previous data with a sync-error banner.
-    const names = ["families", "grocery", "notes", "chores", "projects", "kids", "scheduleBlocks", "members", "events", "customizations"];
+    const names = ["families", "grocery", "notes", "chores", "projects", "kids", "scheduleBlocks", "members", "events", "customizations", "budgetCategories", "expenses"];
     const failures = results
       .map((r, i) => (r.status === "rejected" ? i : null))
       .filter((i): i is number => i !== null);
@@ -117,6 +125,8 @@ export async function pullAll(familyIdOverride?: string): Promise<void> {
         | null;
       store.setCustomizations(value ?? {});
     }
+    applyIfOk(10, apiToLocalBudgetCategory, store.setBudgetCategories);
+    applyIfOk(11, apiToLocalExpense, store.setExpenses);
     store.setLastSyncedAt(Date.now());
     store.setSyncStatus(failures.length > 0 ? "error" : "idle",
       failures.length > 0 ? "Partial sync" : undefined);
@@ -137,7 +147,7 @@ export async function pushAll(): Promise<void> {
 
   try {
     const fid = await getFamilyId();
-    const { grocery, notes, chores, projects, kids, scheduleBlocks, familyMembers, familyEvents } = store;
+    const { grocery, notes, chores, projects, kids, scheduleBlocks, familyMembers, familyEvents, budgetCategories, expenses } = store;
 
     await Promise.all([
       ...grocery.map((item) =>
@@ -163,6 +173,12 @@ export async function pushAll(): Promise<void> {
       ),
       ...familyEvents.map((item) =>
         familyEventsApi.upsert(fid, localToApiFamilyEvent(item)),
+      ),
+      ...budgetCategories.map((item) =>
+        budgetCategoriesApi.upsert(fid, localToApiBudgetCategory(item)),
+      ),
+      ...expenses.map((item) =>
+        expensesApi.upsert(fid, localToApiExpense(item)),
       ),
     ]);
 

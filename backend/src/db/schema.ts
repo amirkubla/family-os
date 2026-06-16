@@ -66,6 +66,8 @@ export const familiesRelations = relations(families, ({ many }) => ({
   scheduleBlocks: many(scheduleBlocks),
   familyEvents: many(familyEvents),
   pushTokens: many(pushTokens),
+  budgetCategories: many(budgetCategories),
+  expenses: many(expenses),
 }));
 
 // ---------------------------------------------------------------------------
@@ -552,6 +554,66 @@ export const reminders = pgTable(
 export const remindersRelations = relations(reminders, ({ one }) => ({
   family: one(families, {
     fields: [reminders.familyId],
+    references: [families.id],
+  }),
+}));
+
+// ---------------------------------------------------------------------------
+// budget_categories
+// ---------------------------------------------------------------------------
+
+export const budgetCategories = pgTable(
+  "budget_categories",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    icon: text("icon").notNull().default("📦"),
+    color: text("color").notNull().default("#888888"),
+    monthlyCap: integer("monthly_cap"), // agorot (÷100 = NIS); null = no cap
+    sortOrder: integer("sort_order").default(0).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("budget_categories_family_id_idx").on(t.familyId)],
+);
+
+export const budgetCategoriesRelations = relations(budgetCategories, ({ one }) => ({
+  family: one(families, {
+    fields: [budgetCategories.familyId],
+    references: [families.id],
+  }),
+}));
+
+// ---------------------------------------------------------------------------
+// expenses
+// ---------------------------------------------------------------------------
+
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(), // agorot (÷100 = NIS)
+    categoryName: text("category_name").notNull(),
+    payerMemberId: uuid("payer_member_id"),
+    kidId: uuid("kid_id").references(() => kids.id, { onDelete: "set null" }),
+    date: text("date").notNull(), // "YYYY-MM-DD"
+    note: text("note"),
+    ...timestamps,
+  },
+  (t) => [
+    index("expenses_family_id_idx").on(t.familyId),
+    index("expenses_family_date_idx").on(t.familyId, t.date),
+  ],
+);
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  family: one(families, {
+    fields: [expenses.familyId],
     references: [families.id],
   }),
 }));

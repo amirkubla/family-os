@@ -43,6 +43,7 @@ import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
+import { formatILS } from "@src/models/budget";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,6 +101,23 @@ export default function TodayScreen() {
   const familyMembers = useFamilyStore((s) => s.familyMembers);
   const syncStatus = useFamilyStore((s) => s.syncStatus);
   const lastSyncedAt = useFamilyStore((s) => s.lastSyncedAt);
+  const budgetCategories = useFamilyStore((s) => s.budgetCategories);
+  const allExpenses = useFamilyStore((s) => s.expenses);
+
+  // Current month budget summary
+  const currentYM = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const monthExpenses = useMemo(
+    () => allExpenses.filter((e) => e.date.startsWith(currentYM)),
+    [allExpenses, currentYM],
+  );
+  const budgetSpent = useMemo(
+    () => monthExpenses.reduce((sum, e) => sum + e.amount, 0),
+    [monthExpenses],
+  );
+  const budgetCap = useMemo(
+    () => budgetCategories.reduce((sum, c) => sum + (c.monthlyCap ?? 0), 0),
+    [budgetCategories],
+  );
 
   const [syncing, setSyncing] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(true);
@@ -372,6 +390,42 @@ export default function TodayScreen() {
           </View>
         </Card>
 
+        {/* ── Budget mini-card ── */}
+        {(budgetSpent > 0 || budgetCap > 0) && (
+          <Pressable
+            style={styles.budgetCard}
+            onPress={() => router.push("/budget" as any)}
+            accessibilityRole="button"
+            accessibilityLabel="פתח מסך תקציב"
+          >
+            <View style={[{ flexDirection: RTL_ROW }, styles.budgetCardRow]}>
+              <Text style={styles.budgetLabel}>{t("budget.thisMonth")}</Text>
+              <Text style={styles.budgetAmount}>{formatILS(budgetSpent)}</Text>
+            </View>
+            {budgetCap > 0 && (
+              <>
+                <View style={styles.budgetBar}>
+                  <View
+                    style={[
+                      styles.budgetBarFill,
+                      {
+                        width: `${Math.min(budgetSpent / budgetCap, 1) * 100}%` as any,
+                        backgroundColor:
+                          budgetSpent / budgetCap > 0.9 ? C.red
+                          : budgetSpent / budgetCap > 0.7 ? C.amber
+                          : "#9B59B6",
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.budgetCapText}>
+                  {t("budget.ofBudget", { cap: formatILS(budgetCap) })}
+                </Text>
+              </>
+            )}
+          </Pressable>
+        )}
+
         {/* ── Pinned notes — collapsible, single column ── */}
         {pinnedNotesList.length > 0 && (
           <>
@@ -608,6 +662,47 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
 
+
+  // ── Budget mini-card ─────────────────────────────────────────────────────
+  budgetCard: {
+    backgroundColor: C.surface,
+    borderRadius: R.lg,
+    padding: S.md,
+    marginBottom: S.md,
+    ...SHADOW.sm,
+    borderRightWidth: 3,
+    borderRightColor: "#9B59B6",
+  },
+  budgetCardRow: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: S.xs,
+  },
+  budgetLabel: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  budgetAmount: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: C.textPrimary,
+  },
+  budgetBar: {
+    height: 5,
+    backgroundColor: C.surfaceSubtle,
+    borderRadius: 3,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  budgetBarFill: { height: "100%", borderRadius: 3 },
+  budgetCapText: {
+    fontSize: 11,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
 
   // ── Unified Today card ────────────────────────────────────────────────────
   todayCard: {

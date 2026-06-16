@@ -104,6 +104,31 @@ export interface ApiScheduleBlock {
   updatedAt: string;
 }
 
+export interface ApiBudgetCategory {
+  id: string;
+  familyId: string;
+  name: string;
+  icon: string;
+  color: string;
+  monthlyCap: number | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiExpense {
+  id: string;
+  familyId: string;
+  amount: number;
+  categoryName: string;
+  payerMemberId: string | null;
+  kidId: string | null;
+  date: string;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiFamilyEvent {
   id: string;
   familyId: string;

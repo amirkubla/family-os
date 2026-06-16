@@ -14,6 +14,8 @@ import type {
   ApiScheduleBlock,
   ApiFamilyMember,
   ApiFamilyEvent,
+  ApiBudgetCategory,
+  ApiExpense,
 } from "./types";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
@@ -23,6 +25,7 @@ import type { Kid } from "@src/models/kid";
 import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
+import type { BudgetCategory, Expense } from "@src/models/budget";
 
 const toMs = (iso: string) => new Date(iso).getTime();
 
@@ -278,6 +281,64 @@ export function apiToLocalFamilyEvent(a: ApiFamilyEvent): FamilyEvent {
     reminders: a.reminders ? JSON.parse(a.reminders) : undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Budget Categories
+// ---------------------------------------------------------------------------
+
+export function apiToLocalBudgetCategory(a: ApiBudgetCategory): BudgetCategory {
+  return {
+    id: a.id,
+    name: a.name,
+    icon: a.icon,
+    color: a.color,
+    monthlyCap: a.monthlyCap ?? undefined,
+    sortOrder: a.sortOrder,
+    updatedAt: toMs(a.updatedAt),
+    createdAt: toMs(a.createdAt),
+  };
+}
+
+export function localToApiBudgetCategory(item: BudgetCategory) {
+  return {
+    id: item.id,
+    name: item.name,
+    icon: item.icon,
+    color: item.color,
+    monthlyCap: item.monthlyCap ?? null,
+    sortOrder: item.sortOrder,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Expenses
+// ---------------------------------------------------------------------------
+
+export function apiToLocalExpense(a: ApiExpense): Expense {
+  return {
+    id: a.id,
+    amount: a.amount,
+    categoryName: a.categoryName,
+    payerMemberId: a.payerMemberId ?? undefined,
+    kidId: a.kidId ?? undefined,
+    date: a.date,
+    note: a.note ?? undefined,
+    updatedAt: toMs(a.updatedAt),
+    createdAt: toMs(a.createdAt),
+  };
+}
+
+export function localToApiExpense(item: Expense) {
+  return {
+    id: item.id,
+    amount: item.amount,
+    categoryName: item.categoryName,
+    payerMemberId: item.payerMemberId ?? null,
+    kidId: item.kidId ?? null,
+    date: item.date,
+    note: item.note ?? null,
   };
 }
 

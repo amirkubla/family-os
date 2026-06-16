@@ -13,6 +13,8 @@ import type {
   ApiScheduleBlock,
   ApiFamilyMember,
   ApiFamilyEvent,
+  ApiBudgetCategory,
+  ApiExpense,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -234,6 +236,48 @@ export const telegramApi = {
     if (!res.ok) throw new Error(`Assistant API ${res.status}`);
     return res.json() as Promise<{ code: string; expires_in_minutes: number }>;
   },
+};
+
+// ---------------------------------------------------------------------------
+// Budget Categories
+// ---------------------------------------------------------------------------
+
+export const budgetCategoriesApi = {
+  list: (fid: string) =>
+    http.get<ApiBudgetCategory[]>(`${fam(fid)}/budget-categories`),
+
+  create: (fid: string, data: Omit<ApiBudgetCategory, "familyId" | "createdAt" | "updatedAt">) =>
+    http.post<ApiBudgetCategory>(`${fam(fid)}/budget-categories`, data),
+
+  upsert: (fid: string, data: Omit<ApiBudgetCategory, "familyId" | "createdAt" | "updatedAt">) =>
+    http.put<ApiBudgetCategory>(`${fam(fid)}/budget-categories/${data.id}`, data),
+
+  update: (fid: string, id: string, data: Partial<ApiBudgetCategory>) =>
+    http.patch<ApiBudgetCategory>(`${fam(fid)}/budget-categories/${id}`, data),
+
+  delete: (fid: string, id: string) =>
+    http.delete<{ deleted: boolean }>(`${fam(fid)}/budget-categories/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Expenses
+// ---------------------------------------------------------------------------
+
+export const expensesApi = {
+  list: (fid: string) =>
+    http.get<ApiExpense[]>(`${fam(fid)}/expenses`),
+
+  create: (fid: string, data: Omit<ApiExpense, "familyId" | "createdAt" | "updatedAt">) =>
+    http.post<ApiExpense>(`${fam(fid)}/expenses`, data),
+
+  upsert: (fid: string, data: Omit<ApiExpense, "familyId" | "createdAt" | "updatedAt">) =>
+    http.put<ApiExpense>(`${fam(fid)}/expenses/${data.id}`, data),
+
+  update: (fid: string, id: string, data: Partial<ApiExpense>) =>
+    http.patch<ApiExpense>(`${fam(fid)}/expenses/${id}`, data),
+
+  delete: (fid: string, id: string) =>
+    http.delete<{ deleted: boolean }>(`${fam(fid)}/expenses/${id}`),
 };
 
 // ---------------------------------------------------------------------------

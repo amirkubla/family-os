@@ -14,6 +14,8 @@ import type {
   reminders,
   users,
   invites,
+  budgetCategories,
+  expenses,
 } from "../db/schema.js";
 
 // ---------------------------------------------------------------------------
@@ -76,6 +78,14 @@ export type ReminderStatus =
   | "failed"
   | "cancelled"
   | "complete";
+
+export type BudgetCategory = InferSelectModel<typeof budgetCategories>;
+export type NewBudgetCategory = InferInsertModel<typeof budgetCategories>;
+export type UpdateBudgetCategory = Partial<Omit<NewBudgetCategory, "id">>;
+
+export type Expense = InferSelectModel<typeof expenses>;
+export type NewExpense = InferInsertModel<typeof expenses>;
+export type UpdateExpense = Partial<Omit<NewExpense, "id">>;
 
 // ---------------------------------------------------------------------------
 // Enums (mirrored from schema for convenience)
