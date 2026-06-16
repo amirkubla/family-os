@@ -12,12 +12,19 @@
 
 import type { ShoppingCategory } from "@src/models/grocery";
 
+export interface GrocerySubcategory {
+  name: string;
+  icon: string;
+  color: string;
+}
+
 export interface FamilyCustomizations {
-  grocerySubcategories?: Partial<Record<ShoppingCategory, string[]>>;
+  grocerySubcategories?: Partial<Record<ShoppingCategory, GrocerySubcategory[]>>;
 }
 
 /**
- * Hebrew defaults used when a family hasn't set its own subcategories yet.
+ * Hebrew defaults with icons and colors, used when a family hasn't set its
+ * own subcategories yet.
  *
  * IMPORTANT — names align EXACTLY with the Hebrew labels in
  * `src/i18n/he.ts → groceryCategory`. That table maps the legacy English
@@ -28,57 +35,103 @@ export interface FamilyCustomizations {
  * silently fall into the "אחר" bucket — keep them in lockstep with the
  * i18n table.
  */
-export const DEFAULT_GROCERY_SUBCATEGORIES: Record<ShoppingCategory, string[]> = {
+export const DEFAULT_GROCERY_SUBCATEGORIES: Record<ShoppingCategory, GrocerySubcategory[]> = {
   grocery: [
-    "ירקות ופירות", // Produce
-    "מוצרי חלב",     // Dairy
-    "בשר",           // Meat
-    "דגים",          // Fish
-    "מאפים",         // Bakery
-    "קפואים",        // Frozen
-    "חטיפים",        // Snacks
-    "משקאות",        // Beverages
-    "שימורים",       // Canned
-    "תבלינים ורטבים", // Spices
-    "אחר",           // Other
+    { name: "ירקות ופירות", icon: "🥬", color: "#2D9F6F" },
+    { name: "מוצרי חלב",   icon: "🧀", color: "#F59E0B" },
+    { name: "בשר",          icon: "🥩", color: "#EF4444" },
+    { name: "דגים",         icon: "🐟", color: "#3A7BD5" },
+    { name: "מאפים",        icon: "🥖", color: "#E0699B" },
+    { name: "קפואים",       icon: "🧊", color: "#20B2AA" },
+    { name: "חטיפים",       icon: "🍿", color: "#9B59B6" },
+    { name: "משקאות",       icon: "🥤", color: "#E67E22" },
+    { name: "שימורים",      icon: "🥫", color: "#888888" },
+    { name: "תבלינים ורטבים", icon: "🌶️", color: "#E67E22" },
+    { name: "אחר",          icon: "📦", color: "#888888" },
   ],
   health: [
-    "תרופות",       // Medications
-    "ויטמינים",     // Vitamins
-    "טיפוח אישי",   // PersonalCare
-    "תינוקות",      // BabyCare
-    "עזרה ראשונה",  // FirstAid
-    "טיפוח עור",    // Skincare
-    "טיפוח שיער",   // HairCare
-    "אחר",          // Other
+    { name: "תרופות",      icon: "💊", color: "#EF4444" },
+    { name: "ויטמינים",    icon: "💪", color: "#2D9F6F" },
+    { name: "טיפוח אישי",  icon: "🧴", color: "#9B59B6" },
+    { name: "תינוקות",     icon: "🍼", color: "#E0699B" },
+    { name: "עזרה ראשונה", icon: "🩹", color: "#E67E22" },
+    { name: "טיפוח עור",   icon: "✨", color: "#F59E0B" },
+    { name: "טיפוח שיער",  icon: "💇", color: "#3A7BD5" },
+    { name: "אחר",         icon: "📦", color: "#888888" },
   ],
   home: [
-    "ניקיון",       // Cleaning
-    "כביסה",        // Laundry
-    "מטבח",         // Kitchen
-    "אמבטיה",       // Bathroom
-    "מוצרי נייר",   // PaperGoods
-    "כלי עבודה",    // Tools
-    "קישוט ועיצוב", // Decor
-    "אחר",          // Other
+    { name: "ניקיון",       icon: "🧹", color: "#20B2AA" },
+    { name: "כביסה",        icon: "👕", color: "#3A7BD5" },
+    { name: "מטבח",         icon: "🍳", color: "#E67E22" },
+    { name: "אמבטיה",       icon: "🚿", color: "#3A7BD5" },
+    { name: "מוצרי נייר",   icon: "🧻", color: "#888888" },
+    { name: "כלי עבודה",    icon: "🔧", color: "#F59E0B" },
+    { name: "קישוט ועיצוב", icon: "🖼️", color: "#9B59B6" },
+    { name: "אחר",          icon: "📦", color: "#888888" },
   ],
 };
 
-/** Fallback bucket for items whose `subcategory` isn't in the active list. */
+/** Maps legacy English & Hebrew subcategory keys to emoji, for backward
+ *  compatibility when old string[] data is loaded from the server. */
+const LEGACY_ICON_MAP: Record<string, string> = {
+  // English keys
+  Produce: "🥬", Dairy: "🧀", Meat: "🥩", Fish: "🐟", Bakery: "🥖",
+  Frozen: "🧊", Snacks: "🍿", Beverages: "🥤", Canned: "🥫", Spices: "🌶️",
+  Medications: "💊", Vitamins: "💪", PersonalCare: "🧴", BabyCare: "🍼",
+  FirstAid: "🩹", Skincare: "✨", HairCare: "💇",
+  Cleaning: "🧹", Laundry: "👕", Kitchen: "🍳", Bathroom: "🚿",
+  PaperGoods: "🧻", Tools: "🔧", Decor: "🖼️", Household: "🏠", Other: "📦",
+  // Hebrew keys
+  "ירקות ופירות": "🥬", "מוצרי חלב": "🧀", "בשר": "🥩", "דגים": "🐟",
+  "מאפים": "🥖", "קפואים": "🧊", "חטיפים": "🍿", "משקאות": "🥤",
+  "שימורים": "🥫", "תבלינים ורטבים": "🌶️",
+  "תרופות": "💊", "ויטמינים": "💪", "טיפוח אישי": "🧴", "תינוקות": "🍼",
+  "עזרה ראשונה": "🩹", "טיפוח עור": "✨", "טיפוח שיער": "💇",
+  "ניקיון": "🧹", "כביסה": "👕", "מטבח": "🍳", "אמבטיה": "🚿",
+  "מוצרי נייר": "🧻", "כלי עבודה": "🔧", "קישוט ועיצוב": "🖼️", "אחר": "📦",
+};
+
+const LEGACY_COLOR_MAP: Record<string, string> = {
+  Produce: "#2D9F6F", Dairy: "#F59E0B", Meat: "#EF4444", Fish: "#3A7BD5",
+  Bakery: "#E0699B", Frozen: "#20B2AA", Snacks: "#9B59B6", Beverages: "#E67E22",
+  "ירקות ופירות": "#2D9F6F", "מוצרי חלב": "#F59E0B", "בשר": "#EF4444",
+  "דגים": "#3A7BD5", "מאפים": "#E0699B", "קפואים": "#20B2AA",
+  "חטיפים": "#9B59B6", "משקאות": "#E67E22",
+  "תרופות": "#EF4444", "ויטמינים": "#2D9F6F", "טיפוח אישי": "#9B59B6",
+  "תינוקות": "#E0699B", "עזרה ראשונה": "#E67E22",
+  "ניקיון": "#20B2AA", "כביסה": "#3A7BD5", "מטבח": "#E67E22",
+};
+
+/** Fallback bucket name for items whose `subcategory` isn't in the active list. */
 export const OTHER_SUBCATEGORY = "אחר";
+
+const OTHER_ENTRY: GrocerySubcategory = { name: OTHER_SUBCATEGORY, icon: "📦", color: "#888888" };
 
 /**
  * Resolve the effective subcategory list for a main category: the family's
  * customized list if present, otherwise the Hebrew defaults. Always returns
- * a non-empty array (the "אחר" bucket is guaranteed).
+ * a non-empty array ending with the "אחר" bucket.
+ *
+ * Backward-compatible: if old `string[]` data is loaded from the server it
+ * is silently normalized to `GrocerySubcategory[]`.
  */
 export function effectiveSubcategories(
   customizations: FamilyCustomizations | null | undefined,
   category: ShoppingCategory,
-): string[] {
-  const custom = customizations?.grocerySubcategories?.[category];
-  const list =
-    custom && custom.length > 0 ? custom : DEFAULT_GROCERY_SUBCATEGORIES[category];
-  // Defensive: always end with the Other bucket so unknown values group cleanly.
-  return list.includes(OTHER_SUBCATEGORY) ? list : [...list, OTHER_SUBCATEGORY];
+): GrocerySubcategory[] {
+  const raw = customizations?.grocerySubcategories?.[category];
+  let list: GrocerySubcategory[];
+
+  if (!raw || raw.length === 0) {
+    list = DEFAULT_GROCERY_SUBCATEGORIES[category];
+  } else {
+    // Normalize legacy string[] format that may still be in some families' JSONB.
+    list = (raw as (string | GrocerySubcategory)[]).map((item) =>
+      typeof item === "string"
+        ? { name: item, icon: LEGACY_ICON_MAP[item] ?? "📦", color: LEGACY_COLOR_MAP[item] ?? "#888888" }
+        : item,
+    );
+  }
+
+  return list.some((s) => s.name === OTHER_SUBCATEGORY) ? list : [...list, OTHER_ENTRY];
 }

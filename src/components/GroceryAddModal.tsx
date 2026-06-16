@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { View } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
-import { SUBCATEGORIES } from "@src/models/grocery";
-import type { ShoppingCategory } from "@src/models/grocery";
+import type { ShoppingCategory, GroceryItem } from "@src/models/grocery";
 import { addGroceryRemote, updateGroceryRemote } from "@src/lib/sync/remoteCrud";
 import { inferGrocerySubcategory } from "@src/lib/groceryCategoryInfer";
-import type { GroceryItem } from "@src/models/grocery";
 import { t, groceryCategoryLabel } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
 import { C, S } from "@src/ui/tokens";
 import ModalWrapper from "./ModalWrapper";
+import { useFamilyStore } from "@src/store/useFamilyStore";
+import { effectiveSubcategories } from "@src/models/customization";
 
 interface Props {
   visible: boolean;
@@ -32,10 +32,14 @@ export default function GroceryAddModal({
 }: Props) {
   const isEditing = !!editItem;
   const shoppingCat = isEditing ? editItem.shoppingCategory : defaultShoppingCategory;
-  const subcats = SUBCATEGORIES[shoppingCat];
+  const customizations = useFamilyStore((s) => s.customizations);
+  const subcats = useMemo(
+    () => effectiveSubcategories(customizations, shoppingCat),
+    [customizations, shoppingCat],
+  );
 
   const [title, setTitle] = useState("");
-  const [subcategory, setSubcategory] = useState("Other");
+  const [subcategory, setSubcategory] = useState(subcats[0]?.name ?? "");
   const [qty, setQty] = useState("");
   // Whether the user has manually picked a category — stops auto-inference
   // from overriding their choice when they keep typing.
@@ -57,30 +61,37 @@ export default function GroceryAddModal({
     setSubmitting(false);
     if (editItem) {
       setTitle(editItem.title);
-      setSubcategory(editItem.subcategory ?? "Other");
+      // Normalize legacy English key to Hebrew name if it matches a subcategory label.
+      const raw = editItem.subcategory ?? "";
+      const directMatch = subcats.find((s) => s.name === raw);
+      const translatedMatch = subcats.find((s) => s.name === groceryCategoryLabel(raw));
+      setSubcategory(directMatch?.name ?? translatedMatch?.name ?? subcats[0]?.name ?? "");
       setQty(editItem.qty ?? "");
-      setCategoryTouched(true); // keep existing category when editing
+      setCategoryTouched(true);
     } else {
       setTitle("");
-      setSubcategory("Other");
+      setSubcategory(subcats[0]?.name ?? "");
       setQty("");
       setCategoryTouched(false);
     }
-  }, [visible, editItem, defaultShoppingCategory]);
+  }, [visible, editItem, defaultShoppingCategory, subcats]);
 
   // Infer subcategory from the title as the user types — but only on add (not
-  // edit) and only until the user manually picks a category. Without this the
-  // default was "first option in the list" (Produce), so milk landed under
-  // vegetables. See src/lib/groceryCategoryInfer.ts for the keyword map.
+  // edit) and only until the user manually picks a category.
+  // inferGrocerySubcategory returns English keys; we map them to the family's
+  // Hebrew subcategory names by trying a direct match, then a translated match.
   useEffect(() => {
     if (!visible || isEditing || categoryTouched) return;
     const inferred = inferGrocerySubcategory(title, defaultShoppingCategory);
-    setSubcategory(inferred);
-  }, [title, visible, isEditing, categoryTouched, defaultShoppingCategory]);
+    const directMatch = subcats.find((s) => s.name === inferred);
+    const translatedMatch = subcats.find((s) => s.name === groceryCategoryLabel(inferred));
+    const resolved = directMatch?.name ?? translatedMatch?.name ?? subcats[0]?.name ?? "";
+    setSubcategory(resolved);
+  }, [title, visible, isEditing, categoryTouched, defaultShoppingCategory, subcats]);
 
   const reset = () => {
     setTitle("");
-    setSubcategory("Other");
+    setSubcategory(subcats[0]?.name ?? "");
     setQty("");
     setCategoryTouched(false);
   };
@@ -166,19 +177,19 @@ export default function GroceryAddModal({
         </View>
         <View style={[MS.chipRow, { marginBottom: 0 }]}>
           {subcats.map((cat) => {
-            const sel = subcategory === cat;
+            const sel = subcategory === cat.name;
             return (
               <Button
-                key={cat}
+                key={cat.name}
                 mode={sel ? "contained" : "outlined"}
                 compact
-                onPress={() => { setSubcategory(cat); setCategoryTouched(true); }}
+                onPress={() => { setSubcategory(cat.name); setCategoryTouched(true); }}
                 style={MS.chip}
                 labelStyle={MS.chipLabel}
-                buttonColor={sel ? C.selectBg : undefined}
-                textColor={sel ? C.selectText : C.textSecondary}
+                buttonColor={sel ? cat.color : undefined}
+                textColor={sel ? "#fff" : C.textSecondary}
               >
-                {groceryCategoryLabel(cat)}
+                {cat.icon} {cat.name}
               </Button>
             );
           })}

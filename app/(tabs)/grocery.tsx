@@ -26,37 +26,20 @@ import { SHOPPING_CATEGORIES } from "@src/models/grocery";
 import {
   effectiveSubcategories,
   OTHER_SUBCATEGORY,
+  type GrocerySubcategory,
 } from "@src/models/customization";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 
-/** Emoji per subcategory — keyed by English key AND Hebrew label for compat with legacy data. */
-const SUBCATEGORY_EMOJI: Record<string, string> = {
-  // Grocery — English keys
-  Produce: "🥬", Dairy: "🧀", Meat: "🥩", Bakery: "🥖",
-  Frozen: "🧊", Snacks: "🍿", Beverages: "🥤",
-  Canned: "🥫", Spices: "🌶️", Fish: "🐟",
-  // Grocery — Hebrew labels (legacy seed data)
-  "ירקות ופירות": "🥬", "ירקות": "🥬", "פירות": "🥬",
-  "מוצרי חלב": "🧀", "בשר": "🥩", "בשר ועוף": "🥩",
-  "מאפים": "🥖", "קפואים": "🧊", "חטיפים": "🍿",
-  "משקאות": "🥤", "שימורים": "🥫", "תבלינים ורטבים": "🌶️",
-  "שמנים": "🌶️", "דגים": "🐟", "קטניות ודגנים": "🥫",
-  // Health — English keys
+/** Fallback emoji map for items with legacy English subcategory keys not found
+ *  in the family's effective list (e.g. items added before customization). */
+const LEGACY_EMOJI: Record<string, string> = {
+  Produce: "🥬", Dairy: "🧀", Meat: "🥩", Fish: "🐟", Bakery: "🥖",
+  Frozen: "🧊", Snacks: "🍿", Beverages: "🥤", Canned: "🥫", Spices: "🌶️",
   Medications: "💊", Vitamins: "💪", PersonalCare: "🧴", BabyCare: "🍼",
   FirstAid: "🩹", Skincare: "✨", HairCare: "💇",
-  // Health — Hebrew labels
-  "תרופות": "💊", "ויטמינים": "💪", "טיפוח אישי": "🧴",
-  "תינוקות": "🍼", "עזרה ראשונה": "🩹", "טיפוח עור": "✨", "טיפוח שיער": "💇",
-  // Home — English keys
   Cleaning: "🧹", Laundry: "👕", Kitchen: "🍳", Bathroom: "🚿",
-  PaperGoods: "🧻", Tools: "🔧", Decor: "🖼️",
-  // Home — Hebrew labels
-  "ניקיון": "🧹", "כביסה": "👕", "מטבח": "🍳", "אמבטיה": "🚿",
-  "מוצרי נייר": "🧻", "כלי עבודה": "🔧", "קישוט ועיצוב": "🖼️",
-  // Shared
-  Household: "🏠", Other: "📦", "מוצרי בית": "🏠", "אחר": "📦",
-  "ארוחת בוקר": "🥣",
+  PaperGoods: "🧻", Tools: "🔧", Decor: "🖼️", Other: "📦",
 };
 
 const EMPTY_KEYS: Record<ShoppingCategory, string> = {
@@ -90,35 +73,31 @@ export default function GroceryScreen() {
 
   // Group unbought items by subcategory in the family's preferred order.
   //
-  // Lookup is tried in two steps for backward compatibility with the
-  // pre-customization data model:
-  //   1. Direct: item.subcategory matches a string in the effective list
-  //      (covers families that already use Hebrew keys end-to-end).
-  //   2. Translated: groceryCategoryLabel(item.subcategory) matches a
-  //      string in the effective list. The DEFAULT_GROCERY_SUBCATEGORIES
-  //      are deliberately aligned with the i18n table, so legacy English
-  //      keys ("Produce", "Dairy", …) land in their proper Hebrew bucket
-  //      without a DB migration.
-  // Anything still unresolved falls into "אחר". Empty buckets render nothing.
+  // Lookup is tried in two steps for backward compatibility with items that
+  // have legacy English subcategory keys ("Produce", "Dairy", …):
+  //   1. Direct: item.subcategory matches a GrocerySubcategory.name.
+  //   2. Translated: groceryCategoryLabel(item.subcategory) matches a name.
+  // Anything still unresolved falls into "אחר". Empty buckets are hidden.
   const unboughtGroups = useMemo(() => {
     const order = effectiveSubcategories(customizations, selectedCategory);
-    const orderSet = new Set(order);
+    const nameSet = new Set(order.map((s) => s.name));
+    const subByName = new Map<string, GrocerySubcategory>(order.map((s) => [s.name, s]));
     const buckets = new Map<string, GroceryItem[]>();
-    for (const sub of order) buckets.set(sub, []);
+    for (const sub of order) buckets.set(sub.name, []);
     for (const item of unbought) {
       let key = OTHER_SUBCATEGORY;
       if (item.subcategory) {
-        if (orderSet.has(item.subcategory)) {
+        if (nameSet.has(item.subcategory)) {
           key = item.subcategory;
         } else {
           const translated = groceryCategoryLabel(item.subcategory);
-          if (orderSet.has(translated)) key = translated;
+          if (nameSet.has(translated)) key = translated;
         }
       }
       buckets.get(key)?.push(item);
     }
     return order
-      .map((sub) => ({ subcategory: sub, items: buckets.get(sub) ?? [] }))
+      .map((sub) => ({ subcategory: subByName.get(sub.name)!, items: buckets.get(sub.name) ?? [] }))
       .filter((g) => g.items.length > 0);
   }, [unbought, customizations, selectedCategory]);
 
@@ -180,11 +159,13 @@ export default function GroceryScreen() {
                 group header carries the same info), so we drop it inside
                 groups to reduce visual noise. */}
             {unboughtGroups.map((group, gi) => (
-              <View key={group.subcategory}>
+              <View key={group.subcategory.name}>
                 <View style={styles.groupHeaderRow}>
                   <Text style={styles.groupHeaderText}>
-                    {SUBCATEGORY_EMOJI[group.subcategory] ?? ""}{" "}
-                    {groceryCategoryLabel(group.subcategory)}
+                    {group.subcategory.icon
+                      || LEGACY_EMOJI[group.subcategory.name]
+                      || "📦"}{" "}
+                    {group.subcategory.name}
                   </Text>
                   <Text style={styles.groupHeaderCount}>{group.items.length}</Text>
                 </View>
