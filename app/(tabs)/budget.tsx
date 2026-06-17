@@ -408,7 +408,11 @@ export default function BudgetScreen() {
                       {`  (${recurrenceLabel(r)})`}
                     </Text>
                     <Pressable style={styles.nudgeBtn} onPress={() => logRecurringNow(r)}>
-                      <Text style={styles.nudgeBtnText}>{t("budget.logThisMonth")}</Text>
+                      <Text style={styles.nudgeBtnText}>
+                        {(r.recurrenceType ?? "monthly") === "weekly"
+                          ? t("budget.logThisWeek")
+                          : t("budget.logThisMonth")}
+                      </Text>
                     </Pressable>
                   </View>
                 );
