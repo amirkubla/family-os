@@ -3,6 +3,7 @@ import { View, StyleSheet, Pressable, Switch } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import DatePicker from "./DatePicker";
+import WheelPicker from "./WheelPicker";
 import { MS } from "@src/ui/modalStyles";
 import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -19,13 +20,40 @@ const RECURRENCE_TYPES: { key: RecurrenceType; label: string }[] = [
   { key: "monthly", label: t("payment.monthly") },
 ];
 
+const DAYS_OF_WEEK = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const DAYS_OF_MONTH = Array.from({ length: 31 }, (_, i) => i + 1);
+
 /**
  * A kid payment is stored as an Expense scoped to the kid, with paid=false until
  * settled. Its `note` holds the payment name (e.g. "חוג ציור") and its `date`
  * is the due date. Category defaults to the kids bucket so that — once paid —
  * it rolls into "ילדים וחוגים" spending on the budget screen.
+ *
+ * For a recurring payment the user picks a cadence (weekly/monthly) + a day
+ * (day-of-week or day-of-month); the concrete due date is the next matching day.
  */
 const KID_PAYMENT_CATEGORY = "ילדים וחוגים";
+
+// Next date (today or later) whose weekday is `dow` (0=Sunday).
+function nextWeeklyDate(dow: number): string {
+  const today = new Date();
+  const diff = (dow - today.getDay() + 7) % 7;
+  const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
+  return toYMD(d);
+}
+
+// `dom`-th of this month, or next month if that day has already passed.
+function nextMonthlyDate(dom: number): string {
+  const today = new Date();
+  let y = today.getFullYear();
+  let m = today.getMonth();
+  if (dom < today.getDate()) {
+    m += 1;
+    if (m > 11) { m = 0; y += 1; }
+  }
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  return toYMD(new Date(y, m, Math.min(dom, daysInMonth)));
+}
 
 interface Props {
   visible: boolean;
@@ -42,6 +70,8 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
   const [dueDate, setDueDate] = useState(toYMD(new Date()));
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("monthly");
+  // 0-6 for weekly, 1-31 for monthly.
+  const [recurrenceDay, setRecurrenceDay] = useState(new Date().getDate());
   const [nameError, setNameError] = useState("");
   const [amountError, setAmountError] = useState("");
 
@@ -52,17 +82,31 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
       setAmountText(String(editExpense.amount / 100));
       setDueDate(editExpense.date);
       setIsRecurring(editExpense.isRecurring);
-      setRecurrenceType((editExpense.recurrenceType as RecurrenceType) ?? "monthly");
+      const rt = (editExpense.recurrenceType as RecurrenceType) ?? "monthly";
+      setRecurrenceType(rt);
+      if (editExpense.recurrenceDay != null) {
+        setRecurrenceDay(editExpense.recurrenceDay);
+      } else {
+        const [yy, mm, dd] = editExpense.date.split("-").map(Number);
+        setRecurrenceDay(rt === "weekly" ? new Date(yy, mm - 1, dd).getDay() : dd);
+      }
     } else {
       setName("");
       setAmountText("");
       setDueDate(toYMD(new Date()));
       setIsRecurring(false);
       setRecurrenceType("monthly");
+      setRecurrenceDay(new Date().getDate());
     }
     setNameError("");
     setAmountError("");
   }, [visible, editExpense]);
+
+  // Switching cadence re-anchors the day to a sensible default for that cadence.
+  const changeType = (rt: RecurrenceType) => {
+    setRecurrenceType(rt);
+    setRecurrenceDay(rt === "weekly" ? new Date().getDay() : new Date().getDate());
+  };
 
   const handleSave = () => {
     const trimmed = name.trim();
@@ -70,25 +114,29 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
     const amount = parseILS(amountText);
     if (!amount || amount <= 0) { setAmountError(t("budget.amount")); return; }
 
+    // Recurring → due date is the next matching day; otherwise use the picker.
+    const date = isRecurring
+      ? recurrenceType === "weekly" ? nextWeeklyDate(recurrenceDay) : nextMonthlyDate(recurrenceDay)
+      : dueDate;
+
+    const recurrenceFields = {
+      isRecurring,
+      recurrenceType: isRecurring ? recurrenceType : undefined,
+      recurrenceDay: isRecurring ? recurrenceDay : undefined,
+    };
+
     if (editExpense) {
       // paid status is toggled from the list row, not here — leave it untouched.
-      updateExpenseRemote(editExpense.id, {
-        note: trimmed,
-        amount,
-        date: dueDate,
-        isRecurring,
-        recurrenceType: isRecurring ? recurrenceType : undefined,
-      });
+      updateExpenseRemote(editExpense.id, { note: trimmed, amount, date, ...recurrenceFields });
     } else {
       addExpenseRemote({
         amount,
         categoryName: KID_PAYMENT_CATEGORY,
         kidId,
-        date: dueDate,
+        date,
         note: trimmed,
         paid: false,
-        isRecurring,
-        recurrenceType: isRecurring ? recurrenceType : undefined,
+        ...recurrenceFields,
       });
     }
     onDismiss();
@@ -127,10 +175,6 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
       />
       {amountError ? <Text style={MS.error}>{amountError}</Text> : null}
 
-      {/* Due date */}
-      <Text style={MS.label}>{t("payment.dueDate")}</Text>
-      <DatePicker value={dueDate} onChange={setDueDate} />
-
       {/* Recurring toggle */}
       <View style={styles.recurringRow}>
         <Text style={styles.recurringLabel}>{t("payment.recurringToggle")}</Text>
@@ -141,20 +185,54 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
           trackColor={{ false: C.border, true: C.purple + "55" }}
         />
       </View>
-      {isRecurring && (
-        <View style={styles.typeRow}>
-          {RECURRENCE_TYPES.map((rt) => (
-            <Pressable
-              key={rt.key}
-              onPress={() => setRecurrenceType(rt.key)}
-              style={[styles.typeChip, recurrenceType === rt.key && styles.typeChipActive]}
-            >
-              <Text style={[styles.typeChipText, recurrenceType === rt.key && styles.typeChipTextActive]}>
-                {rt.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+
+      {isRecurring ? (
+        <>
+          {/* Cadence */}
+          <View style={styles.typeRow}>
+            {RECURRENCE_TYPES.map((rt) => (
+              <Pressable
+                key={rt.key}
+                onPress={() => changeType(rt.key)}
+                style={[styles.typeChip, recurrenceType === rt.key && styles.typeChipActive]}
+              >
+                <Text style={[styles.typeChipText, recurrenceType === rt.key && styles.typeChipTextActive]}>
+                  {rt.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Day selector */}
+          {recurrenceType === "weekly" ? (
+            <View style={styles.pickerRow}>
+              <Text style={styles.pickerLabel}>{t("payment.onDay")}</Text>
+              <WheelPicker
+                data={DAYS_OF_WEEK}
+                selectedIndex={recurrenceDay}
+                onChange={setRecurrenceDay}
+                width={110}
+              />
+            </View>
+          ) : (
+            <View style={styles.pickerRow}>
+              <Text style={styles.pickerLabel}>{t("payment.onDay")}</Text>
+              <WheelPicker
+                data={DAYS_OF_MONTH.map(String)}
+                selectedIndex={recurrenceDay - 1}
+                onChange={(i) => setRecurrenceDay(i + 1)}
+                width={72}
+              />
+              <Text style={styles.pickerLabel}>{t("payment.inMonth")}</Text>
+            </View>
+          )}
+        </>
+      ) : (
+        <>
+          {/* One-time due date */}
+          <Text style={MS.label}>{t("payment.dueDate")}</Text>
+          <DatePicker value={dueDate} onChange={setDueDate} />
+        </>
       )}
 
       <View style={MS.actions}>
@@ -198,4 +276,16 @@ const styles = StyleSheet.create({
   typeChipActive: { backgroundColor: C.purple, borderColor: C.purple },
   typeChipText: { fontSize: 13, color: C.textSecondary, fontWeight: "600" },
   typeChipTextActive: { color: "#fff" },
+  pickerRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: S.sm,
+    marginBottom: S.sm,
+  },
+  pickerLabel: {
+    fontSize: 13,
+    color: C.textSecondary,
+    writingDirection: "rtl",
+  },
 });

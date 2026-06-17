@@ -409,6 +409,7 @@ export default function KidScheduleScreen() {
         paid: false,
         isRecurring: true,
         recurrenceType: pay.recurrenceType,
+        recurrenceDay: pay.recurrenceDay,
       });
     }
   }, []);
@@ -855,9 +856,13 @@ export default function KidScheduleScreen() {
                       const unpaid = pay.paid === false;
                       const overdue = unpaid && pay.date < todayYMD;
                       const dateLabel = `${pay.date.slice(8, 10)}/${pay.date.slice(5, 7)}`;
-                      const recurLabel = pay.isRecurring
-                        ? pay.recurrenceType === "weekly" ? t("payment.everyWeek") : t("payment.everyMonth")
-                        : "";
+                      const recurLabel = !pay.isRecurring
+                        ? ""
+                        : pay.recurrenceType === "weekly"
+                          ? `${t("payment.everyWeek")}, ${dayName(pay.recurrenceDay ?? 0)}`
+                          : pay.recurrenceDay != null
+                            ? `${t("payment.everyMonth")}, ${pay.recurrenceDay} ${t("payment.inMonth")}`
+                            : t("payment.everyMonth");
                       const metaText = [overdue ? t("payment.overdue") : "", recurLabel, dateLabel]
                         .filter(Boolean)
                         .join(" • ");

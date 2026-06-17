@@ -537,6 +537,8 @@ const he = {
     monthly: "חודשי",
     everyWeek: "כל שבוע",
     everyMonth: "כל חודש",
+    onDay: "ביום",
+    inMonth: "בחודש",
   },
 
 } as const;
