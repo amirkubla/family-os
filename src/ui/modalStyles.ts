@@ -57,6 +57,7 @@ export const MS = StyleSheet.create({
     flex: 1,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
+    marginBottom: S.md,
   },
 
   // ---------------------------------------------------------------------------
