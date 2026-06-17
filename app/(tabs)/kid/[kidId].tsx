@@ -39,11 +39,15 @@ import {
   deleteProjectRemote,
   reorderNotesRemote,
   reorderProjectsRemote,
+  deleteExpenseRemote,
+  updateExpenseRemote,
 } from "@src/lib/sync/remoteCrud";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { Note } from "@src/models/note";
 import type { Project } from "@src/models/project";
+import type { Expense } from "@src/models/budget";
+import { formatILS } from "@src/models/budget";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, blockTypeLabel, statusLabel } from "@src/i18n";
@@ -58,6 +62,7 @@ import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import NoteModal from "@src/components/NoteModal";
 import ProjectModal from "@src/components/ProjectModal";
+import KidPaymentModal from "@src/components/KidPaymentModal";
 import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -313,9 +318,13 @@ export default function KidScheduleScreen() {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  // Payment modal — owned by this kid.
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Expense | null>(null);
   // Section-collapse state (local; doesn't need to persist across sessions).
   const [notesExpanded, setNotesExpanded] = useState(true);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [paymentsExpanded, setPaymentsExpanded] = useState(true);
 
   // This kid's notes + projects (kidId === kidId), in manual sortOrder.
   const allNotes = useFamilyStore((s) => s.notes);
@@ -334,6 +343,23 @@ export default function KidScheduleScreen() {
         .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [allProjects, kidId],
   );
+
+  // This kid's payments (expenses tagged to the kid). Unpaid ("to pay") first,
+  // ordered by due date; settled payments below, most recent first.
+  const allExpenses = useFamilyStore((s) => s.expenses);
+  const kidPayments = useMemo(
+    () =>
+      allExpenses
+        .filter((e) => e.kidId === kidId)
+        .sort((a, b) => {
+          const aUnpaid = a.paid === false;
+          const bUnpaid = b.paid === false;
+          if (aUnpaid !== bUnpaid) return aUnpaid ? -1 : 1;
+          return aUnpaid ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date);
+        }),
+    [allExpenses, kidId],
+  );
+  const todayYMD = toYMD(new Date());
 
   // Up/down reorder for the kid's notes/projects. (Drag isn't used here —
   // these lists are nested in the calendar scroll, where nested drag is
@@ -767,6 +793,96 @@ export default function KidScheduleScreen() {
                   </View>
                 )
               )}
+
+              {/* --- This kid's payments (תשלומים) --- */}
+              <View style={styles.sectionHeaderRow}>
+                <SectionHeader
+                  label={t("kid.paymentsOf", { name: kid?.name ?? "" })}
+                  collapsible
+                  expanded={paymentsExpanded}
+                  onToggle={() => setPaymentsExpanded((v) => !v)}
+                  testID="kid-section-payments"
+                />
+                <IconButton
+                  icon="plus-circle"
+                  size={28}
+                  iconColor={kidColor}
+                  accessibilityLabel={t("kid.addPayment")}
+                  onPress={() => {
+                    setEditingPayment(null);
+                    setPaymentModalOpen(true);
+                  }}
+                />
+              </View>
+              {paymentsExpanded && (
+                kidPayments.length === 0 ? (
+                  <Text style={styles.emptyText}>{t("kid.noPayments")}</Text>
+                ) : (
+                  <View style={styles.paymentsContainer}>
+                    {kidPayments.map((pay) => {
+                      const unpaid = pay.paid === false;
+                      const overdue = unpaid && pay.date < todayYMD;
+                      return (
+                        <Pressable
+                          key={pay.id}
+                          style={({ hovered }: any) => [
+                            styles.paymentCard,
+                            hovered && styles.paymentCardHover,
+                          ]}
+                          onPress={() => {
+                            setEditingPayment(pay);
+                            setPaymentModalOpen(true);
+                          }}
+                          testID={`kid-payment-${pay.id}`}
+                        >
+                          {/* Status pill — tap to flip paid/unpaid */}
+                          <Pressable
+                            onPress={() => updateExpenseRemote(pay.id, { paid: unpaid })}
+                            style={[
+                              styles.statusPill,
+                              unpaid ? styles.statusPillUnpaid : styles.statusPillPaid,
+                            ]}
+                            accessibilityRole="button"
+                            accessibilityLabel={unpaid ? t("payment.markPaid") : t("payment.markUnpaid")}
+                            testID={`kid-payment-toggle-${pay.id}`}
+                          >
+                            <Text
+                              style={[
+                                styles.statusPillText,
+                                unpaid ? styles.statusPillTextUnpaid : styles.statusPillTextPaid,
+                              ]}
+                            >
+                              {unpaid ? t("payment.toPay") : t("payment.paid")}
+                            </Text>
+                          </Pressable>
+
+                          <View style={styles.paymentInfo}>
+                            <Text
+                              style={[styles.paymentName, !unpaid && styles.paymentNamePaid]}
+                              numberOfLines={1}
+                            >
+                              {pay.note || t("payment.add")}
+                            </Text>
+                            <Text style={[styles.paymentMeta, overdue && styles.paymentMetaOverdue]}>
+                              {overdue ? `${t("payment.overdue")} • ` : ""}
+                              {pay.date.slice(8, 10)}/{pay.date.slice(5, 7)}
+                            </Text>
+                          </View>
+
+                          <Text style={styles.paymentAmount}>{formatILS(pay.amount)}</Text>
+
+                          <IconButton
+                            icon="trash-can-outline"
+                            size={16}
+                            iconColor={C.textMuted}
+                            onPress={() => requestDelete(() => deleteExpenseRemote(pay.id))}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )
+              )}
             </>
           )}
 
@@ -873,6 +989,17 @@ export default function KidScheduleScreen() {
           defaultKidId={kidId}
         />
 
+        {/* This kid's payments (תשלומים) — new ones start as "to pay". */}
+        <KidPaymentModal
+          visible={paymentModalOpen}
+          onDismiss={() => {
+            setPaymentModalOpen(false);
+            setEditingPayment(null);
+          }}
+          kidId={kidId}
+          editExpense={editingPayment}
+        />
+
         <ConfirmDeleteModal
           visible={confirmVisible}
           onConfirm={confirmDelete}
@@ -925,6 +1052,53 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+
+  // ── Payments (תשלומים) ──
+  paymentsContainer: {
+    gap: S.sm,
+    marginBottom: S.lg,
+  },
+  paymentCard: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    backgroundColor: C.surface,
+    borderRadius: R.md,
+    paddingVertical: S.sm,
+    paddingHorizontal: S.md,
+    gap: S.sm,
+    ...SHADOW.sm,
+  },
+  paymentCardHover: { backgroundColor: C.surfaceSubtle },
+  statusPill: {
+    paddingHorizontal: S.sm,
+    paddingVertical: 4,
+    borderRadius: 999,
+    minWidth: 64,
+    alignItems: "center",
+  },
+  statusPillUnpaid: { backgroundColor: C.amber + "22" },
+  statusPillPaid: { backgroundColor: C.teal + "22" },
+  statusPillText: { fontSize: 12, fontWeight: "700", writingDirection: "rtl" },
+  statusPillTextUnpaid: { color: "#92400E" },
+  statusPillTextPaid: { color: C.teal },
+  paymentInfo: { flex: 1 },
+  paymentName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  paymentNamePaid: { color: C.textMuted, textDecorationLine: "line-through" },
+  paymentMeta: {
+    fontSize: 11,
+    color: C.textMuted,
+    textAlign: TEXT_RIGHT,
+    marginTop: 2,
+    writingDirection: "rtl",
+  },
+  paymentMetaOverdue: { color: C.red, fontWeight: "700" },
+  paymentAmount: { fontSize: 15, fontWeight: "700", color: C.textPrimary },
 
   // ── Notes (identical to /home) ──
   notesGrid: {

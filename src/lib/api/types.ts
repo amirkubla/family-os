@@ -125,6 +125,7 @@ export interface ApiExpense {
   kidId: string | null;
   date: string;
   note: string | null;
+  paid: boolean;
   isRecurring: boolean;
   recurrenceType: string | null; // 'weekly' | 'monthly'
   recurrenceDay: number | null;

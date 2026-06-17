@@ -131,6 +131,9 @@ const he = {
     noProjects: "אין פרויקטים",
     addNote: "הוספת פתק",
     addProject: "הוספת פרויקט",
+    paymentsOf: "התשלומים של {{name}}",
+    addPayment: "הוספת תשלום",
+    noPayments: "אין תשלומים",
   },
 
   // ── Grocery Add Modal ──
@@ -515,6 +518,20 @@ const he = {
     noRecurring: "אין הוצאות קבועות — סמנו הוצאה כ׳קבועה׳ כדי שתופיע כאן",
     byPayer: "לפי משלם",
     unassigned: "לא מוגדר",
+  },
+  payment: {
+    add: "תשלום חדש",
+    edit: "עריכת תשלום",
+    name: "שם התשלום",
+    namePlaceholder: "לדוגמה: חוג ציור",
+    amount: "סכום (₪)",
+    amountPlaceholder: "0",
+    dueDate: "תאריך יעד",
+    toPay: "לתשלום",
+    paid: "שולם",
+    markPaid: "סמן כשולם",
+    markUnpaid: "החזר ללתשלום",
+    overdue: "באיחור",
   },
 
 } as const;

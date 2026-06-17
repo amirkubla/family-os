@@ -603,6 +603,10 @@ export const expenses = pgTable(
     kidId: uuid("kid_id").references(() => kids.id, { onDelete: "set null" }),
     date: text("date").notNull(), // "YYYY-MM-DD"
     note: text("note"),
+    // false = a planned kid payment still "to pay" (לתשלום); true = a settled
+    // expense. Defaults true so every pre-existing/normal expense is "paid".
+    // Unpaid rows are excluded from spending totals on the budget screen.
+    paid: boolean("paid").default(true).notNull(),
     isRecurring: boolean("is_recurring").default(false).notNull(),
     recurrenceType: text("recurrence_type"), // 'weekly' | 'monthly' | 'yearly'
     recurrenceDay: integer("recurrence_day"), // 0-6 for weekly, 1-31 for monthly/yearly

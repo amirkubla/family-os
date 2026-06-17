@@ -15,8 +15,13 @@ export interface Expense {
   categoryName: string;
   payerMemberId?: string;
   kidId?: string;
-  date: string; // "YYYY-MM-DD"
+  date: string; // "YYYY-MM-DD" — for kid payments this is the due date
   note?: string;
+  /**
+   * false = a planned kid payment still "to pay" (לתשלום); true/undefined = a
+   * settled expense. Unpaid items are excluded from budget spending totals.
+   */
+  paid?: boolean;
   isRecurring: boolean;
   recurrenceType?: "weekly" | "monthly";
   recurrenceDay?: number; // 0-6 for weekly, 1-31 for monthly

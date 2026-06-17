@@ -92,10 +92,12 @@ export default function BudgetScreen() {
     [allExpenses],
   );
 
-  // One-time expenses for the selected month only.
+  // One-time, settled expenses for the selected month only.
+  // Unpaid items (kid payments still "to pay", paid===false) are excluded —
+  // they aren't spent yet, so they don't count toward totals or the list.
   const monthExpenses = useMemo(() => {
     return allExpenses
-      .filter((e) => !e.isRecurring && e.date.startsWith(selectedYM))
+      .filter((e) => !e.isRecurring && e.paid !== false && e.date.startsWith(selectedYM))
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [allExpenses, selectedYM]);
 
@@ -188,6 +190,7 @@ export default function BudgetScreen() {
       amount: template.amount,
       categoryName: template.categoryName,
       payerMemberId: template.payerMemberId,
+      kidId: template.kidId,
       date: toYMD(today),
       note: `🔄 ${template.note ?? template.categoryName}`,
       isRecurring: false,
