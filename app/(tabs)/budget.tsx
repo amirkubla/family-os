@@ -138,20 +138,21 @@ export default function BudgetScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Month navigation — RTL_ROW: first child appears on RIGHT, last on LEFT.
-            chevron-right (→) on RIGHT = go forward in time (next month).
-            chevron-left  (←) on LEFT  = go back in time (prev month). */}
+            In Hebrew RTL calendars, LEFT = forward in time, RIGHT = backward.
+            chevron-left  (←) on LEFT  = next month (disabled on current month).
+            chevron-right (→) on RIGHT = prev month (always enabled). */}
         <View style={styles.monthHeader}>
           <IconButton
             icon="chevron-right"
             size={22}
-            onPress={() => setSelectedYM(nextMonth(selectedYM))}
-            disabled={isCurrentMonth}
+            onPress={() => setSelectedYM(prevMonth(selectedYM))}
           />
           <Text style={styles.monthLabel}>{monthLabel(selectedYM)}</Text>
           <IconButton
             icon="chevron-left"
             size={22}
-            onPress={() => setSelectedYM(prevMonth(selectedYM))}
+            onPress={() => setSelectedYM(nextMonth(selectedYM))}
+            disabled={isCurrentMonth}
           />
         </View>
 
