@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
   center: {
     width: "100%",
     alignItems: "center",
-    justifyContent: "flex-start",
-    paddingTop: 48,
+    justifyContent: "center",
+    paddingVertical: S.xxl,
     flex: 1,
     pointerEvents: "box-none",
   },

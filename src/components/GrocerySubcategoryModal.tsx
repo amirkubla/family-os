@@ -63,8 +63,8 @@ export default function GrocerySubcategoryModal({ visible, onDismiss, editSubcat
         {editSubcategory ? t("customization.editSubcategory") : t("customization.addSubcategoryTitle")}
       </Text>
 
+      <Text style={MS.label}>{t("customization.subcategoryName")}</Text>
       <TextInput
-        label={t("customization.subcategoryName")}
         placeholder={t("customization.subcategoryPlaceholder")}
         value={name}
         onChangeText={(v) => { setName(v); setNameError(""); }}
