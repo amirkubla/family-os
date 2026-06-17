@@ -129,7 +129,7 @@ export const MS = StyleSheet.create({
   label: {
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
-    marginTop: S.sm,
+    marginTop: S.lg,
     marginBottom: S.xs + 2,
     color: C.textSecondary,
     fontSize: 13,

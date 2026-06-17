@@ -78,7 +78,7 @@ export default function KidOwnerPicker({ value, onChange, label }: Props) {
 const styles = StyleSheet.create({
   container: {
     gap: S.xs,
-    marginTop: S.md,
+    marginTop: S.xl,
     marginBottom: S.sm,
   },
   label: {
