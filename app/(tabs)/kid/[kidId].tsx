@@ -39,6 +39,7 @@ import {
   deleteProjectRemote,
   reorderNotesRemote,
   reorderProjectsRemote,
+  addExpenseRemote,
   deleteExpenseRemote,
   updateExpenseRemote,
 } from "@src/lib/sync/remoteCrud";
@@ -68,6 +69,15 @@ import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
 type CalendarView = "month" | "week" | "day";
+
+// Advance a "YYYY-MM-DD" due date by one recurrence period (default monthly).
+function nextDueDate(ymd: string, type?: "weekly" | "monthly"): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  if (type === "weekly") date.setDate(date.getDate() + 7);
+  else date.setMonth(date.getMonth() + 1);
+  return toYMD(date);
+}
 
 // Same palette as /home so kid-owned notes/projects look identical.
 const NOTE_COLORS = {
@@ -384,6 +394,28 @@ export default function KidScheduleScreen() {
     },
     [kidProjects],
   );
+
+  // Settle a payment. For a recurring one, settle this occurrence as history
+  // (isRecurring=false) and queue the next "to pay" with the due date advanced.
+  const handleMarkPaid = useCallback((pay: Expense) => {
+    updateExpenseRemote(pay.id, { paid: true, isRecurring: false });
+    if (pay.isRecurring) {
+      addExpenseRemote({
+        amount: pay.amount,
+        categoryName: pay.categoryName,
+        kidId: pay.kidId,
+        date: nextDueDate(pay.date, pay.recurrenceType),
+        note: pay.note,
+        paid: false,
+        isRecurring: true,
+        recurrenceType: pay.recurrenceType,
+      });
+    }
+  }, []);
+
+  const handleMarkUnpaid = useCallback((pay: Expense) => {
+    updateExpenseRemote(pay.id, { paid: false });
+  }, []);
 
   const openAdd = (dayOfWeek?: number) => {
     setEditingBlock(null);
@@ -822,6 +854,13 @@ export default function KidScheduleScreen() {
                     {kidPayments.map((pay) => {
                       const unpaid = pay.paid === false;
                       const overdue = unpaid && pay.date < todayYMD;
+                      const dateLabel = `${pay.date.slice(8, 10)}/${pay.date.slice(5, 7)}`;
+                      const recurLabel = pay.isRecurring
+                        ? pay.recurrenceType === "weekly" ? t("payment.everyWeek") : t("payment.everyMonth")
+                        : "";
+                      const metaText = [overdue ? t("payment.overdue") : "", recurLabel, dateLabel]
+                        .filter(Boolean)
+                        .join(" • ");
                       return (
                         <Pressable
                           key={pay.id}
@@ -835,16 +874,12 @@ export default function KidScheduleScreen() {
                           }}
                           testID={`kid-payment-${pay.id}`}
                         >
-                          {/* Status pill — tap to flip paid/unpaid */}
-                          <Pressable
-                            onPress={() => updateExpenseRemote(pay.id, { paid: unpaid })}
+                          {/* Status label (non-interactive — use the actions below) */}
+                          <View
                             style={[
                               styles.statusPill,
                               unpaid ? styles.statusPillUnpaid : styles.statusPillPaid,
                             ]}
-                            accessibilityRole="button"
-                            accessibilityLabel={unpaid ? t("payment.markPaid") : t("payment.markUnpaid")}
-                            testID={`kid-payment-toggle-${pay.id}`}
                           >
                             <Text
                               style={[
@@ -854,7 +889,7 @@ export default function KidScheduleScreen() {
                             >
                               {unpaid ? t("payment.toPay") : t("payment.paid")}
                             </Text>
-                          </Pressable>
+                          </View>
 
                           <View style={styles.paymentInfo}>
                             <Text
@@ -864,12 +899,32 @@ export default function KidScheduleScreen() {
                               {pay.note || t("payment.add")}
                             </Text>
                             <Text style={[styles.paymentMeta, overdue && styles.paymentMetaOverdue]}>
-                              {overdue ? `${t("payment.overdue")} • ` : ""}
-                              {pay.date.slice(8, 10)}/{pay.date.slice(5, 7)}
+                              {metaText}
                             </Text>
                           </View>
 
                           <Text style={styles.paymentAmount}>{formatILS(pay.amount)}</Text>
+
+                          {/* Mark paid / undo — explicit action beside delete */}
+                          {unpaid ? (
+                            <IconButton
+                              icon="check-circle-outline"
+                              size={20}
+                              iconColor={C.teal}
+                              accessibilityLabel={t("payment.markPaid")}
+                              testID={`kid-payment-markpaid-${pay.id}`}
+                              onPress={() => handleMarkPaid(pay)}
+                            />
+                          ) : (
+                            <IconButton
+                              icon="undo-variant"
+                              size={18}
+                              iconColor={C.textMuted}
+                              accessibilityLabel={t("payment.markUnpaid")}
+                              testID={`kid-payment-undo-${pay.id}`}
+                              onPress={() => handleMarkUnpaid(pay)}
+                            />
+                          )}
 
                           <IconButton
                             icon="trash-can-outline"

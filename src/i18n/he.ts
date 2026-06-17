@@ -532,6 +532,11 @@ const he = {
     markPaid: "סמן כשולם",
     markUnpaid: "החזר ללתשלום",
     overdue: "באיחור",
+    recurringToggle: "תשלום חוזר",
+    weekly: "שבועי",
+    monthly: "חודשי",
+    everyWeek: "כל שבוע",
+    everyMonth: "כל חודש",
   },
 
 } as const;

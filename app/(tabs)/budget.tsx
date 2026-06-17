@@ -86,9 +86,10 @@ export default function BudgetScreen() {
 
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
-  // All recurring expense templates (not filtered by month).
+  // All recurring expense templates (not filtered by month). Kid payments
+  // (kidId set) are managed on the kid screen, so they're excluded here.
   const recurringExpenses = useMemo(
-    () => allExpenses.filter((e) => e.isRecurring).sort((a, b) => (a.recurrenceDay ?? 1) - (b.recurrenceDay ?? 1)),
+    () => allExpenses.filter((e) => e.isRecurring && !e.kidId).sort((a, b) => (a.recurrenceDay ?? 1) - (b.recurrenceDay ?? 1)),
     [allExpenses],
   );
 

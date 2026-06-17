@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { View } from "react-native";
+import { View, StyleSheet, Pressable, Switch } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import DatePicker from "./DatePicker";
 import { MS } from "@src/ui/modalStyles";
+import { C, S, R } from "@src/ui/tokens";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 import { toYMD } from "@src/utils/date";
 import { addExpenseRemote, updateExpenseRemote } from "@src/lib/sync/remoteCrud";
 import { parseILS } from "@src/models/budget";
 import type { Expense } from "@src/models/budget";
+
+type RecurrenceType = "weekly" | "monthly";
+
+const RECURRENCE_TYPES: { key: RecurrenceType; label: string }[] = [
+  { key: "weekly", label: t("payment.weekly") },
+  { key: "monthly", label: t("payment.monthly") },
+];
 
 /**
  * A kid payment is stored as an Expense scoped to the kid, with paid=false until
@@ -31,6 +40,8 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
   const [name, setName] = useState("");
   const [amountText, setAmountText] = useState("");
   const [dueDate, setDueDate] = useState(toYMD(new Date()));
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("monthly");
   const [nameError, setNameError] = useState("");
   const [amountError, setAmountError] = useState("");
 
@@ -40,10 +51,14 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
       setName(editExpense.note ?? "");
       setAmountText(String(editExpense.amount / 100));
       setDueDate(editExpense.date);
+      setIsRecurring(editExpense.isRecurring);
+      setRecurrenceType((editExpense.recurrenceType as RecurrenceType) ?? "monthly");
     } else {
       setName("");
       setAmountText("");
       setDueDate(toYMD(new Date()));
+      setIsRecurring(false);
+      setRecurrenceType("monthly");
     }
     setNameError("");
     setAmountError("");
@@ -57,7 +72,13 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
 
     if (editExpense) {
       // paid status is toggled from the list row, not here — leave it untouched.
-      updateExpenseRemote(editExpense.id, { note: trimmed, amount, date: dueDate });
+      updateExpenseRemote(editExpense.id, {
+        note: trimmed,
+        amount,
+        date: dueDate,
+        isRecurring,
+        recurrenceType: isRecurring ? recurrenceType : undefined,
+      });
     } else {
       addExpenseRemote({
         amount,
@@ -66,7 +87,8 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
         date: dueDate,
         note: trimmed,
         paid: false,
-        isRecurring: false,
+        isRecurring,
+        recurrenceType: isRecurring ? recurrenceType : undefined,
       });
     }
     onDismiss();
@@ -109,6 +131,32 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
       <Text style={MS.label}>{t("payment.dueDate")}</Text>
       <DatePicker value={dueDate} onChange={setDueDate} />
 
+      {/* Recurring toggle */}
+      <View style={styles.recurringRow}>
+        <Text style={styles.recurringLabel}>{t("payment.recurringToggle")}</Text>
+        <Switch
+          value={isRecurring}
+          onValueChange={setIsRecurring}
+          thumbColor={isRecurring ? C.purple : C.textSecondary}
+          trackColor={{ false: C.border, true: C.purple + "55" }}
+        />
+      </View>
+      {isRecurring && (
+        <View style={styles.typeRow}>
+          {RECURRENCE_TYPES.map((rt) => (
+            <Pressable
+              key={rt.key}
+              onPress={() => setRecurrenceType(rt.key)}
+              style={[styles.typeChip, recurrenceType === rt.key && styles.typeChipActive]}
+            >
+              <Text style={[styles.typeChipText, recurrenceType === rt.key && styles.typeChipTextActive]}>
+                {rt.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
       <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>
         <Button mode="contained" onPress={handleSave}>{t("save")}</Button>
@@ -116,3 +164,38 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
     </ModalWrapper>
   );
 }
+
+const styles = StyleSheet.create({
+  recurringRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: S.sm,
+    marginTop: S.xs,
+  },
+  recurringLabel: {
+    fontSize: 14,
+    color: C.textPrimary,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  typeRow: {
+    flexDirection: RTL_ROW,
+    gap: S.xs,
+    marginBottom: S.sm,
+  },
+  typeChip: {
+    flex: 1,
+    paddingVertical: S.xs,
+    borderRadius: R.xl,
+    backgroundColor: C.surfaceSubtle,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    alignItems: "center",
+  },
+  typeChipActive: { backgroundColor: C.purple, borderColor: C.purple },
+  typeChipText: { fontSize: 13, color: C.textSecondary, fontWeight: "600" },
+  typeChipTextActive: { color: "#fff" },
+});
