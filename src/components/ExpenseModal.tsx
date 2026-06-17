@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, TextInput as RNTextInput } from "react-native";
+import { View, StyleSheet, Pressable, TextInput as RNTextInput, Switch } from "react-native";
 import { Text, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import { MS } from "@src/ui/modalStyles";
@@ -22,6 +22,8 @@ interface Props {
     kidId?: string;
     date: string;
     note?: string;
+    isRecurring: boolean;
+    recurrenceDay?: number;
   }) => void;
 }
 
@@ -36,6 +38,8 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
   const [payerMemberId, setPayerMemberId] = useState<string | undefined>(undefined);
   const [date, setDate] = useState(today);
   const [note, setNote] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceDayText, setRecurrenceDayText] = useState("");
   const [amountError, setAmountError] = useState("");
   const [categoryError, setCategoryError] = useState("");
 
@@ -47,12 +51,16 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       setPayerMemberId(editExpense.payerMemberId);
       setDate(editExpense.date);
       setNote(editExpense.note ?? "");
+      setIsRecurring(editExpense.isRecurring);
+      setRecurrenceDayText(editExpense.recurrenceDay ? String(editExpense.recurrenceDay) : "");
     } else {
       setAmountText("");
       setCategoryName(budgetCategories[0]?.name ?? "");
       setPayerMemberId(undefined);
       setDate(today);
       setNote("");
+      setIsRecurring(false);
+      setRecurrenceDayText("");
     }
     setAmountError("");
     setCategoryError("");
@@ -69,7 +77,8 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       return;
     }
     setCategoryError("");
-    onSave({ amount, categoryName, payerMemberId, date, note: note.trim() || undefined });
+    const recurrenceDay = isRecurring && recurrenceDayText ? parseInt(recurrenceDayText, 10) : undefined;
+    onSave({ amount, categoryName, payerMemberId, date, note: note.trim() || undefined, isRecurring, recurrenceDay });
     onDismiss();
   };
 
@@ -153,6 +162,31 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         multiline
       />
 
+      {/* Recurring toggle */}
+      <View style={styles.recurringRow}>
+        <Text style={styles.recurringLabel}>{t("budget.recurringToggle")}</Text>
+        <Switch
+          value={isRecurring}
+          onValueChange={setIsRecurring}
+          thumbColor={isRecurring ? C.purple : C.textSecondary}
+          trackColor={{ false: C.border, true: C.purple + "55" }}
+        />
+      </View>
+      {isRecurring && (
+        <View style={styles.recurringDayRow}>
+          <Text style={styles.recurringDayLabel}>{t("budget.recurrenceDay")}</Text>
+          <RNTextInput
+            value={recurrenceDayText}
+            onChangeText={(v) => setRecurrenceDayText(v.replace(/[^0-9]/g, ""))}
+            placeholder={t("budget.recurrenceDayPlaceholder")}
+            keyboardType="number-pad"
+            maxLength={2}
+            style={styles.recurringDayInput}
+            placeholderTextColor={C.textSecondary}
+          />
+        </View>
+      )}
+
       <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>
         <Button mode="contained" onPress={handleSave}>{t("save")}</Button>
@@ -212,5 +246,44 @@ const styles = StyleSheet.create({
     minHeight: 48,
     marginBottom: S.sm,
     writingDirection: "rtl",
+  },
+  recurringRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: S.sm,
+    marginBottom: S.xs,
+  },
+  recurringLabel: {
+    fontSize: 14,
+    color: C.textPrimary,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: TEXT_RIGHT ?? "right",
+    writingDirection: "rtl",
+  },
+  recurringDayRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.sm,
+    marginBottom: S.sm,
+  },
+  recurringDayLabel: {
+    fontSize: 13,
+    color: C.textSecondary,
+    flex: 1,
+    textAlign: TEXT_RIGHT ?? "right",
+    writingDirection: "rtl",
+  },
+  recurringDayInput: {
+    width: 64,
+    fontSize: 16,
+    fontWeight: "700",
+    color: C.textPrimary,
+    borderWidth: 1.5,
+    borderColor: C.purple,
+    borderRadius: R.sm,
+    padding: S.xs,
+    textAlign: "center",
   },
 });

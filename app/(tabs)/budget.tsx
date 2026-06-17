@@ -20,6 +20,7 @@ import { t, LOCALE } from "@src/i18n";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { formatILS } from "@src/models/budget";
+import { toYMD } from "@src/utils/date";
 import type { Expense, BudgetCategory } from "@src/models/budget";
 import ExpenseModal from "@src/components/ExpenseModal";
 import BudgetCategoryModal from "@src/components/BudgetCategoryModal";
@@ -76,9 +77,16 @@ export default function BudgetScreen() {
 
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
+  // All recurring expense templates (not filtered by month).
+  const recurringExpenses = useMemo(
+    () => allExpenses.filter((e) => e.isRecurring).sort((a, b) => (a.recurrenceDay ?? 1) - (b.recurrenceDay ?? 1)),
+    [allExpenses],
+  );
+
+  // One-time expenses for the selected month only.
   const monthExpenses = useMemo(() => {
     return allExpenses
-      .filter((e) => e.date.startsWith(selectedYM))
+      .filter((e) => !e.isRecurring && e.date.startsWith(selectedYM))
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [allExpenses, selectedYM]);
 
@@ -102,12 +110,48 @@ export default function BudgetScreen() {
 
   const isCurrentMonth = selectedYM === currentYM;
 
+  // Recurring entries already logged for the selected month (identified by 🔄 note prefix).
+  const recurringLoggedThisMonth = useMemo(
+    () => new Set(
+      allExpenses
+        .filter((e) => !e.isRecurring && e.date.startsWith(selectedYM) && e.note?.startsWith("🔄"))
+        .map((e) => e.categoryName + "|" + e.amount),
+    ),
+    [allExpenses, selectedYM],
+  );
+
+  // Nudge: recurring templates whose recurrenceDay ≤ today and not yet logged this month.
+  const today = new Date();
+  const todayDay = today.getDate();
+  const pendingRecurring = useMemo(
+    () => isCurrentMonth
+      ? recurringExpenses.filter((r) => {
+          const dueDay = r.recurrenceDay ?? 1;
+          const key = r.categoryName + "|" + r.amount;
+          return dueDay <= todayDay && !recurringLoggedThisMonth.has(key);
+        })
+      : [],
+    [isCurrentMonth, recurringExpenses, todayDay, recurringLoggedThisMonth],
+  );
+
   const handleSaveExpense = (data: Parameters<typeof addExpenseRemote>[0]) => {
     if (editExpense) {
       deleteExpenseRemote(editExpense.id);
     }
     addExpenseRemote(data);
     setEditExpense(null);
+  };
+
+  // Log a recurring template as a one-time expense for this month.
+  const logRecurringNow = (template: Expense) => {
+    addExpenseRemote({
+      amount: template.amount,
+      categoryName: template.categoryName,
+      payerMemberId: template.payerMemberId,
+      date: toYMD(today),
+      note: `🔄 ${template.note ?? template.categoryName}`,
+      isRecurring: false,
+    });
   };
 
   const handleDeleteExpense = (expense: Expense) => {
@@ -255,6 +299,69 @@ export default function BudgetScreen() {
           >
             <Text style={styles.addCatText}>+ {t("budget.addCategory")}</Text>
           </Pressable>
+        )}
+
+        {/* Recurring expenses section */}
+        <SectionHeader label={t("budget.recurringSection")} />
+
+        {/* Nudge banner — pending recurring items */}
+        {pendingRecurring.length > 0 && (
+          <View style={styles.nudgeBanner}>
+            <Text style={styles.nudgeText}>
+              ⏰ {pendingRecurring.length === 1
+                ? t("budget.recurringNudgeOne")
+                : t("budget.recurringNudge", { count: pendingRecurring.length })}
+            </Text>
+            <View style={styles.nudgeList}>
+              {pendingRecurring.map((r) => {
+                const cat = budgetCategories.find((c) => c.name === r.categoryName);
+                return (
+                  <View key={r.id} style={styles.nudgeRow}>
+                    <Text style={styles.nudgeItem}>
+                      {cat?.icon ?? "📦"} {r.categoryName} — {formatILS(r.amount)}
+                      {r.recurrenceDay ? ` (יום ${r.recurrenceDay})` : ""}
+                    </Text>
+                    <Pressable style={styles.nudgeBtn} onPress={() => logRecurringNow(r)}>
+                      <Text style={styles.nudgeBtnText}>{t("budget.logThisMonth")}</Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {recurringExpenses.length === 0 ? (
+          <Text style={styles.empty}>{t("budget.noRecurring")}</Text>
+        ) : (
+          recurringExpenses.map((exp) => {
+            const cat = budgetCategories.find((c) => c.name === exp.categoryName);
+            return (
+              <View key={exp.id} style={styles.expRow}>
+                <View style={[styles.expAvatar, { backgroundColor: (cat?.color ?? "#9B59B6") + "22" }]}>
+                  <Text style={styles.expAvatarEmoji}>{cat?.icon ?? "🔄"}</Text>
+                </View>
+                <View style={styles.expInfo}>
+                  <Text style={[styles.expTitle, { textAlign: TEXT_RIGHT }]}>
+                    {exp.categoryName}
+                    {exp.note ? `  •  ${exp.note}` : ""}
+                  </Text>
+                  <Text style={[styles.expMeta, { textAlign: TEXT_RIGHT }]}>
+                    {exp.recurrenceDay ? `כל חודש, יום ${exp.recurrenceDay}` : "כל חודש"}
+                  </Text>
+                </View>
+                <View style={styles.expRight}>
+                  <Text style={styles.expAmount}>{formatILS(exp.amount)}</Text>
+                  <IconButton
+                    icon="trash-can-outline"
+                    size={16}
+                    onPress={() => handleDeleteExpense(exp)}
+                    iconColor={C.textSecondary}
+                  />
+                </View>
+              </View>
+            );
+          })
         )}
 
         {/* Recent expenses */}
@@ -539,4 +646,42 @@ const styles = StyleSheet.create({
     left: S.lg,
     backgroundColor: ACCENT,
   },
+
+  nudgeBanner: {
+    backgroundColor: "#FFF8E1",
+    borderRadius: R.md,
+    borderWidth: 1,
+    borderColor: "#F59E0B",
+    padding: S.md,
+    marginBottom: S.md,
+  },
+  nudgeText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#92400E",
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    marginBottom: S.sm,
+  },
+  nudgeList: { gap: S.xs },
+  nudgeRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: S.sm,
+  },
+  nudgeItem: {
+    flex: 1,
+    fontSize: 13,
+    color: "#78350F",
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  nudgeBtn: {
+    backgroundColor: "#F59E0B",
+    borderRadius: R.sm,
+    paddingHorizontal: S.sm,
+    paddingVertical: S.xs,
+  },
+  nudgeBtnText: { fontSize: 12, fontWeight: "700", color: "#fff" },
 });

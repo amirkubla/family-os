@@ -603,6 +603,8 @@ export const expenses = pgTable(
     kidId: uuid("kid_id").references(() => kids.id, { onDelete: "set null" }),
     date: text("date").notNull(), // "YYYY-MM-DD"
     note: text("note"),
+    isRecurring: boolean("is_recurring").default(false).notNull(),
+    recurrenceDay: integer("recurrence_day"), // 1-31; which day of month it recurs
     ...timestamps,
   },
   (t) => [

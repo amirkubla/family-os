@@ -709,6 +709,8 @@ export function addExpenseRemote(input: {
   kidId?: string;
   date: string;
   note?: string;
+  isRecurring?: boolean;
+  recurrenceDay?: number;
 }): Expense {
   const item = useFamilyStore.getState().addExpense(input);
   fireAndForget(
@@ -720,7 +722,7 @@ export function addExpenseRemote(input: {
 
 export function updateExpenseRemote(
   id: string,
-  patch: Partial<Pick<Expense, "amount" | "categoryName" | "payerMemberId" | "kidId" | "date" | "note">>,
+  patch: Partial<Pick<Expense, "amount" | "categoryName" | "payerMemberId" | "kidId" | "date" | "note" | "isRecurring" | "recurrenceDay">>,
 ) {
   useFamilyStore.getState().updateExpense(id, patch);
   fireAndForget(

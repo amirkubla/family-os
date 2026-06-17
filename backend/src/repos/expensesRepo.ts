@@ -47,6 +47,8 @@ export const expensesRepo = {
           kidId: sql`excluded.kid_id`,
           date: sql`excluded.date`,
           note: sql`excluded.note`,
+          isRecurring: sql`excluded.is_recurring`,
+          recurrenceDay: sql`excluded.recurrence_day`,
           updatedAt: new Date(),
         },
       })

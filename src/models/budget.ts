@@ -17,6 +17,8 @@ export interface Expense {
   kidId?: string;
   date: string; // "YYYY-MM-DD"
   note?: string;
+  isRecurring: boolean;
+  recurrenceDay?: number; // 1-31
   updatedAt: number;
   createdAt: number;
 }

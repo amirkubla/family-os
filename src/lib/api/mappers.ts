@@ -325,6 +325,8 @@ export function apiToLocalExpense(a: ApiExpense): Expense {
     kidId: a.kidId ?? undefined,
     date: a.date,
     note: a.note ?? undefined,
+    isRecurring: a.isRecurring,
+    recurrenceDay: a.recurrenceDay ?? undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -339,6 +341,8 @@ export function localToApiExpense(item: Expense) {
     kidId: item.kidId ?? null,
     date: item.date,
     note: item.note ?? null,
+    isRecurring: item.isRecurring,
+    recurrenceDay: item.recurrenceDay ?? null,
   };
 }
 

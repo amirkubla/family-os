@@ -236,8 +236,8 @@ interface FamilyState {
   deleteBudgetCategory: (id: string) => void;
 
   // Expense actions
-  addExpense: (input: { amount: number; categoryName: string; payerMemberId?: string; kidId?: string; date: string; note?: string }) => Expense;
-  updateExpense: (id: string, patch: Partial<Pick<Expense, "amount" | "categoryName" | "payerMemberId" | "kidId" | "date" | "note">>) => void;
+  addExpense: (input: { amount: number; categoryName: string; payerMemberId?: string; kidId?: string; date: string; note?: string; isRecurring?: boolean; recurrenceDay?: number }) => Expense;
+  updateExpense: (id: string, patch: Partial<Pick<Expense, "amount" | "categoryName" | "payerMemberId" | "kidId" | "date" | "note" | "isRecurring" | "recurrenceDay">>) => void;
   deleteExpense: (id: string) => void;
 }
 
@@ -665,9 +665,9 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Expenses ── */
 
-      addExpense: ({ amount, categoryName, payerMemberId, kidId, date, note }) => {
+      addExpense: ({ amount, categoryName, payerMemberId, kidId, date, note, isRecurring = false, recurrenceDay }) => {
         const now = Date.now();
-        const item: Expense = { id: makeId(), amount, categoryName, payerMemberId, kidId, date, note, updatedAt: now, createdAt: now };
+        const item: Expense = { id: makeId(), amount, categoryName, payerMemberId, kidId, date, note, isRecurring, recurrenceDay, updatedAt: now, createdAt: now };
         set((s) => ({ expenses: [...s.expenses, item] }));
         return item;
       },

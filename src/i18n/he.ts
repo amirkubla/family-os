@@ -504,6 +504,14 @@ const he = {
     monthlyCap: "תקציב חודשי (₪, אופציונלי)",
     monthlyCapPlaceholder: "ללא מגבלה",
     deleteCategoryConfirm: "מחיקת הקטגוריה לא תמחק את ההוצאות הקשורות אליה.",
+    recurringToggle: "הוצאה קבועה (חוזרת מדי חודש)",
+    recurrenceDay: "יום בחודש",
+    recurrenceDayPlaceholder: "1–31",
+    recurringSection: "הוצאות קבועות",
+    recurringNudge: "{{count}} הוצאות קבועות עדיין לא נרשמו החודש",
+    recurringNudgeOne: "הוצאה קבועה אחת עדיין לא נרשמה החודש",
+    logThisMonth: "רשום לחודש זה",
+    noRecurring: "אין הוצאות קבועות — סמנו הוצאה כ׳קבועה׳ כדי שתופיע כאן",
   },
 
 } as const;
