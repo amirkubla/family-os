@@ -17,14 +17,12 @@ import { parseILS } from "@src/models/budget";
 
 const DAYS_OF_MONTH = Array.from({ length: 31 }, (_, i) => i + 1);
 const DAYS_OF_WEEK = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-const MONTHS_HE = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 
-type RecurrenceType = "weekly" | "monthly" | "yearly";
+type RecurrenceType = "weekly" | "monthly";
 
 const RECURRENCE_TYPES: { key: RecurrenceType; label: string }[] = [
   { key: "weekly",  label: "שבועי"  },
   { key: "monthly", label: "חודשי"  },
-  { key: "yearly",  label: "שנתי"   },
 ];
 
 // ---------------------------------------------------------------------------
@@ -45,7 +43,6 @@ interface Props {
     isRecurring: boolean;
     recurrenceType?: RecurrenceType;
     recurrenceDay?: number;
-    recurrenceMonth?: number;
   }) => void;
 }
 
@@ -66,8 +63,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
   const [note, setNote] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("monthly");
-  const [recurrenceDay, setRecurrenceDay] = useState(1);   // 0-6 weekly, 1-31 monthly/yearly
-  const [recurrenceMonth, setRecurrenceMonth] = useState(1); // 1-12, yearly only
+  const [recurrenceDay, setRecurrenceDay] = useState(1);   // 0-6 weekly, 1-31 monthly
   const [amountError, setAmountError] = useState("");
   const [categoryError, setCategoryError] = useState("");
 
@@ -82,7 +78,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       setIsRecurring(editExpense.isRecurring);
       setRecurrenceType((editExpense.recurrenceType as RecurrenceType) ?? "monthly");
       setRecurrenceDay(editExpense.recurrenceDay ?? 1);
-      setRecurrenceMonth(editExpense.recurrenceMonth ?? 1);
     } else {
       setAmountText("");
       setCategoryName(budgetCategories[0]?.name ?? "");
@@ -92,7 +87,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       setIsRecurring(false);
       setRecurrenceType("monthly");
       setRecurrenceDay(1);
-      setRecurrenceMonth(1);
     }
     setAmountError("");
     setCategoryError("");
@@ -108,7 +102,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       isRecurring,
       recurrenceType: isRecurring ? recurrenceType : undefined,
       recurrenceDay: isRecurring ? recurrenceDay : undefined,
-      recurrenceMonth: isRecurring && recurrenceType === "yearly" ? recurrenceMonth : undefined,
     });
     onDismiss();
   };
@@ -211,7 +204,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
                 onPress={() => {
                   setRecurrenceType(rt.key);
                   setRecurrenceDay(rt.key === "weekly" ? 0 : 1);
-                  setRecurrenceMonth(1);
                 }}
                 style={[styles.typeChip, recurrenceType === rt.key && styles.typeChipActive]}
               >
@@ -248,24 +240,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
             </View>
           )}
 
-          {recurrenceType === "yearly" && (
-            <View style={styles.pickerRow}>
-              <Text style={styles.pickerLabel}>ב-</Text>
-              <WheelPicker
-                data={DAYS_OF_MONTH.map(String)}
-                selectedIndex={recurrenceDay - 1}
-                onChange={(i) => setRecurrenceDay(i + 1)}
-                width={60}
-              />
-              <Text style={styles.pickerLabel}>ל-</Text>
-              <WheelPicker
-                data={MONTHS_HE}
-                selectedIndex={recurrenceMonth - 1}
-                onChange={(i) => setRecurrenceMonth(i + 1)}
-                width={110}
-              />
-            </View>
-          )}
         </View>
       )}
 

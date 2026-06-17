@@ -18,9 +18,8 @@ export interface Expense {
   date: string; // "YYYY-MM-DD"
   note?: string;
   isRecurring: boolean;
-  recurrenceType?: "weekly" | "monthly" | "yearly";
-  recurrenceDay?: number; // 0-6 for weekly, 1-31 for monthly/yearly
-  recurrenceMonth?: number; // 1-12, yearly only
+  recurrenceType?: "weekly" | "monthly";
+  recurrenceDay?: number; // 0-6 for weekly, 1-31 for monthly
   updatedAt: number;
   createdAt: number;
 }

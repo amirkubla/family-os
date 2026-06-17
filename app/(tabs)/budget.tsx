@@ -23,18 +23,12 @@ import { formatILS } from "@src/models/budget";
 import { toYMD } from "@src/utils/date";
 
 const DAYS_OF_WEEK_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-const MONTHS_HE_SHORT = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 
 function recurrenceLabel(exp: Expense): string {
   if (!exp.isRecurring) return "";
   const type = exp.recurrenceType ?? "monthly";
   if (type === "weekly") return `כל שבוע, ביום ${DAYS_OF_WEEK_HE[exp.recurrenceDay ?? 0]}`;
-  if (type === "monthly") return `כל חודש, יום ${exp.recurrenceDay ?? 1}`;
-  if (type === "yearly") {
-    const month = MONTHS_HE_SHORT[(exp.recurrenceMonth ?? 1) - 1] ?? "";
-    return `כל שנה, ${exp.recurrenceDay ?? 1} ב${month}`;
-  }
-  return "חוזר";
+  return `כל חודש, יום ${exp.recurrenceDay ?? 1}`;
 }
 import type { Expense, BudgetCategory } from "@src/models/budget";
 import ExpenseModal from "@src/components/ExpenseModal";
@@ -145,18 +139,39 @@ export default function BudgetScreen() {
     [allExpenses, selectedYM],
   );
 
-  // Nudge: recurring templates whose recurrenceDay ≤ today and not yet logged this month.
+  // Nudge: recurring templates that are due but not yet logged.
   const today = new Date();
   const todayDay = today.getDate();
+  const todayDOW = today.getDay(); // 0=Sunday … 6=Saturday (matches DAYS_OF_WEEK_HE order)
+
+  // Start of the current week (Sunday) as "YYYY-MM-DD".
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - todayDOW);
+  const startOfWeekStr = toYMD(startOfWeek);
+  const todayStr = toYMD(today);
+
+  // Weekly recurring expenses logged anywhere in the current week.
+  const recurringLoggedThisWeek = useMemo(
+    () => new Set(
+      allExpenses
+        .filter((e) => !e.isRecurring && e.date >= startOfWeekStr && e.date <= todayStr && e.note?.startsWith("🔄"))
+        .map((e) => e.categoryName + "|" + e.amount),
+    ),
+    [allExpenses, startOfWeekStr, todayStr],
+  );
+
   const pendingRecurring = useMemo(
     () => isCurrentMonth
       ? recurringExpenses.filter((r) => {
-          const dueDay = r.recurrenceDay ?? 1;
           const key = r.categoryName + "|" + r.amount;
-          return dueDay <= todayDay && !recurringLoggedThisMonth.has(key);
+          if ((r.recurrenceType ?? "monthly") === "weekly") {
+            return (r.recurrenceDay ?? 0) <= todayDOW && !recurringLoggedThisWeek.has(key);
+          }
+          // monthly
+          return (r.recurrenceDay ?? 1) <= todayDay && !recurringLoggedThisMonth.has(key);
         })
       : [],
-    [isCurrentMonth, recurringExpenses, todayDay, recurringLoggedThisMonth],
+    [isCurrentMonth, recurringExpenses, todayDay, todayDOW, recurringLoggedThisMonth, recurringLoggedThisWeek],
   );
 
   const handleSaveExpense = (data: Parameters<typeof addExpenseRemote>[0]) => {

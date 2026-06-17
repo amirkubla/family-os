@@ -328,7 +328,6 @@ export function apiToLocalExpense(a: ApiExpense): Expense {
     isRecurring: a.isRecurring,
     recurrenceType: (a.recurrenceType as Expense["recurrenceType"]) ?? undefined,
     recurrenceDay: a.recurrenceDay ?? undefined,
-    recurrenceMonth: a.recurrenceMonth ?? undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -346,7 +345,6 @@ export function localToApiExpense(item: Expense) {
     isRecurring: item.isRecurring,
     recurrenceType: item.recurrenceType ?? null,
     recurrenceDay: item.recurrenceDay ?? null,
-    recurrenceMonth: item.recurrenceMonth ?? null,
   };
 }
 
