@@ -7,7 +7,7 @@ import {
   Platform,
 } from "react-native";
 import { Text, FAB, IconButton } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
   addExpenseRemote,
@@ -61,6 +61,7 @@ function nextMonth(ym: string): string {
 // ---------------------------------------------------------------------------
 
 export default function BudgetScreen() {
+  const insets = useSafeAreaInsets();
   const budgetCategories = useFamilyStore((s) => s.budgetCategories);
   const allExpenses = useFamilyStore((s) => s.expenses);
   const familyMembers = useFamilyStore((s) => s.familyMembers);
@@ -136,17 +137,19 @@ export default function BudgetScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Month navigation */}
+        {/* Month navigation — RTL_ROW: first child appears on RIGHT, last on LEFT.
+            chevron-right (→) on RIGHT = go forward in time (next month).
+            chevron-left  (←) on LEFT  = go back in time (prev month). */}
         <View style={styles.monthHeader}>
           <IconButton
-            icon="chevron-left"
+            icon="chevron-right"
             size={22}
             onPress={() => setSelectedYM(nextMonth(selectedYM))}
             disabled={isCurrentMonth}
           />
           <Text style={styles.monthLabel}>{monthLabel(selectedYM)}</Text>
           <IconButton
-            icon="chevron-right"
+            icon="chevron-left"
             size={22}
             onPress={() => setSelectedYM(prevMonth(selectedYM))}
           />
@@ -301,7 +304,11 @@ export default function BudgetScreen() {
 
       <FAB
         icon="plus"
-        style={[styles.fab, Platform.OS === "web" && ({ position: "fixed" } as any)]}
+        style={[
+          styles.fab,
+          { bottom: insets.bottom + S.lg },
+          Platform.OS === "web" && ({ position: "fixed" } as any),
+        ]}
         onPress={() => {
           setEditExpense(null);
           setExpenseModalVisible(true);
@@ -527,8 +534,8 @@ const styles = StyleSheet.create({
 
   fab: {
     position: "absolute",
-    bottom: 90,
-    left: 16,
+    bottom: S.lg,  // overridden inline with insets.bottom + S.lg
+    left: S.lg,
     backgroundColor: ACCENT,
   },
 });

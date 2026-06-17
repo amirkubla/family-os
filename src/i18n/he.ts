@@ -85,6 +85,8 @@ const he = {
     tileChoresZero: "הכל בוצע",
     tileProjects: "{{count}} פרויקטים פעילים",
     tileProjectsZero: "אין פרויקטים פעילים",
+    tileBudget: "{{count}} הוצאות החודש",
+    tileBudgetZero: "אין הוצאות החודש",
   },
 
   // ── Grocery screen ──

@@ -28,6 +28,7 @@ const TILE = {
   notes: "#D97706",
   chores: "#0D9488",
   projects: "#6C63FF",
+  budget: "#9B59B6",
   kids: "#E0699B",
 };
 
@@ -40,6 +41,7 @@ export default function HomeScreen() {
   const chores = useFamilyStore((s) => s.chores);
   const grocery = useFamilyStore((s) => s.grocery);
   const familyEvents = useFamilyStore((s) => s.familyEvents);
+  const allExpenses = useFamilyStore((s) => s.expenses);
   const kids = useFamilyStore((s) => s.kids);
   const familyName = useFamilyStore((s) => s.familyName);
   const familyMembers = useFamilyStore((s) => s.familyMembers);
@@ -71,6 +73,8 @@ export default function HomeScreen() {
       e.isRecurring ? true : !!e.date && e.date >= todayYMD && e.date <= weekEndYMD,
     ).length;
 
+    const currentYM = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
     return {
       eventsWeek,
       grocery: grocery.filter((g) => !g.isBought).length,
@@ -78,8 +82,9 @@ export default function HomeScreen() {
       notes: notes.length,
       chores: chores.filter((c) => !c.done).length,
       projects: projects.filter((p) => p.status !== "done").length,
+      budgetExpenses: allExpenses.filter((e) => e.date.startsWith(currentYM)).length,
     };
-  }, [allNotes, allProjects, chores, grocery, familyEvents]);
+  }, [allNotes, allProjects, chores, grocery, familyEvents, allExpenses]);
 
   // Tile subtitle helper: "{n} …" or a friendly zero-state string.
   const sub = (n: number, key: string, zeroKey: string) =>
@@ -142,6 +147,11 @@ export default function HomeScreen() {
             title={t("home.projects")} emoji="🚀" accent={TILE.projects}
             subtitle={sub(counts.projects, "home.tileProjects", "home.tileProjectsZero")}
             onPress={() => router.push("/projects")} testID="tile-projects"
+          />
+          <FeatureTile
+            title={t("tabs.budget")} emoji="💰" accent={TILE.budget}
+            subtitle={sub(counts.budgetExpenses, "home.tileBudget", "home.tileBudgetZero")}
+            onPress={() => router.push("/budget" as any)} testID="tile-budget"
           />
         </View>
 
