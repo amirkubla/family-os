@@ -48,7 +48,9 @@ export const expensesRepo = {
           date: sql`excluded.date`,
           note: sql`excluded.note`,
           isRecurring: sql`excluded.is_recurring`,
+          recurrenceType: sql`excluded.recurrence_type`,
           recurrenceDay: sql`excluded.recurrence_day`,
+          recurrenceMonth: sql`excluded.recurrence_month`,
           updatedAt: new Date(),
         },
       })

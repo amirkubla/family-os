@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, TextInput as RNTextInput, Switch } from "react-native";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { View, StyleSheet, Pressable, TextInput as RNTextInput, Switch, ScrollView, Platform } from "react-native";
 import { Text, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import { MS } from "@src/ui/modalStyles";
@@ -10,6 +10,26 @@ import { toYMD } from "@src/utils/date";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Expense } from "@src/models/budget";
 import { parseILS } from "@src/models/budget";
+
+// ---------------------------------------------------------------------------
+// Wheel data
+// ---------------------------------------------------------------------------
+
+const DAYS_OF_MONTH = Array.from({ length: 31 }, (_, i) => i + 1);
+const DAYS_OF_WEEK = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const MONTHS_HE = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+
+type RecurrenceType = "weekly" | "monthly" | "yearly";
+
+const RECURRENCE_TYPES: { key: RecurrenceType; label: string }[] = [
+  { key: "weekly",  label: "שבועי"  },
+  { key: "monthly", label: "חודשי"  },
+  { key: "yearly",  label: "שנתי"   },
+];
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 interface Props {
   visible: boolean;
@@ -23,9 +43,15 @@ interface Props {
     date: string;
     note?: string;
     isRecurring: boolean;
+    recurrenceType?: RecurrenceType;
     recurrenceDay?: number;
+    recurrenceMonth?: number;
   }) => void;
 }
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }: Props) {
   const budgetCategories = useFamilyStore((s) => s.budgetCategories);
@@ -39,7 +65,9 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
   const [date, setDate] = useState(today);
   const [note, setNote] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrenceDayText, setRecurrenceDayText] = useState("");
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("monthly");
+  const [recurrenceDay, setRecurrenceDay] = useState(1);   // 0-6 weekly, 1-31 monthly/yearly
+  const [recurrenceMonth, setRecurrenceMonth] = useState(1); // 1-12, yearly only
   const [amountError, setAmountError] = useState("");
   const [categoryError, setCategoryError] = useState("");
 
@@ -52,7 +80,9 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       setDate(editExpense.date);
       setNote(editExpense.note ?? "");
       setIsRecurring(editExpense.isRecurring);
-      setRecurrenceDayText(editExpense.recurrenceDay ? String(editExpense.recurrenceDay) : "");
+      setRecurrenceType((editExpense.recurrenceType as RecurrenceType) ?? "monthly");
+      setRecurrenceDay(editExpense.recurrenceDay ?? 1);
+      setRecurrenceMonth(editExpense.recurrenceMonth ?? 1);
     } else {
       setAmountText("");
       setCategoryName(budgetCategories[0]?.name ?? "");
@@ -60,7 +90,9 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       setDate(today);
       setNote("");
       setIsRecurring(false);
-      setRecurrenceDayText("");
+      setRecurrenceType("monthly");
+      setRecurrenceDay(1);
+      setRecurrenceMonth(1);
     }
     setAmountError("");
     setCategoryError("");
@@ -68,17 +100,16 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
 
   const handleSave = () => {
     const amount = parseILS(amountText);
-    if (!amount || amount <= 0) {
-      setAmountError("יש להזין סכום תקין");
-      return;
-    }
-    if (!categoryName) {
-      setCategoryError("יש לבחור קטגוריה");
-      return;
-    }
+    if (!amount || amount <= 0) { setAmountError("יש להזין סכום תקין"); return; }
+    if (!categoryName) { setCategoryError("יש לבחור קטגוריה"); return; }
     setCategoryError("");
-    const recurrenceDay = isRecurring && recurrenceDayText ? parseInt(recurrenceDayText, 10) : undefined;
-    onSave({ amount, categoryName, payerMemberId, date, note: note.trim() || undefined, isRecurring, recurrenceDay });
+    onSave({
+      amount, categoryName, payerMemberId, date, note: note.trim() || undefined,
+      isRecurring,
+      recurrenceType: isRecurring ? recurrenceType : undefined,
+      recurrenceDay: isRecurring ? recurrenceDay : undefined,
+      recurrenceMonth: isRecurring && recurrenceType === "yearly" ? recurrenceMonth : undefined,
+    });
     onDismiss();
   };
 
@@ -107,10 +138,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           <Pressable
             key={cat.id}
             onPress={() => { setCategoryName(cat.name); setCategoryError(""); }}
-            style={[
-              styles.catChip,
-              categoryName === cat.name && { backgroundColor: cat.color },
-            ]}
+            style={[styles.catChip, categoryName === cat.name && { backgroundColor: cat.color }]}
           >
             <Text style={[styles.catChipText, categoryName === cat.name && styles.catChipTextActive]}>
               {cat.icon} {cat.name}
@@ -172,18 +200,72 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           trackColor={{ false: C.border, true: C.purple + "55" }}
         />
       </View>
+
       {isRecurring && (
-        <View style={styles.recurringDayRow}>
-          <Text style={styles.recurringDayLabel}>{t("budget.recurrenceDay")}</Text>
-          <RNTextInput
-            value={recurrenceDayText}
-            onChangeText={(v) => setRecurrenceDayText(v.replace(/[^0-9]/g, ""))}
-            placeholder={t("budget.recurrenceDayPlaceholder")}
-            keyboardType="number-pad"
-            maxLength={2}
-            style={styles.recurringDayInput}
-            placeholderTextColor={C.textSecondary}
-          />
+        <View style={styles.recurringPanel}>
+          {/* Type selector */}
+          <View style={styles.typeRow}>
+            {RECURRENCE_TYPES.map((rt) => (
+              <Pressable
+                key={rt.key}
+                onPress={() => {
+                  setRecurrenceType(rt.key);
+                  setRecurrenceDay(rt.key === "weekly" ? 0 : 1);
+                  setRecurrenceMonth(1);
+                }}
+                style={[styles.typeChip, recurrenceType === rt.key && styles.typeChipActive]}
+              >
+                <Text style={[styles.typeChipText, recurrenceType === rt.key && styles.typeChipTextActive]}>
+                  {rt.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Pickers */}
+          {recurrenceType === "weekly" && (
+            <View style={styles.pickerRow}>
+              <Text style={styles.pickerLabel}>ביום</Text>
+              <WheelPicker
+                data={DAYS_OF_WEEK}
+                selectedIndex={recurrenceDay}
+                onChange={(i) => setRecurrenceDay(i)}
+                width={110}
+              />
+            </View>
+          )}
+
+          {recurrenceType === "monthly" && (
+            <View style={styles.pickerRow}>
+              <Text style={styles.pickerLabel}>ביום</Text>
+              <WheelPicker
+                data={DAYS_OF_MONTH.map(String)}
+                selectedIndex={recurrenceDay - 1}
+                onChange={(i) => setRecurrenceDay(i + 1)}
+                width={72}
+              />
+              <Text style={styles.pickerLabel}>בחודש</Text>
+            </View>
+          )}
+
+          {recurrenceType === "yearly" && (
+            <View style={styles.pickerRow}>
+              <Text style={styles.pickerLabel}>ב-</Text>
+              <WheelPicker
+                data={DAYS_OF_MONTH.map(String)}
+                selectedIndex={recurrenceDay - 1}
+                onChange={(i) => setRecurrenceDay(i + 1)}
+                width={60}
+              />
+              <Text style={styles.pickerLabel}>ל-</Text>
+              <WheelPicker
+                data={MONTHS_HE}
+                selectedIndex={recurrenceMonth - 1}
+                onChange={(i) => setRecurrenceMonth(i + 1)}
+                width={110}
+              />
+            </View>
+          )}
         </View>
       )}
 
@@ -194,6 +276,127 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
     </ModalWrapper>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Generic wheel picker column
+// ---------------------------------------------------------------------------
+
+const WHEEL_ITEM_H = 40;
+const WHEEL_VISIBLE = 3;
+const WHEEL_H = WHEEL_ITEM_H * WHEEL_VISIBLE;
+const WHEEL_PAD = Math.floor(WHEEL_VISIBLE / 2);
+
+function WheelPicker({
+  data,
+  selectedIndex,
+  onChange,
+  width,
+}: {
+  data: (string | number)[];
+  selectedIndex: number;
+  onChange: (index: number) => void;
+  width: number;
+}) {
+  const scrollRef = useRef<ScrollView>(null);
+  const selected = useRef(selectedIndex);
+  const debounce = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    selected.current = selectedIndex;
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: selectedIndex * WHEEL_ITEM_H, animated: false });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [selectedIndex]);
+
+  const settle = useCallback(
+    (y: number) => {
+      const idx = Math.round(y / WHEEL_ITEM_H);
+      const clamped = Math.max(0, Math.min(idx, data.length - 1));
+      if (selected.current !== clamped) {
+        selected.current = clamped;
+        onChange(clamped);
+      }
+    },
+    [onChange, data.length],
+  );
+
+  const onScrollEnd = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => settle(e.nativeEvent.contentOffset.y),
+    [settle],
+  );
+
+  const onScrollDebounced = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      clearTimeout(debounce.current);
+      debounce.current = setTimeout(() => settle(e.nativeEvent.contentOffset.y), 80);
+    },
+    [settle],
+  );
+
+  return (
+    <View style={[wheelStyles.container, { width }]}>
+      <View style={wheelStyles.highlight} pointerEvents="none" />
+      <ScrollView
+        ref={scrollRef}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={WHEEL_ITEM_H}
+        decelerationRate="fast"
+        bounces={false}
+        nestedScrollEnabled
+        onMomentumScrollEnd={onScrollEnd}
+        onScrollEndDrag={onScrollEnd}
+        {...(Platform.OS === "web" ? { onScroll: onScrollDebounced, scrollEventThrottle: 16 } : {})}
+        style={{ height: WHEEL_H, width }}
+        contentContainerStyle={{
+          paddingTop: WHEEL_PAD * WHEEL_ITEM_H,
+          paddingBottom: WHEEL_PAD * WHEEL_ITEM_H,
+        }}
+        contentOffset={{ x: 0, y: selectedIndex * WHEEL_ITEM_H }}
+      >
+        {data.map((item, i) => (
+          <View key={i} style={wheelStyles.item}>
+            <Text style={wheelStyles.itemText}>{item}</Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+const wheelStyles = StyleSheet.create({
+  container: {
+    height: WHEEL_H,
+    overflow: "hidden",
+    borderRadius: R.md,
+    backgroundColor: "#F5F3FF",
+  },
+  highlight: {
+    position: "absolute",
+    top: WHEEL_PAD * WHEEL_ITEM_H,
+    left: 4,
+    right: 4,
+    height: WHEEL_ITEM_H,
+    backgroundColor: "#E8E6FF",
+    borderRadius: R.sm,
+    zIndex: 0,
+  },
+  item: {
+    height: WHEEL_ITEM_H,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: C.textPrimary,
+    writingDirection: "rtl",
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Main styles
+// ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
   amountInput: {
@@ -262,28 +465,42 @@ const styles = StyleSheet.create({
     textAlign: TEXT_RIGHT ?? "right",
     writingDirection: "rtl",
   },
-  recurringDayRow: {
+  recurringPanel: {
+    backgroundColor: C.surfaceSubtle,
+    borderRadius: R.md,
+    padding: S.sm,
+    marginBottom: S.sm,
+    gap: S.sm,
+  },
+  typeRow: {
+    flexDirection: RTL_ROW,
+    gap: S.xs,
+    justifyContent: "center",
+  },
+  typeChip: {
+    flex: 1,
+    paddingVertical: S.xs,
+    borderRadius: R.xl,
+    backgroundColor: C.surface,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    alignItems: "center",
+  },
+  typeChipActive: {
+    backgroundColor: C.purple,
+    borderColor: C.purple,
+  },
+  typeChipText: { fontSize: 13, color: C.textSecondary, fontWeight: "600" },
+  typeChipTextActive: { color: "#fff" },
+  pickerRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
+    justifyContent: "center",
     gap: S.sm,
-    marginBottom: S.sm,
   },
-  recurringDayLabel: {
+  pickerLabel: {
     fontSize: 13,
     color: C.textSecondary,
-    flex: 1,
-    textAlign: TEXT_RIGHT ?? "right",
     writingDirection: "rtl",
-  },
-  recurringDayInput: {
-    width: 64,
-    fontSize: 16,
-    fontWeight: "700",
-    color: C.textPrimary,
-    borderWidth: 1.5,
-    borderColor: C.purple,
-    borderRadius: R.sm,
-    padding: S.xs,
-    textAlign: "center",
   },
 });

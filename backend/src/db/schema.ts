@@ -604,7 +604,9 @@ export const expenses = pgTable(
     date: text("date").notNull(), // "YYYY-MM-DD"
     note: text("note"),
     isRecurring: boolean("is_recurring").default(false).notNull(),
-    recurrenceDay: integer("recurrence_day"), // 1-31; which day of month it recurs
+    recurrenceType: text("recurrence_type"), // 'weekly' | 'monthly' | 'yearly'
+    recurrenceDay: integer("recurrence_day"), // 0-6 for weekly, 1-31 for monthly/yearly
+    recurrenceMonth: integer("recurrence_month"), // 1-12, only for yearly
     ...timestamps,
   },
   (t) => [

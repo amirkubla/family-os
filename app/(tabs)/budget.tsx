@@ -21,6 +21,21 @@ import { C, S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { formatILS } from "@src/models/budget";
 import { toYMD } from "@src/utils/date";
+
+const DAYS_OF_WEEK_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const MONTHS_HE_SHORT = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+
+function recurrenceLabel(exp: Expense): string {
+  if (!exp.isRecurring) return "";
+  const type = exp.recurrenceType ?? "monthly";
+  if (type === "weekly") return `כל שבוע, ביום ${DAYS_OF_WEEK_HE[exp.recurrenceDay ?? 0]}`;
+  if (type === "monthly") return `כל חודש, יום ${exp.recurrenceDay ?? 1}`;
+  if (type === "yearly") {
+    const month = MONTHS_HE_SHORT[(exp.recurrenceMonth ?? 1) - 1] ?? "";
+    return `כל שנה, ${exp.recurrenceDay ?? 1} ב${month}`;
+  }
+  return "חוזר";
+}
 import type { Expense, BudgetCategory } from "@src/models/budget";
 import ExpenseModal from "@src/components/ExpenseModal";
 import BudgetCategoryModal from "@src/components/BudgetCategoryModal";
@@ -319,7 +334,7 @@ export default function BudgetScreen() {
                   <View key={r.id} style={styles.nudgeRow}>
                     <Text style={styles.nudgeItem}>
                       {cat?.icon ?? "📦"} {r.categoryName} — {formatILS(r.amount)}
-                      {r.recurrenceDay ? ` (יום ${r.recurrenceDay})` : ""}
+                      {`  (${recurrenceLabel(r)})`}
                     </Text>
                     <Pressable style={styles.nudgeBtn} onPress={() => logRecurringNow(r)}>
                       <Text style={styles.nudgeBtnText}>{t("budget.logThisMonth")}</Text>
@@ -347,7 +362,7 @@ export default function BudgetScreen() {
                     {exp.note ? `  •  ${exp.note}` : ""}
                   </Text>
                   <Text style={[styles.expMeta, { textAlign: TEXT_RIGHT }]}>
-                    {exp.recurrenceDay ? `כל חודש, יום ${exp.recurrenceDay}` : "כל חודש"}
+                    {recurrenceLabel(exp)}
                   </Text>
                 </View>
                 <View style={styles.expRight}>
