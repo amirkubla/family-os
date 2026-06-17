@@ -512,6 +512,8 @@ const he = {
     recurringNudgeOne: "הוצאה קבועה אחת עדיין לא נרשמה החודש",
     logThisMonth: "רשום לחודש זה",
     noRecurring: "אין הוצאות קבועות — סמנו הוצאה כ׳קבועה׳ כדי שתופיע כאן",
+    byPayer: "לפי משלם",
+    unassigned: "לא מוגדר",
   },
 
 } as const;

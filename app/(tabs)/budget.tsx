@@ -123,6 +123,16 @@ export default function BudgetScreen() {
     return map;
   }, [monthExpenses]);
 
+  // Per-member spend for the selected month (only members with >0 spend).
+  const memberTotals = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const e of monthExpenses) {
+      const key = e.payerMemberId ?? "__none__";
+      map[key] = (map[key] ?? 0) + e.amount;
+    }
+    return map;
+  }, [monthExpenses]);
+
   const isCurrentMonth = selectedYM === currentYM;
 
   // Recurring entries already logged for the selected month (identified by 🔄 note prefix).
@@ -238,6 +248,52 @@ export default function BudgetScreen() {
             </>
           )}
         </View>
+
+        {/* Per-member breakdown — only when 2+ payers have expenses this month */}
+        {Object.keys(memberTotals).length >= 2 && (
+          <>
+            <SectionHeader label={t("budget.byPayer")} />
+            {familyMembers
+              .filter((m) => m.isActive && (memberTotals[m.id] ?? 0) > 0)
+              .sort((a, b) => (memberTotals[b.id] ?? 0) - (memberTotals[a.id] ?? 0))
+              .map((m) => {
+                const spent = memberTotals[m.id] ?? 0;
+                const pct = totalSpent > 0 ? spent / totalSpent : 0;
+                return (
+                  <View key={m.id} style={styles.memberRow}>
+                    <View style={[styles.memberAvatar, { backgroundColor: (m.color ?? C.purple) + "22" }]}>
+                      <Text style={styles.memberEmoji}>{m.avatarEmoji ?? "👤"}</Text>
+                    </View>
+                    <View style={styles.memberInfo}>
+                      <View style={[{ flexDirection: RTL_ROW }, styles.memberNameRow]}>
+                        <Text style={styles.memberName}>{m.name}</Text>
+                        <Text style={styles.memberAmount}>{formatILS(spent)}</Text>
+                      </View>
+                      <View style={styles.memberBarTrack}>
+                        <View style={[styles.memberBarFill, { width: `${pct * 100}%` as any, backgroundColor: m.color ?? C.purple }]} />
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            {(memberTotals["__none__"] ?? 0) > 0 && (
+              <View style={styles.memberRow}>
+                <View style={[styles.memberAvatar, { backgroundColor: C.textSecondary + "22" }]}>
+                  <Text style={styles.memberEmoji}>❓</Text>
+                </View>
+                <View style={styles.memberInfo}>
+                  <View style={[{ flexDirection: RTL_ROW }, styles.memberNameRow]}>
+                    <Text style={styles.memberName}>{t("budget.unassigned")}</Text>
+                    <Text style={styles.memberAmount}>{formatILS(memberTotals["__none__"])}</Text>
+                  </View>
+                  <View style={styles.memberBarTrack}>
+                    <View style={[styles.memberBarFill, { width: `${(totalSpent > 0 ? memberTotals["__none__"] / totalSpent : 0) * 100}%` as any, backgroundColor: C.textSecondary }]} />
+                  </View>
+                </View>
+              </View>
+            )}
+          </>
+        )}
 
         {/* Categories section header + manage toggle */}
         <View style={styles.sectionRow}>
@@ -567,6 +623,30 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginStart: S.sm,
   },
+
+  memberRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    backgroundColor: C.surface,
+    borderRadius: R.md,
+    padding: S.sm,
+    marginBottom: S.xs,
+    gap: S.sm,
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  memberEmoji: { fontSize: 20 },
+  memberInfo: { flex: 1 },
+  memberNameRow: { alignItems: "center", marginBottom: 4 },
+  memberName: { flex: 1, fontSize: 14, fontWeight: "600", color: C.textPrimary, textAlign: TEXT_RIGHT, writingDirection: "rtl" },
+  memberAmount: { fontSize: 14, fontWeight: "700", color: C.textPrimary },
+  memberBarTrack: { height: 5, borderRadius: 3, backgroundColor: C.surfaceSubtle, overflow: "hidden" },
+  memberBarFill: { height: 5, borderRadius: 3 },
 
   catRow: {
     flexDirection: RTL_ROW,
