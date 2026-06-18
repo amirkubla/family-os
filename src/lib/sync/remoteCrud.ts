@@ -19,6 +19,7 @@
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { getFamilyId } from "../familyContext";
+import { nextDueDate } from "@src/utils/date";
 import {
   familyApi,
   groceryApi,
@@ -739,4 +740,27 @@ export function deleteExpenseRemote(id: string) {
     getFamilyId().then((fid) => expensesApi.delete(fid, id)),
     "Delete expense",
   );
+}
+
+/**
+ * Settle a kid payment. The current occurrence becomes a paid, one-time
+ * expense (history + counts toward budget spending). If it was recurring, the
+ * next occurrence is queued as a fresh "to pay" with the due date advanced by
+ * one period. Shared by the kid screen and the budget screen.
+ */
+export function markKidPaymentPaidRemote(payment: Expense) {
+  updateExpenseRemote(payment.id, { paid: true, isRecurring: false });
+  if (payment.isRecurring) {
+    addExpenseRemote({
+      amount: payment.amount,
+      categoryName: payment.categoryName,
+      kidId: payment.kidId,
+      date: nextDueDate(payment.date, payment.recurrenceType),
+      note: payment.note,
+      paid: false,
+      isRecurring: true,
+      recurrenceType: payment.recurrenceType,
+      recurrenceDay: payment.recurrenceDay,
+    });
+  }
 }

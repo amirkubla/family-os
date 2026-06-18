@@ -39,9 +39,9 @@ import {
   deleteProjectRemote,
   reorderNotesRemote,
   reorderProjectsRemote,
-  addExpenseRemote,
   deleteExpenseRemote,
   updateExpenseRemote,
+  markKidPaymentPaidRemote,
 } from "@src/lib/sync/remoteCrud";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
@@ -69,15 +69,6 @@ import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
 type CalendarView = "month" | "week" | "day";
-
-// Advance a "YYYY-MM-DD" due date by one recurrence period (default monthly).
-function nextDueDate(ymd: string, type?: "weekly" | "monthly"): string {
-  const [y, m, d] = ymd.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  if (type === "weekly") date.setDate(date.getDate() + 7);
-  else date.setMonth(date.getMonth() + 1);
-  return toYMD(date);
-}
 
 // Same palette as /home so kid-owned notes/projects look identical.
 const NOTE_COLORS = {
@@ -395,24 +386,7 @@ export default function KidScheduleScreen() {
     [kidProjects],
   );
 
-  // Settle a payment. For a recurring one, settle this occurrence as history
-  // (isRecurring=false) and queue the next "to pay" with the due date advanced.
-  const handleMarkPaid = useCallback((pay: Expense) => {
-    updateExpenseRemote(pay.id, { paid: true, isRecurring: false });
-    if (pay.isRecurring) {
-      addExpenseRemote({
-        amount: pay.amount,
-        categoryName: pay.categoryName,
-        kidId: pay.kidId,
-        date: nextDueDate(pay.date, pay.recurrenceType),
-        note: pay.note,
-        paid: false,
-        isRecurring: true,
-        recurrenceType: pay.recurrenceType,
-        recurrenceDay: pay.recurrenceDay,
-      });
-    }
-  }, []);
+  const handleMarkPaid = useCallback((pay: Expense) => markKidPaymentPaidRemote(pay), []);
 
   const handleMarkUnpaid = useCallback((pay: Expense) => {
     updateExpenseRemote(pay.id, { paid: false });

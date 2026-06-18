@@ -518,6 +518,7 @@ const he = {
     noRecurring: "אין הוצאות קבועות — סמנו הוצאה כ׳קבועה׳ כדי שתופיע כאן",
     byPayer: "לפי משלם",
     unassigned: "לא מוגדר",
+    kidPayments: "תשלומי ילדים",
   },
   payment: {
     add: "תשלום חדש",

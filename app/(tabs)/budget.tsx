@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Text, FAB, IconButton } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
   addExpenseRemote,
@@ -15,6 +16,7 @@ import {
   addBudgetCategoryRemote,
   updateBudgetCategoryRemote,
   deleteBudgetCategoryRemote,
+  markKidPaymentPaidRemote,
 } from "@src/lib/sync/remoteCrud";
 import { t, LOCALE } from "@src/i18n";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
@@ -75,6 +77,8 @@ export default function BudgetScreen() {
   const budgetCategories = useFamilyStore((s) => s.budgetCategories);
   const allExpenses = useFamilyStore((s) => s.expenses);
   const familyMembers = useFamilyStore((s) => s.familyMembers);
+  const kids = useFamilyStore((s) => s.kids);
+  const router = useRouter();
 
   const currentYM = toYearMonth(new Date());
   const [selectedYM, setSelectedYM] = useState(currentYM);
@@ -90,6 +94,17 @@ export default function BudgetScreen() {
   // (kidId set) are managed on the kid screen, so they're excluded here.
   const recurringExpenses = useMemo(
     () => allExpenses.filter((e) => e.isRecurring && !e.kidId).sort((a, b) => (a.recurrenceDay ?? 1) - (b.recurrenceDay ?? 1)),
+    [allExpenses],
+  );
+
+  // Outstanding kid payments (תשלומים still "to pay") across ALL kids, so the
+  // budget screen is the single place to see everything owed. Overdue first,
+  // then by due date. Settled ones drop off (they become normal expenses).
+  const outstandingKidPayments = useMemo(
+    () =>
+      allExpenses
+        .filter((e) => e.kidId && e.paid === false)
+        .sort((a, b) => a.date.localeCompare(b.date)),
     [allExpenses],
   );
 
@@ -311,6 +326,50 @@ export default function BudgetScreen() {
                 </View>
               </View>
             )}
+          </>
+        )}
+
+        {/* Outstanding kid payments (תשלומים) across all kids */}
+        {outstandingKidPayments.length > 0 && (
+          <>
+            <SectionHeader label={t("budget.kidPayments")} />
+            {outstandingKidPayments.map((pay) => {
+              const kid = kids.find((k) => k.id === pay.kidId);
+              const overdue = pay.date < todayStr;
+              const dateLabel = `${pay.date.slice(8, 10)}/${pay.date.slice(5, 7)}`;
+              const recur = pay.isRecurring
+                ? pay.recurrenceType === "weekly" ? t("payment.everyWeek") : t("payment.everyMonth")
+                : "";
+              const metaText = [overdue ? t("payment.overdue") : "", recur, dateLabel].filter(Boolean).join(" • ");
+              return (
+                <Pressable
+                  key={pay.id}
+                  style={styles.kidPayRow}
+                  onPress={() => kid && router.push(`/kid/${kid.id}`)}
+                >
+                  <View style={[styles.kidPayAvatar, { backgroundColor: (kid?.color ?? C.purple) + "22" }]}>
+                    <Text style={styles.kidPayEmoji}>{kid?.emoji ?? "🧒"}</Text>
+                  </View>
+                  <View style={styles.kidPayInfo}>
+                    <Text style={[styles.kidPayTitle, { textAlign: TEXT_RIGHT }]} numberOfLines={1}>
+                      {pay.note || t("payment.add")}
+                      {kid ? `  •  ${kid.name}` : ""}
+                    </Text>
+                    <Text style={[styles.kidPayMeta, { textAlign: TEXT_RIGHT }, overdue && styles.kidPayMetaOverdue]}>
+                      {metaText}
+                    </Text>
+                  </View>
+                  <Text style={styles.kidPayAmount}>{formatILS(pay.amount)}</Text>
+                  <IconButton
+                    icon="check-circle-outline"
+                    size={20}
+                    iconColor={C.teal}
+                    accessibilityLabel={t("payment.markPaid")}
+                    onPress={() => markKidPaymentPaidRemote(pay)}
+                  />
+                </Pressable>
+              );
+            })}
           </>
         )}
 
@@ -670,6 +729,31 @@ const styles = StyleSheet.create({
   memberAmount: { fontSize: 14, fontWeight: "700", color: C.textPrimary },
   memberBarTrack: { height: 5, borderRadius: 3, backgroundColor: C.surfaceSubtle, overflow: "hidden" },
   memberBarFill: { height: 5, borderRadius: 3 },
+
+  kidPayRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    backgroundColor: C.surface,
+    borderRadius: R.md,
+    paddingVertical: S.sm,
+    paddingHorizontal: S.md,
+    marginBottom: S.xs,
+    gap: S.sm,
+    ...SHADOW.sm,
+  },
+  kidPayAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  kidPayEmoji: { fontSize: 18 },
+  kidPayInfo: { flex: 1 },
+  kidPayTitle: { fontSize: 14, fontWeight: "600", color: C.textPrimary, writingDirection: "rtl" },
+  kidPayMeta: { fontSize: 11, color: C.textSecondary, marginTop: 2, writingDirection: "rtl" },
+  kidPayMetaOverdue: { color: C.red, fontWeight: "700" },
+  kidPayAmount: { fontSize: 15, fontWeight: "700", color: C.textPrimary },
 
   catRow: {
     flexDirection: RTL_ROW,
