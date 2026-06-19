@@ -12,15 +12,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
-import { BLOCK_TYPES } from "@src/models/schedule";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
-import { t, dayNameShort, blockTypeLabel } from "@src/i18n";
+import { t, dayNameShort } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
 import ModalWrapper from "./ModalWrapper";
+import ModalCarouselNav, { CarouselNav } from "./ModalCarouselNav";
 import WheelTimePicker from "./WheelTimePicker";
 import DatePicker from "./DatePicker";
 
@@ -103,6 +103,8 @@ interface Props {
     reminders?: number[];
   }) => void;
   onDelete?: () => void;
+  /** When set, shows carousel arrows to swap between the kid "add" modals. */
+  carousel?: CarouselNav;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +119,7 @@ export default function ScheduleBlockModal({
   defaultDate,
   onSubmit,
   onDelete,
+  carousel,
 }: Props) {
   const kids = useFamilyStore((s) => s.kids);
   const editKid = editBlock ? kids.find((k) => k.id === editBlock.kidId) : undefined;
@@ -171,7 +174,6 @@ export default function ScheduleBlockModal({
     }
   }, [visible, editBlock, defaultDaysOfWeek, defaultDate, reset]);
 
-  const selectedType = watch("type");
   const selectedDays = watch("daysOfWeek");
   const isRecurring = watch("isRecurring");
 
@@ -196,6 +198,7 @@ export default function ScheduleBlockModal({
 
   return (
     <ModalWrapper visible={visible} onDismiss={onDismiss}>
+      {carousel && <ModalCarouselNav {...carousel} />}
       {/* ── Header ── */}
       <View style={MS.headerBar}>
         <View style={MS.headerIconWrap}>
@@ -235,30 +238,6 @@ export default function ScheduleBlockModal({
           )}
         />
         {errors.title && <Text style={MS.error}>{errors.title.message}</Text>}
-
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>🏷️</Text>
-          <Text style={MS.sectionLabel}>{t("blockModal.type")}</Text>
-        </View>
-        <View style={MS.chipRow}>
-          {BLOCK_TYPES.map((bt) => {
-            const sel = selectedType === bt.value;
-            return (
-              <Button
-                key={bt.value}
-                mode={sel ? "contained" : "outlined"}
-                compact
-                onPress={() => setValue("type", bt.value)}
-                style={MS.chip}
-                labelStyle={MS.chipLabel}
-                buttonColor={sel ? C.selectBg : undefined}
-                textColor={sel ? C.selectText : C.textSecondary}
-              >
-                {blockTypeLabel(bt.value)}
-              </Button>
-            );
-          })}
-        </View>
       </View>
 
       {/* ── Schedule section ── */}

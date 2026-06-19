@@ -64,11 +64,16 @@ import FamilyEventModal from "@src/components/FamilyEventModal";
 import NoteModal from "@src/components/NoteModal";
 import ProjectModal from "@src/components/ProjectModal";
 import KidPaymentModal from "@src/components/KidPaymentModal";
+import type { CarouselNav } from "@src/components/ModalCarouselNav";
 import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
 type CalendarView = "month" | "week" | "day";
+
+// The kid-view FAB opens an "add" carousel that cycles through these in order.
+type AddType = "event" | "note" | "project" | "payment";
+const ADD_ORDER: AddType[] = ["event", "note", "project", "payment"];
 
 // Same palette as /home so kid-owned notes/projects look identical.
 const NOTE_COLORS = {
@@ -322,6 +327,21 @@ export default function KidScheduleScreen() {
   // Payment modal — owned by this kid.
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Expense | null>(null);
+  // "Add" carousel — the FAB opens the add-event modal with arrows that cycle
+  // through the four add modals (event → note → project → payment).
+  const [addType, setAddType] = useState<AddType | null>(null);
+  const addIndex = addType ? ADD_ORDER.indexOf(addType) : 0;
+  const cycleAdd = useCallback((dir: 1 | -1) => {
+    setAddType((prev) => {
+      const i = ADD_ORDER.indexOf(prev ?? "event");
+      return ADD_ORDER[(i + dir + ADD_ORDER.length) % ADD_ORDER.length];
+    });
+  }, []);
+  const addCarousel = (type: AddType): CarouselNav | undefined =>
+    addType === type
+      ? { index: addIndex, count: ADD_ORDER.length, onPrev: () => cycleAdd(-1), onNext: () => cycleAdd(1) }
+      : undefined;
+
   // Section-collapse state (local; doesn't need to persist across sessions).
   const [notesExpanded, setNotesExpanded] = useState(true);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
@@ -393,6 +413,16 @@ export default function KidScheduleScreen() {
     setEditingBlock(null);
     setModalDay(dayOfWeek ?? (tab === "calendar" ? selectedDow : 1));
     setModalOpen(true);
+  };
+
+  // The FAB opens the add carousel starting at the event modal.
+  const openAddCarousel = () => {
+    setEditingBlock(null);
+    setEditingNote(null);
+    setEditingProject(null);
+    setEditingPayment(null);
+    setModalDay(tab === "calendar" ? selectedDow : 1);
+    setAddType("event");
   };
 
   const openEdit = (block: ScheduleBlock) => {
@@ -971,19 +1001,21 @@ export default function KidScheduleScreen() {
           icon="plus"
           style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: kidColor }]}
           color="#FFF"
-          onPress={() => openAdd()}
+          onPress={openAddCarousel}
         />
 
         <ScheduleBlockModal
-          visible={modalOpen}
+          visible={modalOpen || addType === "event"}
           onDismiss={() => {
             setModalOpen(false);
             setEditingBlock(null);
+            setAddType(null);
           }}
           editBlock={editingBlock}
           defaultDaysOfWeek={[modalDay]}
           defaultDate={tab === "calendar" ? selectedDate : undefined}
           onSubmit={handleSubmit}
+          carousel={addCarousel("event")}
         />
 
         {/* Edit/delete for kid-assigned family events (created on /calendar). */}
@@ -1005,37 +1037,43 @@ export default function KidScheduleScreen() {
         />
         {/* This kid's notes — locked to this kid (picker hidden, name in title). */}
         <NoteModal
-          visible={noteModalOpen}
+          visible={noteModalOpen || addType === "note"}
           onDismiss={() => {
             setNoteModalOpen(false);
             setEditingNote(null);
+            setAddType(null);
           }}
           editNote={editingNote}
           defaultKidId={kidId}
           lockedKidName={kid?.name}
+          carousel={addCarousel("note")}
         />
 
         {/* Same for projects. */}
         <ProjectModal
-          visible={projectModalOpen}
+          visible={projectModalOpen || addType === "project"}
           onDismiss={() => {
             setProjectModalOpen(false);
             setEditingProject(null);
+            setAddType(null);
           }}
           editProject={editingProject}
           defaultKidId={kidId}
           lockedKidName={kid?.name}
+          carousel={addCarousel("project")}
         />
 
         {/* This kid's payments (תשלומים) — new ones start as "to pay". */}
         <KidPaymentModal
-          visible={paymentModalOpen}
+          visible={paymentModalOpen || addType === "payment"}
           onDismiss={() => {
             setPaymentModalOpen(false);
             setEditingPayment(null);
+            setAddType(null);
           }}
           kidId={kidId}
           editExpense={editingPayment}
+          carousel={addCarousel("payment")}
         />
 
         <ConfirmDeleteModal

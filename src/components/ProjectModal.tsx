@@ -8,6 +8,7 @@ import { MS } from "@src/ui/modalStyles";
 import { C } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
+import ModalCarouselNav, { CarouselNav } from "./ModalCarouselNav";
 import KidOwnerPicker from "./KidOwnerPicker";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
@@ -167,9 +168,11 @@ interface Props {
    * picker is hidden and the kid's name is shown in the modal title.
    */
   lockedKidName?: string;
+  /** When set, shows carousel arrows to swap between the kid "add" modals. */
+  carousel?: CarouselNav;
 }
 
-export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName }: Props) {
+export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName, carousel }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>(initialStatus ?? "idea");
@@ -228,6 +231,7 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
 
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
+      {carousel && <ModalCarouselNav {...carousel} />}
       <Text style={MS.heading}>
         {(editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")) +
           (lockedKidName ? ` ל${lockedKidName}` : "")}
