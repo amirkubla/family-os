@@ -90,6 +90,8 @@ interface Props {
   editBlock?: ScheduleBlock | null;
   defaultDaysOfWeek?: number[];
   defaultDate?: string;
+  defaultStartTime?: string; // HH:MM — pre-fill from a time-slot tap
+  defaultEndTime?: string;   // HH:MM — pre-fill from a time-slot tap
   onSubmit: (data: {
     title: string;
     type: BlockType;
@@ -116,6 +118,8 @@ export default function ScheduleBlockModal({
   editBlock,
   defaultDaysOfWeek = [1],
   defaultDate,
+  defaultStartTime,
+  defaultEndTime,
   onSubmit,
   onDelete,
   carousel,
@@ -136,11 +140,12 @@ export default function ScheduleBlockModal({
     defaultValues: {
       title: "",
       type: "other",
-      isRecurring: true,
+      // A time-slot tap implies a one-time block at that date+time.
+      isRecurring: !defaultStartTime,
       daysOfWeek: defaultDaysOfWeek,
       date: defaultDate ?? toYMD(new Date()),
-      startTime: "09:00",
-      endTime: "10:00",
+      startTime: defaultStartTime ?? "09:00",
+      endTime: defaultEndTime ?? "10:00",
       location: "",
     },
   });
@@ -159,19 +164,20 @@ export default function ScheduleBlockModal({
       });
       setSelectedReminders(editBlock.reminders ?? []);
     } else if (visible) {
+      const hasSlotTime = !!defaultStartTime;
       reset({
         title: "",
         type: "other",
-        isRecurring: true,
+        isRecurring: !hasSlotTime,
         daysOfWeek: defaultDaysOfWeek,
         date: defaultDate ?? toYMD(new Date()),
-        startTime: "09:00",
-        endTime: "10:00",
+        startTime: defaultStartTime ?? "09:00",
+        endTime: defaultEndTime ?? "10:00",
         location: "",
       });
       setSelectedReminders([]);
     }
-  }, [visible, editBlock, defaultDaysOfWeek, defaultDate, reset]);
+  }, [visible, editBlock, defaultDaysOfWeek, defaultDate, defaultStartTime, defaultEndTime, reset]);
 
   const selectedDays = watch("daysOfWeek");
   const isRecurring = watch("isRecurring");

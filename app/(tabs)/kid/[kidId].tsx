@@ -316,6 +316,9 @@ export default function KidScheduleScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
   const [modalDay, setModalDay] = useState(1);
+  // Pre-filled time from a calendar time-slot tap (HH:MM); undefined otherwise.
+  const [slotStart, setSlotStart] = useState<string | undefined>(undefined);
+  const [slotEnd, setSlotEnd] = useState<string | undefined>(undefined);
   // Family-event modal (edit/delete only — new events are created on /calendar)
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<FamilyEvent | null>(null);
@@ -411,6 +414,8 @@ export default function KidScheduleScreen() {
   const openAdd = (dayOfWeek?: number) => {
     setEditingBlock(null);
     setModalDay(dayOfWeek ?? (tab === "calendar" ? selectedDow : 1));
+    setSlotStart(undefined);
+    setSlotEnd(undefined);
     setModalOpen(true);
   };
 
@@ -421,12 +426,16 @@ export default function KidScheduleScreen() {
     setEditingProject(null);
     setEditingPayment(null);
     setModalDay(tab === "calendar" ? selectedDow : 1);
+    setSlotStart(undefined);
+    setSlotEnd(undefined);
     setAddType("event");
   };
 
   const openEdit = (block: ScheduleBlock) => {
     setEditingBlock(block);
     setModalDay(block.daysOfWeek[0] ?? 0);
+    setSlotStart(undefined);
+    setSlotEnd(undefined);
     setModalOpen(true);
   };
 
@@ -461,10 +470,12 @@ export default function KidScheduleScreen() {
 
   // Slot tap (week/day grid) → new schedule block on that date.
   const handleSlotPress = useCallback(
-    (date: string, _start: number, _end: number) => {
+    (date: string, start: number, end: number) => {
       setSelectedDate(date);
       setEditingBlock(null);
       setModalDay(dayOfWeekFromYMD(date));
+      setSlotStart(minutesToHHMM(start));
+      setSlotEnd(minutesToHHMM(end));
       setModalOpen(true);
     },
     [],
@@ -1013,6 +1024,8 @@ export default function KidScheduleScreen() {
           editBlock={editingBlock}
           defaultDaysOfWeek={[modalDay]}
           defaultDate={tab === "calendar" ? selectedDate : undefined}
+          defaultStartTime={slotStart}
+          defaultEndTime={slotEnd}
           onSubmit={handleSubmit}
           carousel={addCarousel("event")}
         />
