@@ -64,7 +64,7 @@ import FamilyEventModal from "@src/components/FamilyEventModal";
 import NoteModal from "@src/components/NoteModal";
 import ProjectModal from "@src/components/ProjectModal";
 import KidPaymentModal from "@src/components/KidPaymentModal";
-import type { CarouselNav } from "@src/components/ModalCarouselNav";
+import type { ModalCarousel } from "@src/components/ModalWrapper";
 import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -330,16 +330,15 @@ export default function KidScheduleScreen() {
   // "Add" carousel — the FAB opens the add-event modal with arrows that cycle
   // through the four add modals (event → note → project → payment).
   const [addType, setAddType] = useState<AddType | null>(null);
-  const addIndex = addType ? ADD_ORDER.indexOf(addType) : 0;
   const cycleAdd = useCallback((dir: 1 | -1) => {
     setAddType((prev) => {
       const i = ADD_ORDER.indexOf(prev ?? "event");
       return ADD_ORDER[(i + dir + ADD_ORDER.length) % ADD_ORDER.length];
     });
   }, []);
-  const addCarousel = (type: AddType): CarouselNav | undefined =>
+  const addCarousel = (type: AddType): ModalCarousel | undefined =>
     addType === type
-      ? { index: addIndex, count: ADD_ORDER.length, onPrev: () => cycleAdd(-1), onNext: () => cycleAdd(1) }
+      ? { onPrev: () => cycleAdd(-1), onNext: () => cycleAdd(1) }
       : undefined;
 
   // Section-collapse state (local; doesn't need to persist across sessions).

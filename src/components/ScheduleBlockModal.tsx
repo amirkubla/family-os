@@ -19,8 +19,7 @@ import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
-import ModalWrapper from "./ModalWrapper";
-import ModalCarouselNav, { CarouselNav } from "./ModalCarouselNav";
+import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
 import DatePicker from "./DatePicker";
 
@@ -104,7 +103,7 @@ interface Props {
   }) => void;
   onDelete?: () => void;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
-  carousel?: CarouselNav;
+  carousel?: ModalCarousel;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,8 +196,7 @@ export default function ScheduleBlockModal({
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      {carousel && <ModalCarouselNav {...carousel} />}
+    <ModalWrapper visible={visible} onDismiss={onDismiss} carousel={carousel}>
       {/* ── Header ── */}
       <View style={MS.headerBar}>
         <View style={MS.headerIconWrap}>

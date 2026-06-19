@@ -5,8 +5,7 @@ import type { Note } from "@src/models/note";
 import { addNoteRemote, updateNoteRemote } from "@src/lib/sync/remoteCrud";
 import { t } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
-import ModalWrapper from "./ModalWrapper";
-import ModalCarouselNav, { CarouselNav } from "./ModalCarouselNav";
+import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
 import KidOwnerPicker from "./KidOwnerPicker";
 
 interface Props {
@@ -25,7 +24,7 @@ interface Props {
    */
   lockedKidName?: string;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
-  carousel?: CarouselNav;
+  carousel?: ModalCarousel;
 }
 
 export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, lockedKidName, carousel }: Props) {
@@ -74,8 +73,7 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
   const handleDismiss = () => { reset(); onDismiss(); };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={handleDismiss}>
-      {carousel && <ModalCarouselNav {...carousel} />}
+    <ModalWrapper visible={visible} onDismiss={handleDismiss} carousel={carousel}>
       <Text style={MS.heading}>
         {(editNote ? t("noteModal.editTitle") : t("noteModal.addTitle")) +
           (lockedKidName ? ` ל${lockedKidName}` : "")}

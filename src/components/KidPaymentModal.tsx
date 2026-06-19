@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Switch } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
-import ModalWrapper from "./ModalWrapper";
-import ModalCarouselNav, { CarouselNav } from "./ModalCarouselNav";
+import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
 import DatePicker from "./DatePicker";
 import WheelPicker from "./WheelPicker";
 import { MS } from "@src/ui/modalStyles";
@@ -64,7 +63,7 @@ interface Props {
   /** When set, edit this existing payment instead of creating a new one. */
   editExpense?: Expense | null;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
-  carousel?: CarouselNav;
+  carousel?: ModalCarousel;
 }
 
 export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense, carousel }: Props) {
@@ -146,8 +145,7 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      {carousel && <ModalCarouselNav {...carousel} />}
+    <ModalWrapper visible={visible} onDismiss={onDismiss} carousel={carousel}>
       <Text style={MS.heading}>
         {editExpense ? t("payment.edit") : t("payment.add")}
       </Text>
