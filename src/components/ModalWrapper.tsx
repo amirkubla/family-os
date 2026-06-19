@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { C, R, S, SHADOW } from "@src/ui/tokens";
+import { R, S, SHADOW } from "@src/ui/tokens";
 
 /** When provided, ModalWrapper renders prev/next arrows flanking the card. */
 export interface ModalCarousel {
@@ -62,7 +62,7 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
               accessibilityLabel="הקודם"
               testID="carousel-prev"
             >
-              <Ionicons name="chevron-forward" size={30} color={C.purple} />
+              <Ionicons name="chevron-forward" size={40} color="#FFFFFF" style={styles.arrowIcon} />
             </Pressable>
             {card}
             {/* physical-right arrow */}
@@ -74,7 +74,7 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
               accessibilityLabel="הבא"
               testID="carousel-next"
             >
-              <Ionicons name="chevron-back" size={30} color={C.purple} />
+              <Ionicons name="chevron-back" size={40} color="#FFFFFF" style={styles.arrowIcon} />
             </Pressable>
           </View>
         ) : (
@@ -118,10 +118,16 @@ const styles = StyleSheet.create({
     gap: S.xs,
   },
   sideArrow: {
-    width: 40,
-    height: 40,
+    width: 52,
+    height: 52,
     alignItems: "center",
     justifyContent: "center",
+  },
+  // White chevron with a soft dark halo so it stands out on any background.
+  arrowIcon: {
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   container: {
     backgroundColor: "#FFFFFF",
