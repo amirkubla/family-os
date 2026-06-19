@@ -20,6 +20,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
 import { toggleNotePinnedRemote, deleteNoteRemote, reorderNotesRemote } from "@src/lib/sync/remoteCrud";
 import NoteModal from "@src/components/NoteModal";
+import KidOwnerBadge from "@src/components/KidOwnerBadge";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -94,6 +95,8 @@ function NoteCard({
         </Text>
       ) : null}
 
+      <KidOwnerBadge kidId={note.kidId} style={{ marginTop: S.xs }} />
+
       <View style={[styles.noteAccentBar, note.pinned && { backgroundColor: NOTE_COLORS.accent }]} />
     </Pressable>
   );
@@ -105,12 +108,11 @@ export default function NotesScreen() {
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   const allNotes = useFamilyStore((s) => s.notes);
-  // Family-wide notes, ordered purely by manual drag order (sortOrder).
+  // All notes (family-wide + kid-owned), ordered by manual drag order.
+  // Kid-owned notes also appear on their kid's page; here they carry a kid badge.
   const notes = useMemo(
     () =>
-      allNotes
-        .filter((n) => !n.kidId)
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+      [...allNotes].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [allNotes],
   );
 

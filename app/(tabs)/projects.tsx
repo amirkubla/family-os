@@ -20,6 +20,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Project } from "@src/models/project";
 import { deleteProjectRemote, reorderProjectsRemote } from "@src/lib/sync/remoteCrud";
 import ProjectModal from "@src/components/ProjectModal";
+import KidOwnerBadge from "@src/components/KidOwnerBadge";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -90,6 +91,8 @@ function ProjectCard({
           </Text>
         ) : null}
 
+        <KidOwnerBadge kidId={proj.kidId} style={{ marginTop: S.xs }} />
+
         <View style={styles.projectProgressRow}>
           <View style={styles.projectProgressTrack}>
             <View
@@ -115,11 +118,10 @@ export default function ProjectsScreen() {
 
   const allProjects = useFamilyStore((s) => s.projects);
   // Family-wide projects, sorted by manual drag order.
+  // All projects (family-wide + kid-owned); kid-owned carry a kid badge here.
   const projects = useMemo(
     () =>
-      allProjects
-        .filter((p) => !p.kidId)
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+      [...allProjects].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [allProjects],
   );
 

@@ -57,8 +57,11 @@ export default function HomeScreen() {
 
   // ── Live counts for the launcher tiles ──
   const counts = useMemo(() => {
-    const notes = allNotes.filter((n) => !n.kidId);
-    const projects = allProjects.filter((p) => !p.kidId);
+    // Counts include kid-owned notes/projects too — they're now shown on the
+    // main notes/projects pages (labeled with a kid badge), so the launcher
+    // tile counts should match.
+    const notes = allNotes;
+    const projects = allProjects;
 
     const today = new Date();
     const weekEnd = new Date(today);
