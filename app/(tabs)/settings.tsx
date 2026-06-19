@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Linking, Alert, Share, Platform } from "react-native";
-import { Card, Text, IconButton, Divider, TextInput, Button } from "react-native-paper";
+import { View, StyleSheet, ScrollView, Pressable, Linking, Alert, Share, Platform, ActivityIndicator } from "react-native";
+import { Card, Text, IconButton, Divider, TextInput } from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
@@ -22,6 +23,60 @@ import SectionHeader from "@src/components/SectionHeader";
 import PageHeader from "@src/components/PageHeader";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
+
+// ── Polished action button ──
+// solid = filled accent with a soft colored shadow; soft = tinted + bordered
+// (used for secondary/destructive actions). Replaces the flat Paper buttons.
+function ActionButton({
+  label,
+  icon,
+  onPress,
+  color,
+  variant = "solid",
+  loading,
+  disabled,
+  style,
+  testID,
+}: {
+  label: string;
+  icon: string;
+  onPress: () => void;
+  color: string;
+  variant?: "solid" | "soft";
+  loading?: boolean;
+  disabled?: boolean;
+  style?: any;
+  testID?: string;
+}) {
+  const solid = variant === "solid";
+  const fg = solid ? "#FFFFFF" : color;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      testID={testID}
+      style={({ pressed }: any) => [
+        actionStyles.btn,
+        solid
+          ? { backgroundColor: color, shadowColor: color, ...actionStyles.solidShadow }
+          : { backgroundColor: color + "14", borderWidth: 1.5, borderColor: color + "33" },
+        pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+        (disabled || loading) && { opacity: 0.55 },
+        Platform.OS === "web" && ({ cursor: "pointer" } as any),
+        style,
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={fg} />
+      ) : (
+        <MaterialCommunityIcons name={icon as any} size={20} color={fg} />
+      )}
+      <Text style={[actionStyles.label, { color: fg }]}>{label}</Text>
+    </Pressable>
+  );
+}
 
 // ── Member row ──
 
@@ -400,41 +455,35 @@ export default function SettingsScreen() {
                   <Text style={styles.inviteCodeText}>{inviteCode}</Text>
                 </View>
                 <View style={styles.inviteActions}>
-                  <Button
-                    mode="outlined"
+                  <ActionButton
+                    variant="soft"
+                    color={C.teal}
                     onPress={copyInviteCode}
                     icon={codeCopied ? "check" : "content-copy"}
-                    style={styles.inviteBtn}
-                    textColor={C.teal}
-                  >
-                    {codeCopied ? t("settings.codeCopied") : t("settings.copyCode")}
-                  </Button>
-                  <Button
-                    mode="contained"
+                    label={codeCopied ? t("settings.codeCopied") : t("settings.copyCode")}
+                    style={{ flex: 1, marginTop: 0 }}
+                  />
+                  <ActionButton
+                    color={C.teal}
                     onPress={shareInvite}
                     icon="share-variant"
-                    style={styles.inviteBtn}
-                    buttonColor={C.teal}
-                  >
-                    {t("settings.shareInvite")}
-                  </Button>
+                    label={t("settings.shareInvite")}
+                    style={{ flex: 1, marginTop: 0 }}
+                  />
                 </View>
                 <Text style={styles.inviteExpiry}>
                   {t("settings.inviteExpires", { days: "7" })}
                 </Text>
               </View>
             ) : (
-              <Button
-                mode="contained"
+              <ActionButton
+                color={C.teal}
                 onPress={generateInvite}
                 loading={generatingInvite}
                 disabled={generatingInvite}
                 icon="account-plus"
-                style={styles.inviteGenerateBtn}
-                buttonColor={C.teal}
-              >
-                {t("settings.generateInvite")}
-              </Button>
+                label={t("settings.generateInvite")}
+              />
             )}
           </Card.Content>
         </Card>
@@ -449,17 +498,15 @@ export default function SettingsScreen() {
             <Text style={styles.subtitle}>
               {t("settings.telegramSubtitle")}
             </Text>
-            <Button
-              mode="contained"
+            <ActionButton
+              color={C.selectText}
               onPress={connectTelegram}
               loading={connectingTelegram}
               disabled={connectingTelegram}
               icon="send"
-              style={styles.telegramBtn}
-              buttonColor={C.selectText}
-            >
-              {t("settings.connectTelegram")}
-            </Button>
+              label={t("settings.connectTelegram")}
+              style={{ marginTop: S.md }}
+            />
           </Card.Content>
         </Card>
 
@@ -470,15 +517,12 @@ export default function SettingsScreen() {
             <Text style={styles.subtitle}>
               {t("settings.customizationSubtitle")}
             </Text>
-            <Button
-              mode="contained"
+            <ActionButton
+              color={C.purple}
               onPress={() => router.push("/customization" as any)}
               icon="tune"
-              style={styles.telegramBtn}
-              buttonColor={C.purple}
-            >
-              {t("settings.openCustomization")}
-            </Button>
+              label={t("settings.openCustomization")}
+            />
           </Card.Content>
         </Card>
 
@@ -495,16 +539,14 @@ export default function SettingsScreen() {
               </View>
             )}
 
-            <Button
-              mode="outlined"
+            <ActionButton
+              variant="soft"
+              color={C.red}
               onPress={logout}
               icon="logout"
-              textColor={C.red}
-              style={styles.logoutBtn}
+              label={t("auth.logout")}
               testID="logout-button"
-            >
-              {t("auth.logout")}
-            </Button>
+            />
           </Card.Content>
         </Card>
       </ScrollView>
@@ -582,7 +624,6 @@ const styles = StyleSheet.create({
   nameInputContent: { textAlign: TEXT_RIGHT },
   accountInfo: { marginBottom: S.md },
   accountText: { fontSize: 14, textAlign: TEXT_RIGHT, writingDirection: "rtl", color: C.textPrimary, marginBottom: S.xs },
-  logoutBtn: { borderColor: C.red + "44", borderRadius: R.md },
   inviteCodeContainer: {
     gap: S.md,
     alignItems: "center" as const,
@@ -608,18 +649,10 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
     gap: S.sm,
   },
-  inviteBtn: {
-    borderRadius: R.md,
-    borderColor: C.teal + "44",
-  },
   inviteExpiry: {
     fontSize: 12,
     color: C.textMuted,
     textAlign: "center" as const,
-  },
-  inviteGenerateBtn: {
-    borderRadius: R.md,
-    marginTop: S.sm,
   },
   telegramTitle: {
     fontSize: 16,
@@ -628,5 +661,24 @@ const styles = StyleSheet.create({
     textAlign: TEXT_RIGHT,
     marginBottom: S.sm,
   },
-  telegramBtn: { borderRadius: R.md, marginTop: S.md },
+});
+
+const actionStyles = StyleSheet.create({
+  btn: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: S.sm,
+    paddingVertical: 14,
+    paddingHorizontal: S.lg,
+    borderRadius: 16,
+    marginTop: S.sm,
+  },
+  solidShadow: {
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  label: { fontSize: 15, fontWeight: "700", writingDirection: "rtl" },
 });

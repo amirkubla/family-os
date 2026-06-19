@@ -12,7 +12,7 @@
  * fire-and-forget the PUT. Server errors surface via the global snackbar.
  */
 
-import React, { useState, useMemo, useCallback, useLayoutEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { View, StyleSheet, ScrollView, Platform, Pressable } from "react-native";
 import {
   Card,
@@ -20,7 +20,8 @@ import {
   IconButton,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import PageHeader from "@src/components/PageHeader";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
@@ -221,11 +222,7 @@ function BudgetCategoriesSection() {
 // ---------------------------------------------------------------------------
 
 export default function CustomizationScreen() {
-  const navigation = useNavigation();
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: t("customization.title") });
-  }, [navigation]);
-
+  const router = useRouter();
   const customizations = useFamilyStore((s) => s.customizations);
 
   const effective = useMemo(
@@ -251,9 +248,9 @@ export default function CustomizationScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+      <PageHeader title={t("customization.title")} onBack={() => router.replace("/settings")} />
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{t("customization.title")}</Text>
         <Text style={styles.subtitle}>{t("customization.subtitle")}</Text>
         <Text style={styles.hint}>{t("customization.subcategoriesHint")}</Text>
 
@@ -276,13 +273,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.xxl },
 
-  title: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: C.textPrimary,
-    textAlign: TEXT_RIGHT,
-    writingDirection: "rtl",
-  },
   subtitle: {
     fontSize: 14,
     color: C.textSecondary,

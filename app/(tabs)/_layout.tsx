@@ -28,8 +28,7 @@ export default function TabLayout() {
         name="customization"
         options={{
           href: null,
-          headerShown: true,
-          title: t("customization.title"),
+          headerShown: false,
         }}
       />
       <Tabs.Screen name="budget" options={{ title: t("tabs.budget") }} />

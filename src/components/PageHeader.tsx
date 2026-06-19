@@ -19,16 +19,20 @@ import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 
 interface Props {
   title: string;
+  /** Override the back action. Defaults to returning to the home launcher. */
+  onBack?: () => void;
 }
 
-export default function PageHeader({ title }: Props) {
+export default function PageHeader({ title, onBack }: Props) {
   const router = useRouter();
 
-  // Always return to the home launcher (these pages are only reached from it),
-  // so the button is predictable regardless of how the screen was opened.
+  // Default: return to the home launcher (most of these pages are reached from
+  // it). Screens opened from elsewhere (e.g. customization → settings) pass a
+  // custom onBack.
   const goBack = useCallback(() => {
-    router.replace("/home");
-  }, [router]);
+    if (onBack) onBack();
+    else router.replace("/home");
+  }, [router, onBack]);
 
   return (
     <View style={styles.bar}>
