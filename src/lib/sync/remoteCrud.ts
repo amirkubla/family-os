@@ -728,8 +728,16 @@ export function updateExpenseRemote(
   patch: Partial<Pick<Expense, "amount" | "categoryName" | "payerMemberId" | "kidId" | "date" | "note" | "paid" | "isRecurring" | "recurrenceType" | "recurrenceDay">>,
 ) {
   useFamilyStore.getState().updateExpense(id, patch);
+  // The PATCH body is serialized with JSON.stringify, which DROPS keys whose
+  // value is `undefined` — so an explicit "clear this field" (e.g. setting
+  // recurrenceType to undefined when a payment stops being recurring) would
+  // never reach the server, leaving stale values. Coerce present-`undefined`
+  // values to `null` so clears actually persist. (Absent keys stay absent, so
+  // field-by-field merge for concurrent edits is unaffected.)
+  const apiPatch: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(patch)) apiPatch[k] = v === undefined ? null : v;
   fireAndForget(
-    getFamilyId().then((fid) => expensesApi.update(fid, id, patch as any)),
+    getFamilyId().then((fid) => expensesApi.update(fid, id, apiPatch as any)),
     "Update expense",
   );
 }
@@ -762,5 +770,35 @@ export function markKidPaymentPaidRemote(payment: Expense) {
       recurrenceType: payment.recurrenceType,
       recurrenceDay: payment.recurrenceDay,
     });
+  }
+}
+
+/**
+ * Revert a settled kid payment back to "to pay".
+ *
+ * A settled *recurring* occurrence keeps its `recurrenceType`/`recurrenceDay`
+ * (only `isRecurring` was cleared on settle), so we can detect it and undo the
+ * whole settle: delete the next occurrence that mark-paid queued (matched
+ * precisely by the advanced due date) and restore this row's recurrence.
+ * Without this, undo would leave a duplicate (the restored original + the
+ * already-queued next).
+ */
+export function markKidPaymentUnpaidRemote(payment: Expense) {
+  if (payment.recurrenceType) {
+    const expectedNext = nextDueDate(payment.date, payment.recurrenceType);
+    const queuedNext = useFamilyStore.getState().expenses.find(
+      (e) =>
+        e.id !== payment.id &&
+        e.kidId === payment.kidId &&
+        e.note === payment.note &&
+        e.amount === payment.amount &&
+        e.isRecurring &&
+        e.paid === false &&
+        e.date === expectedNext,
+    );
+    if (queuedNext) deleteExpenseRemote(queuedNext.id);
+    updateExpenseRemote(payment.id, { paid: false, isRecurring: true });
+  } else {
+    updateExpenseRemote(payment.id, { paid: false });
   }
 }

@@ -40,8 +40,8 @@ import {
   reorderNotesRemote,
   reorderProjectsRemote,
   deleteExpenseRemote,
-  updateExpenseRemote,
   markKidPaymentPaidRemote,
+  markKidPaymentUnpaidRemote,
 } from "@src/lib/sync/remoteCrud";
 import type { ScheduleBlock, BlockType } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
@@ -387,10 +387,7 @@ export default function KidScheduleScreen() {
   );
 
   const handleMarkPaid = useCallback((pay: Expense) => markKidPaymentPaidRemote(pay), []);
-
-  const handleMarkUnpaid = useCallback((pay: Expense) => {
-    updateExpenseRemote(pay.id, { paid: false });
-  }, []);
+  const handleMarkUnpaid = useCallback((pay: Expense) => markKidPaymentUnpaidRemote(pay), []);
 
   const openAdd = (dayOfWeek?: number) => {
     setEditingBlock(null);
