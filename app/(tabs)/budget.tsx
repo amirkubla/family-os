@@ -13,9 +13,6 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
   addExpenseRemote,
   deleteExpenseRemote,
-  addBudgetCategoryRemote,
-  updateBudgetCategoryRemote,
-  deleteBudgetCategoryRemote,
   markKidPaymentPaidRemote,
 } from "@src/lib/sync/remoteCrud";
 import { t, LOCALE } from "@src/i18n";
@@ -32,9 +29,8 @@ function recurrenceLabel(exp: Expense): string {
   if (type === "weekly") return `כל שבוע, ביום ${DAYS_OF_WEEK_HE[exp.recurrenceDay ?? 0]}`;
   return `כל חודש, יום ${exp.recurrenceDay ?? 1}`;
 }
-import type { Expense, BudgetCategory } from "@src/models/budget";
+import type { Expense } from "@src/models/budget";
 import ExpenseModal from "@src/components/ExpenseModal";
-import BudgetCategoryModal from "@src/components/BudgetCategoryModal";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import SectionHeader from "@src/components/SectionHeader";
@@ -84,9 +80,6 @@ export default function BudgetScreen() {
   const [selectedYM, setSelectedYM] = useState(currentYM);
   const [expenseModalVisible, setExpenseModalVisible] = useState(false);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
-  const [catModalVisible, setCatModalVisible] = useState(false);
-  const [editCategory, setEditCategory] = useState<BudgetCategory | null>(null);
-  const [managingCats, setManagingCats] = useState(false);
 
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -217,17 +210,10 @@ export default function BudgetScreen() {
     requestDelete(() => deleteExpenseRemote(expense.id));
   };
 
-  const handleSaveCategory = (data: Parameters<typeof addBudgetCategoryRemote>[0]) => {
-    if (editCategory) {
-      updateBudgetCategoryRemote(editCategory.id, data);
-    } else {
-      addBudgetCategoryRemote({ ...data, sortOrder: budgetCategories.length });
-    }
-    setEditCategory(null);
-  };
-
-  const handleDeleteCategory = (cat: BudgetCategory) => {
-    requestDelete(() => deleteBudgetCategoryRemote(cat.id));
+  // Open the expense modal pre-filled to edit an existing item.
+  const openEditExpense = (expense: Expense) => {
+    setEditExpense(expense);
+    setExpenseModalVisible(true);
   };
 
   const spendPct = totalCap > 0 ? Math.min(totalSpent / totalCap, 1) : 0;
@@ -373,15 +359,9 @@ export default function BudgetScreen() {
           </>
         )}
 
-        {/* Categories section header + manage toggle */}
-        <View style={styles.sectionRow}>
-          <Pressable onPress={() => setManagingCats((v) => !v)}>
-            <Text style={[styles.sectionAction, { color: ACCENT }]}>
-              {managingCats ? "סיום" : "ניהול"}
-            </Text>
-          </Pressable>
-          <Text style={styles.sectionTitle}>{t("budget.categories")}</Text>
-        </View>
+        {/* Categories — read-only spend breakdown. Management lives in the
+            customization screen (Settings → התאמה אישית). */}
+        <SectionHeader label={t("budget.categories")} />
 
         {budgetCategories.map((cat) => {
           const spent = categoryTotals[cat.name] ?? 0;
@@ -417,38 +397,9 @@ export default function BudgetScreen() {
                   </>
                 ) : null}
               </View>
-              {managingCats && (
-                <View style={{ flexDirection: RTL_ROW }}>
-                  <IconButton
-                    icon="pencil-outline"
-                    size={18}
-                    onPress={() => {
-                      setEditCategory(cat);
-                      setCatModalVisible(true);
-                    }}
-                  />
-                  <IconButton
-                    icon="trash-can-outline"
-                    size={18}
-                    onPress={() => handleDeleteCategory(cat)}
-                  />
-                </View>
-              )}
             </View>
           );
         })}
-
-        {managingCats && (
-          <Pressable
-            style={styles.addCatBtn}
-            onPress={() => {
-              setEditCategory(null);
-              setCatModalVisible(true);
-            }}
-          >
-            <Text style={styles.addCatText}>+ {t("budget.addCategory")}</Text>
-          </Pressable>
-        )}
 
         {/* Recurring expenses section */}
         <SectionHeader label={t("budget.recurringSection")} />
@@ -491,18 +442,25 @@ export default function BudgetScreen() {
             const cat = budgetCategories.find((c) => c.name === exp.categoryName);
             return (
               <View key={exp.id} style={styles.expRow}>
-                <View style={[styles.expAvatar, { backgroundColor: (cat?.color ?? "#9B59B6") + "22" }]}>
-                  <Text style={styles.expAvatarEmoji}>{cat?.icon ?? "🔄"}</Text>
-                </View>
-                <View style={styles.expInfo}>
-                  <Text style={[styles.expTitle, { textAlign: TEXT_RIGHT }]}>
-                    {exp.categoryName}
-                    {exp.note ? `  •  ${exp.note}` : ""}
-                  </Text>
-                  <Text style={[styles.expMeta, { textAlign: TEXT_RIGHT }]}>
-                    {recurrenceLabel(exp)}
-                  </Text>
-                </View>
+                <Pressable
+                  style={[styles.expTap, Platform.OS === "web" && ({ cursor: "pointer" } as any)]}
+                  onPress={() => openEditExpense(exp)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("budget.editExpense")}
+                >
+                  <View style={[styles.expAvatar, { backgroundColor: (cat?.color ?? "#9B59B6") + "22" }]}>
+                    <Text style={styles.expAvatarEmoji}>{cat?.icon ?? "🔄"}</Text>
+                  </View>
+                  <View style={styles.expInfo}>
+                    <Text style={[styles.expTitle, { textAlign: TEXT_RIGHT }]}>
+                      {exp.categoryName}
+                      {exp.note ? `  •  ${exp.note}` : ""}
+                    </Text>
+                    <Text style={[styles.expMeta, { textAlign: TEXT_RIGHT }]}>
+                      {recurrenceLabel(exp)}
+                    </Text>
+                  </View>
+                </Pressable>
                 <View style={styles.expRight}>
                   <Text style={styles.expAmount}>{formatILS(exp.amount)}</Text>
                   <IconButton
@@ -528,24 +486,31 @@ export default function BudgetScreen() {
             const cat = budgetCategories.find((c) => c.name === exp.categoryName);
             return (
               <View key={exp.id} style={styles.expRow}>
-                <View
-                  style={[
-                    styles.expAvatar,
-                    { backgroundColor: (member?.color ?? "#9B59B6") + "33" },
-                  ]}
+                <Pressable
+                  style={[styles.expTap, Platform.OS === "web" && ({ cursor: "pointer" } as any)]}
+                  onPress={() => openEditExpense(exp)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("budget.editExpense")}
                 >
-                  <Text style={styles.expAvatarEmoji}>{member?.avatarEmoji ?? "🧑"}</Text>
-                </View>
-                <View style={styles.expInfo}>
-                  <Text style={[styles.expTitle, { textAlign: TEXT_RIGHT }]}>
-                    {cat?.icon ?? "📦"} {exp.categoryName}
-                    {exp.note ? `  •  ${exp.note}` : ""}
-                  </Text>
-                  <Text style={[styles.expMeta, { textAlign: TEXT_RIGHT }]}>
-                    {exp.date}
-                    {member ? `  •  ${member.name}` : ""}
-                  </Text>
-                </View>
+                  <View
+                    style={[
+                      styles.expAvatar,
+                      { backgroundColor: (member?.color ?? "#9B59B6") + "33" },
+                    ]}
+                  >
+                    <Text style={styles.expAvatarEmoji}>{member?.avatarEmoji ?? "🧑"}</Text>
+                  </View>
+                  <View style={styles.expInfo}>
+                    <Text style={[styles.expTitle, { textAlign: TEXT_RIGHT }]}>
+                      {cat?.icon ?? "📦"} {exp.categoryName}
+                      {exp.note ? `  •  ${exp.note}` : ""}
+                    </Text>
+                    <Text style={[styles.expMeta, { textAlign: TEXT_RIGHT }]}>
+                      {exp.date}
+                      {member ? `  •  ${member.name}` : ""}
+                    </Text>
+                  </View>
+                </Pressable>
                 <View style={styles.expRight}>
                   <Text style={styles.expAmount}>{formatILS(exp.amount)}</Text>
                   <IconButton
@@ -585,16 +550,6 @@ export default function BudgetScreen() {
         }}
         editExpense={editExpense}
         onSave={handleSaveExpense}
-      />
-
-      <BudgetCategoryModal
-        visible={catModalVisible}
-        onDismiss={() => {
-          setCatModalVisible(false);
-          setEditCategory(null);
-        }}
-        editCategory={editCategory}
-        onSave={handleSaveCategory}
       />
 
       <ConfirmDeleteModal
@@ -686,26 +641,6 @@ const styles = StyleSheet.create({
   },
   barFillSmall: { height: "100%", borderRadius: 3 },
 
-  sectionRow: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: S.xl,
-    marginBottom: S.md,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: C.textPrimary,
-    textAlign: TEXT_RIGHT,
-    flex: 1,
-  },
-  sectionAction: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginStart: S.sm,
-  },
-
   memberRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",
@@ -790,17 +725,6 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
   },
 
-  addCatBtn: {
-    alignItems: "center",
-    paddingVertical: S.sm,
-    marginBottom: S.sm,
-    borderRadius: R.md,
-    borderWidth: 1.5,
-    borderColor: ACCENT,
-    borderStyle: "dashed",
-  },
-  addCatText: { fontSize: 14, color: ACCENT, fontWeight: "600" },
-
   empty: {
     textAlign: TEXT_RIGHT,
     color: C.textSecondary,
@@ -816,6 +740,11 @@ const styles = StyleSheet.create({
     padding: S.md,
     marginBottom: S.sm,
     ...SHADOW.sm,
+  },
+  expTap: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    flex: 1,
   },
   expAvatar: {
     width: 36,
