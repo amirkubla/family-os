@@ -1085,6 +1085,7 @@ export default function KidScheduleScreen() {
           }}
           kidId={kidId}
           editExpense={editingPayment}
+          lockedKidName={kid?.name}
           carousel={addCarousel("payment")}
         />
 

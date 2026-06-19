@@ -62,11 +62,13 @@ interface Props {
   kidId: string;
   /** When set, edit this existing payment instead of creating a new one. */
   editExpense?: Expense | null;
+  /** Kid name shown in the modal title (kid-page context). */
+  lockedKidName?: string;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
   carousel?: ModalCarousel;
 }
 
-export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense, carousel }: Props) {
+export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense, lockedKidName, carousel }: Props) {
   const [name, setName] = useState("");
   const [amountText, setAmountText] = useState("");
   const [dueDate, setDueDate] = useState(toYMD(new Date()));
@@ -147,7 +149,8 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
   return (
     <ModalWrapper visible={visible} onDismiss={onDismiss} carousel={carousel}>
       <Text style={MS.heading}>
-        {editExpense ? t("payment.edit") : t("payment.add")}
+        {(editExpense ? t("payment.edit") : t("payment.add")) +
+          (lockedKidName ? ` ל${lockedKidName}` : "")}
       </Text>
 
       {/* Name */}
