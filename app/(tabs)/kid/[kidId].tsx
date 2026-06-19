@@ -997,8 +997,7 @@ export default function KidScheduleScreen() {
               : undefined
           }
         />
-        {/* This kid's notes — defaultKidId pre-fills the picker so the add
-            button doesn't accidentally create family-wide notes from here. */}
+        {/* This kid's notes — locked to this kid (picker hidden, name in title). */}
         <NoteModal
           visible={noteModalOpen}
           onDismiss={() => {
@@ -1007,6 +1006,7 @@ export default function KidScheduleScreen() {
           }}
           editNote={editingNote}
           defaultKidId={kidId}
+          lockedKidName={kid?.name}
         />
 
         {/* Same for projects. */}
@@ -1018,6 +1018,7 @@ export default function KidScheduleScreen() {
           }}
           editProject={editingProject}
           defaultKidId={kidId}
+          lockedKidName={kid?.name}
         />
 
         {/* This kid's payments (תשלומים) — new ones start as "to pay". */}

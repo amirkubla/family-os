@@ -162,9 +162,14 @@ interface Props {
   defaultKidId?: string;
   /** Pre-select a status for new projects (used by deep links, e.g. ?status=in_progress). */
   initialStatus?: ProjectStatus;
+  /**
+   * When set (kid-page context), the project is locked to this kid: the owner
+   * picker is hidden and the kid's name is shown in the modal title.
+   */
+  lockedKidName?: string;
 }
 
-export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus }: Props) {
+export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>(initialStatus ?? "idea");
@@ -224,7 +229,8 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
       <Text style={MS.heading}>
-        {editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")}
+        {(editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")) +
+          (lockedKidName ? ` ל${lockedKidName}` : "")}
       </Text>
 
       <TextInput
@@ -275,11 +281,14 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
         </>
       )}
 
-      <KidOwnerPicker
-        value={kidId}
-        onChange={setKidId}
-        label={t("projectModal.assignToKid")}
-      />
+      {/* Hidden in kid-page context — the project is locked to that kid. */}
+      {!lockedKidName && (
+        <KidOwnerPicker
+          value={kidId}
+          onChange={setKidId}
+          label={t("projectModal.assignToKid")}
+        />
+      )}
 
       <View style={MS.actions}>
         <Button onPress={handleDismiss}>{t("cancel")}</Button>

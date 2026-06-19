@@ -18,9 +18,14 @@ interface Props {
    * (the existing note's own kidId wins).
    */
   defaultKidId?: string;
+  /**
+   * When set (kid-page context), the note is locked to this kid: the owner
+   * picker is hidden and the kid's name is shown in the modal title.
+   */
+  lockedKidName?: string;
 }
 
-export default function NoteModal({ visible, onDismiss, editNote, defaultKidId }: Props) {
+export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, lockedKidName }: Props) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [kidId, setKidId] = useState<string | undefined>(undefined);
@@ -68,7 +73,8 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId }
   return (
     <ModalWrapper visible={visible} onDismiss={handleDismiss}>
       <Text style={MS.heading}>
-        {editNote ? t("noteModal.editTitle") : t("noteModal.addTitle")}
+        {(editNote ? t("noteModal.editTitle") : t("noteModal.addTitle")) +
+          (lockedKidName ? ` ל${lockedKidName}` : "")}
       </Text>
 
       <TextInput
@@ -95,7 +101,8 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId }
         contentStyle={[MS.inputContent, { minHeight: 150 }]}
       />
 
-      <KidOwnerPicker value={kidId} onChange={setKidId} />
+      {/* Hidden in kid-page context — the note is locked to that kid. */}
+      {!lockedKidName && <KidOwnerPicker value={kidId} onChange={setKidId} />}
 
       <View style={MS.actions}>
         <Button onPress={handleDismiss}>{t("cancel")}</Button>
