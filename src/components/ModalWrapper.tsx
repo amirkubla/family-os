@@ -62,7 +62,7 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
               accessibilityLabel="הקודם"
               testID="carousel-prev"
             >
-              <Ionicons name="chevron-back" size={26} color={C.purple} />
+              <Ionicons name="chevron-forward" size={30} color={C.purple} />
             </Pressable>
             {card}
             {/* physical-right arrow */}
@@ -74,7 +74,7 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
               accessibilityLabel="הבא"
               testID="carousel-next"
             >
-              <Ionicons name="chevron-forward" size={26} color={C.purple} />
+              <Ionicons name="chevron-back" size={30} color={C.purple} />
             </Pressable>
           </View>
         ) : (
@@ -120,11 +120,8 @@ const styles = StyleSheet.create({
   sideArrow: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
-    ...SHADOW.md,
   },
   container: {
     backgroundColor: "#FFFFFF",
