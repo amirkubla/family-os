@@ -279,7 +279,14 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
           <Text style={MS.label}>
             {t("projectModal.progress", { n: Math.round(progress) })}
           </Text>
-          <ProgressSlider value={progress} onChange={setProgress} />
+          <ProgressSlider
+            value={progress}
+            onChange={(v) => {
+              setProgress(v);
+              // Any progress moves the project into "in progress".
+              if (v > 0 && status !== "in_progress") setStatus("in_progress");
+            }}
+          />
         </>
       )}
 
