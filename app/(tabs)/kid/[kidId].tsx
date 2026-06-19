@@ -600,13 +600,15 @@ export default function KidScheduleScreen() {
 
               {/* --- This kid's notes (kidId === kidId) --- */}
               <View style={styles.sectionHeaderRow}>
-                <SectionHeader
-                  label={t("kid.notesOf", { name: kid?.name ?? "" })}
-                  collapsible
-                  expanded={notesExpanded}
-                  onToggle={() => setNotesExpanded((v) => !v)}
-                  testID="kid-section-notes"
-                />
+                <View style={styles.sectionHeaderLabel}>
+                  <SectionHeader
+                    label={t("kid.notesOf", { name: kid?.name ?? "" })}
+                    collapsible
+                    expanded={notesExpanded}
+                    onToggle={() => setNotesExpanded((v) => !v)}
+                    testID="kid-section-notes"
+                  />
+                </View>
                 <IconButton
                   icon="plus-circle"
                   size={28}
@@ -686,13 +688,15 @@ export default function KidScheduleScreen() {
 
               {/* --- This kid's projects --- */}
               <View style={styles.sectionHeaderRow}>
-                <SectionHeader
-                  label={t("kid.projectsOf", { name: kid?.name ?? "" })}
-                  collapsible
-                  expanded={projectsExpanded}
-                  onToggle={() => setProjectsExpanded((v) => !v)}
-                  testID="kid-section-projects"
-                />
+                <View style={styles.sectionHeaderLabel}>
+                  <SectionHeader
+                    label={t("kid.projectsOf", { name: kid?.name ?? "" })}
+                    collapsible
+                    expanded={projectsExpanded}
+                    onToggle={() => setProjectsExpanded((v) => !v)}
+                    testID="kid-section-projects"
+                  />
+                </View>
                 <IconButton
                   icon="plus-circle"
                   size={28}
@@ -800,13 +804,15 @@ export default function KidScheduleScreen() {
 
               {/* --- This kid's payments (תשלומים) --- */}
               <View style={styles.sectionHeaderRow}>
-                <SectionHeader
-                  label={t("kid.paymentsOf", { name: kid?.name ?? "" })}
-                  collapsible
-                  expanded={paymentsExpanded}
-                  onToggle={() => setPaymentsExpanded((v) => !v)}
-                  testID="kid-section-payments"
-                />
+                <View style={styles.sectionHeaderLabel}>
+                  <SectionHeader
+                    label={t("kid.paymentsOf", { name: kid?.name ?? "" })}
+                    collapsible
+                    expanded={paymentsExpanded}
+                    onToggle={() => setPaymentsExpanded((v) => !v)}
+                    testID="kid-section-payments"
+                  />
+                </View>
                 <IconButton
                   icon="plus-circle"
                   size={28}
@@ -1083,6 +1089,12 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  // Wraps the SectionHeader so it takes the available width and the trailing
+  // "+" IconButton always has room. Without this, on native (Yoga) the long
+  // RTL label pushes the IconButton off-screen (web's flexbox shrinks it).
+  sectionHeaderLabel: {
+    flex: 1,
   },
 
   // ── Payments (תשלומים) ──
