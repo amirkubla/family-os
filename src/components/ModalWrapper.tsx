@@ -109,11 +109,15 @@ const styles = StyleSheet.create({
     pointerEvents: "box-none",
   },
   // Carousel: [arrow] [card] [arrow], centered as a group.
+  // flex:1 gives the row a definite height so the card's maxHeight "85%"
+  // resolves (otherwise the card grows unbounded and the inner ScrollView
+  // can't scroll — content spills off-screen).
   carouselRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
+    flex: 1,
     paddingHorizontal: S.xs,
     gap: S.xs,
   },
