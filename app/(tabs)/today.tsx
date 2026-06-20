@@ -106,8 +106,11 @@ export default function TodayScreen() {
 
   // Current month budget summary
   const currentYM = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  // Match the budget screen's "total spent": exclude recurring templates (not
+  // actual spend) and unpaid items (paid === false, e.g. kid payments still
+  // "to pay"), so the Today figure matches the budget page.
   const monthExpenses = useMemo(
-    () => allExpenses.filter((e) => e.date.startsWith(currentYM)),
+    () => allExpenses.filter((e) => !e.isRecurring && e.paid !== false && e.date.startsWith(currentYM)),
     [allExpenses, currentYM],
   );
   const budgetSpent = useMemo(
