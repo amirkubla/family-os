@@ -1,3 +1,5 @@
+import { nextDueDate } from "@src/utils/date";
+
 export interface BudgetCategory {
   id: string;
   name: string;
@@ -39,6 +41,47 @@ export function formatILS(agorot: number): string {
 export function parseILS(input: string): number {
   const n = parseFloat(input.replace(/,/g, ""));
   return isNaN(n) ? 0 : Math.round(n * 100);
+}
+
+// ── Recurring kid payments ──────────────────────────────────────────────────
+//
+// A recurring payment is modeled as a single persistent TEMPLATE row
+// (isRecurring:true, paid:false, date = the series anchor / first due). Paying
+// a period creates a separate settled OCCURRENCE row (isRecurring:false,
+// paid:true, recurrenceType set, date = that period's due date). The template
+// is never mutated or duplicated, so any sequence of mark-paid / undo clicks
+// stays consistent — no chains, no duplicate "to pay" rows, no gaps.
+
+/** Identity key for a recurring series (template ↔ its settled occurrences). */
+export function seriesKey(e: Expense): string {
+  return `${e.kidId}|${e.note ?? ""}|${e.amount}|${e.recurrenceType ?? ""}`;
+}
+
+/** Is this row a settled occurrence of a recurring series (vs. a one-time)? */
+export function isRecurringOccurrence(e: Expense): boolean {
+  return !e.isRecurring && e.paid === true && !!e.recurrenceType && !!e.kidId;
+}
+
+/**
+ * The next due date for a recurring template: the earliest scheduled date
+ * (from the anchor, stepping by period) that has no settled occurrence yet.
+ * Robust to out-of-order payments — it simply finds the first unpaid period.
+ */
+export function nextDueForSeries(template: Expense, expenses: Expense[]): string {
+  const key = seriesKey(template);
+  const paid = new Set(
+    expenses.filter((e) => isRecurringOccurrence(e) && seriesKey(e) === key).map((e) => e.date),
+  );
+  let d = template.date;
+  for (let i = 0; i < 600 && paid.has(d); i++) {
+    d = nextDueDate(d, template.recurrenceType);
+  }
+  return d;
+}
+
+/** Display due date for any kid-payment row (computed next-due for templates). */
+export function paymentDueDate(e: Expense, expenses: Expense[]): string {
+  return e.isRecurring ? nextDueForSeries(e, expenses) : e.date;
 }
 
 /** Default budget categories — mirrors the server-side auto-seed. */

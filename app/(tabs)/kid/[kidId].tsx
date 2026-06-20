@@ -48,7 +48,7 @@ import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { Note } from "@src/models/note";
 import type { Project } from "@src/models/project";
 import type { Expense } from "@src/models/budget";
-import { formatILS } from "@src/models/budget";
+import { formatILS, paymentDueDate } from "@src/models/budget";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, blockTypeLabel, statusLabel } from "@src/i18n";
@@ -871,8 +871,11 @@ export default function KidScheduleScreen() {
                   <View style={styles.paymentsContainer}>
                     {kidPayments.map((pay) => {
                       const unpaid = pay.paid === false;
-                      const overdue = unpaid && pay.date < todayYMD;
-                      const dateLabel = `${pay.date.slice(8, 10)}/${pay.date.slice(5, 7)}`;
+                      // Recurring templates display their computed next-due, not
+                      // the fixed anchor date.
+                      const due = paymentDueDate(pay, allExpenses);
+                      const overdue = unpaid && due < todayYMD;
+                      const dateLabel = `${due.slice(8, 10)}/${due.slice(5, 7)}`;
                       const recurLabel = !pay.isRecurring
                         ? ""
                         : pay.recurrenceType === "weekly"

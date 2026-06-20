@@ -19,7 +19,7 @@
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { getFamilyId } from "../familyContext";
-import { nextDueDate } from "@src/utils/date";
+import { nextDueForSeries, isRecurringOccurrence } from "@src/models/budget";
 import {
   familyApi,
   groceryApi,
@@ -751,53 +751,49 @@ export function deleteExpenseRemote(id: string) {
 }
 
 /**
- * Settle a kid payment. The current occurrence becomes a paid, one-time
- * expense (history + counts toward budget spending). If it was recurring, the
- * next occurrence is queued as a fresh "to pay" with the due date advanced by
- * one period. Shared by the kid screen and the budget screen.
+ * Mark a kid payment paid.
+ *
+ * Recurring template (isRecurring:true): the template is a persistent schedule
+ * and is never settled or duplicated. We create a separate settled OCCURRENCE
+ * for the current due period (history + budget spend); the template stays put,
+ * and its next-due simply recomputes to the following unpaid period.
+ *
+ * One-time payment (isRecurring:false): settle it in place.
+ *
+ * This template+occurrence model replaces the old "settle row + spawn next"
+ * chain, which produced duplicate "to pay" rows and gaps under repeated
+ * mark/undo clicks.
  */
 export function markKidPaymentPaidRemote(payment: Expense) {
-  updateExpenseRemote(payment.id, { paid: true, isRecurring: false });
   if (payment.isRecurring) {
+    const due = nextDueForSeries(payment, useFamilyStore.getState().expenses);
     addExpenseRemote({
       amount: payment.amount,
       categoryName: payment.categoryName,
       kidId: payment.kidId,
-      date: nextDueDate(payment.date, payment.recurrenceType),
+      date: due,
       note: payment.note,
-      paid: false,
-      isRecurring: true,
+      paid: true,
+      isRecurring: false,
+      // Tag with the recurrence so undo knows this is a series occurrence.
       recurrenceType: payment.recurrenceType,
       recurrenceDay: payment.recurrenceDay,
     });
+  } else {
+    updateExpenseRemote(payment.id, { paid: true });
   }
 }
 
 /**
- * Revert a settled kid payment back to "to pay".
+ * Undo a settled kid payment.
  *
- * A settled *recurring* occurrence keeps its `recurrenceType`/`recurrenceDay`
- * (only `isRecurring` was cleared on settle), so we can detect it and undo the
- * whole settle: delete the next occurrence that mark-paid queued (matched
- * precisely by the advanced due date) and restore this row's recurrence.
- * Without this, undo would leave a duplicate (the restored original + the
- * already-queued next).
+ * A settled *recurring occurrence* (tagged with recurrenceType) is removed —
+ * which simply reopens that period in the template's next-due computation. A
+ * one-time settled payment goes back to "to pay".
  */
 export function markKidPaymentUnpaidRemote(payment: Expense) {
-  if (payment.recurrenceType) {
-    const expectedNext = nextDueDate(payment.date, payment.recurrenceType);
-    const queuedNext = useFamilyStore.getState().expenses.find(
-      (e) =>
-        e.id !== payment.id &&
-        e.kidId === payment.kidId &&
-        e.note === payment.note &&
-        e.amount === payment.amount &&
-        e.isRecurring &&
-        e.paid === false &&
-        e.date === expectedNext,
-    );
-    if (queuedNext) deleteExpenseRemote(queuedNext.id);
-    updateExpenseRemote(payment.id, { paid: false, isRecurring: true });
+  if (isRecurringOccurrence(payment)) {
+    deleteExpenseRemote(payment.id);
   } else {
     updateExpenseRemote(payment.id, { paid: false });
   }

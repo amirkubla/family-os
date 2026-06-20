@@ -19,7 +19,7 @@ import {
 import { t, LOCALE } from "@src/i18n";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { formatILS } from "@src/models/budget";
+import { formatILS, paymentDueDate } from "@src/models/budget";
 import { toYMD } from "@src/utils/date";
 
 const DAYS_OF_WEEK_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
@@ -319,8 +319,9 @@ export default function BudgetScreen() {
             <SectionHeader label={t("budget.kidPayments")} />
             {outstandingKidPayments.map((pay) => {
               const kid = kids.find((k) => k.id === pay.kidId);
-              const overdue = pay.date < todayStr;
-              const dateLabel = `${pay.date.slice(8, 10)}/${pay.date.slice(5, 7)}`;
+              const due = paymentDueDate(pay, allExpenses);
+              const overdue = due < todayStr;
+              const dateLabel = `${due.slice(8, 10)}/${due.slice(5, 7)}`;
               const recur = pay.isRecurring
                 ? pay.recurrenceType === "weekly" ? t("payment.everyWeek") : t("payment.everyMonth")
                 : "";
