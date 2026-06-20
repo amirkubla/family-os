@@ -254,7 +254,9 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
         mode="outlined"
         multiline
         numberOfLines={6}
-        style={[MS.input, { minHeight: 120 }]}
+        // flex:1 lets the description fill the tall carousel card (kid-view add
+        // flow); a no-op in content-sized modals where minHeight is the floor.
+        style={[MS.input, { minHeight: 120, flex: 1 }]}
         contentStyle={[MS.inputContent, { minHeight: 110 }]}
       />
 

@@ -99,7 +99,9 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
         mode="outlined"
         multiline
         numberOfLines={8}
-        style={[MS.input, { minHeight: 160 }]}
+        // flex:1 lets the body fill the tall carousel card (kid-view add flow);
+        // a no-op in content-sized modals where minHeight is the floor.
+        style={[MS.input, { minHeight: 160, flex: 1 }]}
         contentStyle={[MS.inputContent, { minHeight: 150 }]}
       />
 
