@@ -96,12 +96,20 @@ export const KID_COLOR_SWATCHES: readonly string[] = [
   "#7E57C2",  // lavender purple
 ] as const;
 
+// Dedupe a pool and trim to the largest multiple of 8, so the paginated picker
+// (8 columns) never renders a duplicate cell or a ragged final row.
+function uniqMul8(arr: string[]): readonly string[] {
+  const u = Array.from(new Set(arr));
+  return u.slice(0, Math.floor(u.length / 8) * 8);
+}
+
 /**
- * Large avatar emoji pool (~120) — faces, people, roles, fantasy, animals, fun.
- * Used by the paginated avatar picker (members + kids). Broad and family-
- * friendly; ZWJ sequences (🧑‍🍳 etc.) degrade gracefully on older renderers.
+ * Large avatar emoji pool (~400) — faces, gestures, people, roles, fantasy,
+ * animals, food, nature, sports, objects, transport, hearts. Used by the
+ * paginated avatar picker (members + kids); deduped + trimmed to a multiple
+ * of 8. ZWJ sequences (🧑‍🍳 etc.) degrade gracefully on older renderers.
  */
-export const AVATAR_EMOJI_OPTIONS: readonly string[] = [
+const AVATAR_EMOJI_RAW: string[] = [
   // Faces / moods
   "😀", "😄", "😁", "😎", "🤩", "🥳", "😇", "🤓", "🤠", "🥸", "🤡", "😺", "😻", "🙂", "😉", "😌",
   // People
@@ -127,7 +135,34 @@ export const AVATAR_EMOJI_OPTIONS: readonly string[] = [
   "🦚", "🦜", "🦢", "🦩", "🐓", "🐡", "🐟", "🦐", "🦀", "🦞", "🦑", "🐌", "🐞", "🦗", "🕷️", "🦂",
   // Food / objects / nature
   "🍕", "🍔", "🍟", "🌮", "🍰", "🍪", "🍫", "🍦", "🎯", "🎲", "🧩", "🎤", "🎧", "🎺", "🥁", "🌙",
-] as const;
+  // ── doubled set ──
+  // More faces / emotions
+  "😗", "😙", "😚", "🥲", "🤨", "🧐", "🙄", "😏", "😒", "😔", "😟", "🙁", "😣", "😖", "😫", "😩",
+  "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓",
+  "🫣", "🤫", "🤭", "🥱", "😴", "😪", "😮", "😯", "😲", "🥴", "🤢", "🤮", "🤧", "🤒", "🤕", "🤑",
+  // Hands / gestures
+  "👋", "🤚", "✋", "🖐️", "🖖", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆",
+  "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🙏", "✍️", "💅", "🦾",
+  // People / activities
+  "🤹", "🧗", "🏌️", "🏄", "🚣", "🏊", "🚴", "🚵", "🤽", "🤾", "🏋️", "🤺", "⛹️", "🏇", "🧘", "🛀",
+  // More animals
+  "🦬", "🐂", "🐃", "🐄", "🐖", "🐏", "🐀", "🐁", "🐇", "🦫", "🐅", "🐆", "🦣", "🐊", "🦎", "🐍",
+  "🐲", "🐉", "🦤", "🦃", "🦆", "🕊️", "🦇", "🦨", "🦡", "🐿️", "🪶", "🐾", "🦘", "🦭", "🐋", "🐡",
+  // More food
+  "🍇", "🍈", "🍉", "🍊", "🍋", "🍌", "🍍", "🥭", "🍑", "🍒", "🥝", "🥥", "🍆", "🥕", "🌽", "🥔",
+  "🥨", "🥯", "🧇", "🥞", "🥓", "🌭", "🍖", "🥪", "🌯", "🫔", "🥙", "🧆", "🥘", "🍲", "🍜", "🍣",
+  "🍱", "🥟", "🍙", "🍘", "🍥", "🥮", "🍢", "🧁", "🎂", "🥧", "🍮", "🍯", "🍷", "🍺", "🥂", "🧉",
+  // Sports / games / objects
+  "🏈", "⚾", "🎾", "🏐", "🏉", "🥏", "🎱", "🏓", "🏸", "🥅", "🥊", "🛹", "🛼", "🎳", "🎰", "🎟️",
+  // Transport
+  "🚗", "🚕", "🚙", "🚌", "🚎", "🚓", "🚑", "🚒", "🚐", "🚚", "🚛", "🏍️", "🛵", "🚲", "🛴", "⛵",
+  // Nature / sky
+  "🌷", "🌹", "🌺", "🌼", "🌵", "🌲", "🌳", "🌴", "🍄", "🌊", "☀️", "⛅", "☁️", "💧", "💫", "🪐",
+  // Hearts / symbols
+  "❤️", "🧡", "💛", "💚", "💙", "💜", "🤍", "🤎", "🖤", "💖", "💗", "💓", "💕", "✨", "💯", "🎉",
+];
+
+export const AVATAR_EMOJI_OPTIONS: readonly string[] = uniqMul8(AVATAR_EMOJI_RAW);
 
 // HSL → #RRGGBB. Standalone (no deps) so the colour pool builds at module load.
 function hslToHex(h: number, s: number, l: number): string {
@@ -142,32 +177,38 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
 }
 
-// 16 hues × 6 tones (96) + 8 neutrals = 104 swatches spanning the wheel.
+// 24 hues × 8 tones (192) + 16 neutrals = 208 swatches spanning the wheel.
 function buildColorPool(): string[] {
-  const hues = [0, 15, 30, 45, 60, 80, 120, 150, 170, 190, 210, 230, 260, 285, 310, 335];
+  const hues = Array.from({ length: 24 }, (_, i) => i * 15); // 0,15,…,345
   const tones = [
-    { s: 75, l: 65 }, // light vivid
-    { s: 82, l: 52 }, // vivid
-    { s: 70, l: 42 }, // deep
-    { s: 55, l: 30 }, // dark
-    { s: 48, l: 78 }, // pastel
-    { s: 35, l: 55 }, // muted
+    { s: 78, l: 70 }, // light vivid
+    { s: 85, l: 60 }, // bright
+    { s: 84, l: 50 }, // vivid
+    { s: 72, l: 42 }, // deep
+    { s: 58, l: 33 }, // dark
+    { s: 45, l: 80 }, // pastel
+    { s: 38, l: 60 }, // muted
+    { s: 30, l: 47 }, // muted-dark
   ];
   const out: string[] = [];
   for (const tone of tones) for (const h of hues) out.push(hslToHex(h, tone.s, tone.l));
-  out.push("#1F2937", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#8D6E63", "#A1887F", "#5D4037");
+  out.push(
+    "#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0",
+    "#3E2723", "#5D4037", "#6D4C41", "#8D6E63", "#A1887F", "#BCAAA4", "#78716C", "#292524",
+  );
   return out;
 }
 
-/** Large colour pool (~104) for the paginated avatar colour picker. */
+/** Large colour pool (~208) for the paginated avatar colour picker. */
 export const COLOR_SWATCHES_LARGE: readonly string[] = buildColorPool();
 
 /**
- * Category icon pool (96) for grocery subcategories + budget categories —
- * food, drinks, health/care, home, kids, money/bills, clothing/leisure.
- * Object/food emojis (not avatars). Multiple of 8 so picker rows stay full.
+ * Category icon pool (~192) for grocery subcategories + budget categories —
+ * food, drinks, health/care, home, tools, kids, money/bills, transport,
+ * clothing, leisure, pets/garden. Object/food emojis (not avatars). Deduped +
+ * trimmed to a multiple of 8 so picker rows stay full.
  */
-export const CATEGORY_ICON_OPTIONS: readonly string[] = [
+const CATEGORY_ICON_RAW: string[] = [
   // Food & groceries
   "🛒", "🛍️", "🥬", "🥦", "🥕", "🌽", "🍅", "🥑", "🍎", "🍌", "🍓", "🫐", "🍇", "🍉", "🍊", "🍋",
   "🥖", "🍞", "🥐", "🧀", "🥚", "🥩", "🍗", "🐟", "🦐", "🍤", "🍚", "🍝", "🍕", "🍔", "🌮", "🥗",
@@ -183,20 +224,45 @@ export const CATEGORY_ICON_OPTIONS: readonly string[] = [
   "💰", "💳", "🧾", "🏦", "⚡", "💧", "🚗", "⛽",
   // Clothing / leisure / pets
   "👕", "👗", "👟", "🎉", "🎮", "✈️", "🐾", "📦",
-] as const;
+  // ── doubled set ──
+  // More food
+  "🍐", "🍑", "🍒", "🥝", "🥥", "🍈", "🍌", "🥭", "🍆", "🥔", "🧅", "🧄", "🫑", "🥒", "🍄", "🌰",
+  "🥗", "🥪", "🌭", "🍖", "🌯", "🥙", "🧆", "🍲", "🍜", "🍛", "🍣", "🍱", "🥟", "🍙", "🍥", "🥮",
+  // Sweets / drinks
+  "🧁", "🎂", "🥧", "🍮", "🍯", "🍷", "🍺", "🥂", "🧉", "🧋", "🍶", "🥛", "🫖", "🧊", "🍫", "🍿",
+  // Health / care
+  "🩻", "🩼", "🦽", "🦼", "🩸", "😷", "🏥", "🪒", "🧷", "🪮", "🛁", "🧯", "💆", "🛌", "🧖", "🪥",
+  // Home / tools
+  "🪑", "🚪", "🪟", "🛗", "🪤", "🧰", "🪚", "🔩", "⚙️", "🧲", "🪣", "🔋", "🪠", "🚰", "🕯️", "🛋️",
+  // Money / shopping
+  "💵", "💶", "💷", "💴", "🪙", "🧧", "💸", "🏧", "🏪", "🏬", "📈", "📉", "💹", "🧮", "🪪", "🛍️",
+  // Transport / bills
+  "🚕", "🚙", "🚌", "🚐", "🚚", "🚛", "🏍️", "🛵", "🚲", "🚆", "🚇", "⛴️", "📱", "💻", "📡", "📶",
+  // Clothing / personal
+  "👖", "👔", "👚", "🧥", "🧦", "🧤", "🧣", "👒", "🎩", "👞", "👠", "👡", "🥿", "🥾", "👜", "💼",
+  // Leisure / kids
+  "🎁", "🎈", "🎄", "🎃", "🎏", "🎐", "🪀", "🪁", "📷", "📸", "🎬", "🎟️", "🎫", "🪅", "🧶", "🧵",
+  // Pets / garden / misc
+  "🦴", "🐕‍🦺", "🐈‍⬛", "🪺", "🌳", "🌷", "🪻", "🪷", "🍃", "🌱", "🪨", "⛲", "🏡", "🛖", "🔑", "📌",
+];
 
-// 16 hues × 3 tones = 48 swatches for the category colour picker.
+export const CATEGORY_ICON_OPTIONS: readonly string[] = uniqMul8(CATEGORY_ICON_RAW);
+
+// 16 hues × 6 tones = 96 swatches for the category colour picker.
 function buildCategoryColors(): string[] {
   const hues = [0, 15, 30, 45, 60, 80, 120, 150, 170, 190, 210, 230, 260, 285, 310, 335];
   const tones = [
-    { s: 80, l: 55 }, // vivid
-    { s: 68, l: 42 }, // deep
-    { s: 55, l: 70 }, // light
+    { s: 82, l: 66 }, // light vivid
+    { s: 84, l: 54 }, // vivid
+    { s: 72, l: 44 }, // deep
+    { s: 58, l: 34 }, // dark
+    { s: 50, l: 76 }, // pastel
+    { s: 40, l: 58 }, // muted
   ];
   const out: string[] = [];
   for (const tone of tones) for (const h of hues) out.push(hslToHex(h, tone.s, tone.l));
   return out;
 }
 
-/** Category colour pool (48) for the paginated category colour picker. */
+/** Category colour pool (96) for the paginated category colour picker. */
 export const CATEGORY_COLOR_SWATCHES: readonly string[] = buildCategoryColors();
