@@ -95,3 +95,59 @@ export const KID_COLOR_SWATCHES: readonly string[] = [
   "#F06292",  // bubblegum
   "#7E57C2",  // lavender purple
 ] as const;
+
+/**
+ * Large avatar emoji pool (~120) — faces, people, roles, fantasy, animals, fun.
+ * Used by the paginated avatar picker (members + kids). Broad and family-
+ * friendly; ZWJ sequences (🧑‍🍳 etc.) degrade gracefully on older renderers.
+ */
+export const AVATAR_EMOJI_OPTIONS: readonly string[] = [
+  // Faces / moods
+  "😀", "😄", "😁", "😎", "🤩", "🥳", "😇", "🤓", "🤠", "🥸", "🤡", "😺", "😻", "🙂", "😉", "😌",
+  // People
+  "👶", "🧒", "👦", "👧", "🧑", "👩", "👨", "🧓", "👴", "👵", "👱", "🧔", "👲", "🧕", "👳", "🤴",
+  "👸", "👮", "🕵️", "💂", "👷", "🧑‍🍳", "🧑‍🌾", "🧑‍🏫",
+  // Roles / professions
+  "🧑‍💻", "🧑‍🔬", "🧑‍🎨", "🧑‍🚀", "🧑‍✈️", "🧑‍⚕️", "🧑‍🏭", "🧑‍🔧", "🧑‍⚖️", "🧑‍🚒", "👨‍🍳", "👩‍🎤", "🦸", "🦹", "🧙", "🧚",
+  // Fantasy / fun
+  "🧛", "🧜", "🧝", "🧞", "🧟", "🥷", "🤖", "👽", "👾", "🦸‍♀️", "🦸‍♂️", "🎅",
+  // Animals
+  "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔",
+  "🐧", "🐦", "🦄", "🐝", "🦋", "🐢", "🐙", "🦕", "🦖", "🦅", "🦉", "🦦", "🦥", "🐳", "🐬", "🦈",
+  // Nature / food / objects
+  "🌸", "🌻", "🌈", "⭐", "🌟", "🔥", "⚡", "❄️", "🍓", "🍎", "🍭", "🍩", "🎀", "🧸", "🚀", "⚽",
+  "🏀", "🎮", "🎨", "🎸",
+] as const;
+
+// HSL → #RRGGBB. Standalone (no deps) so the colour pool builds at module load.
+function hslToHex(h: number, s: number, l: number): string {
+  const sN = s / 100;
+  const lN = l / 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = sN * Math.min(lN, 1 - lN);
+  const f = (n: number) => {
+    const c = lN - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return Math.round(255 * c).toString(16).padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+}
+
+// 16 hues × 6 tones (96) + 8 neutrals = 104 swatches spanning the wheel.
+function buildColorPool(): string[] {
+  const hues = [0, 15, 30, 45, 60, 80, 120, 150, 170, 190, 210, 230, 260, 285, 310, 335];
+  const tones = [
+    { s: 75, l: 65 }, // light vivid
+    { s: 82, l: 52 }, // vivid
+    { s: 70, l: 42 }, // deep
+    { s: 55, l: 30 }, // dark
+    { s: 48, l: 78 }, // pastel
+    { s: 35, l: 55 }, // muted
+  ];
+  const out: string[] = [];
+  for (const tone of tones) for (const h of hues) out.push(hslToHex(h, tone.s, tone.l));
+  out.push("#1F2937", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#8D6E63", "#A1887F", "#5D4037");
+  return out;
+}
+
+/** Large colour pool (~104) for the paginated colour picker. */
+export const COLOR_SWATCHES_LARGE: readonly string[] = buildColorPool();

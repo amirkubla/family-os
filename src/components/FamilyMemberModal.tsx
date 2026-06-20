@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import {
   addFamilyMemberRemote,
@@ -8,15 +8,14 @@ import {
 import { MEMBER_ROLES } from "@src/models/familyMember";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import { t, memberRoleLabel } from "@src/i18n";
-import { C, R, S } from "@src/ui/tokens";
 import { MS } from "@src/ui/modalStyles";
 import SegmentedPills from "./SegmentedPills";
-import { RTL_ROW } from "@src/ui/rtl";
-import { KID_COLOR_SWATCHES, MEMBER_EMOJI_OPTIONS } from "@src/ui/semanticColors";
+import PaginatedPicker from "./PaginatedPicker";
+import { AVATAR_EMOJI_OPTIONS, COLOR_SWATCHES_LARGE } from "@src/ui/semanticColors";
 import ModalWrapper from "./ModalWrapper";
 
-const COLOR_SWATCHES = KID_COLOR_SWATCHES;
-const EMOJI_OPTIONS = MEMBER_EMOJI_OPTIONS;
+const COLOR_SWATCHES = COLOR_SWATCHES_LARGE;
+const EMOJI_OPTIONS = AVATAR_EMOJI_OPTIONS;
 
 interface Props {
   visible: boolean;
@@ -96,28 +95,22 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
       </View>
 
       <Text style={MS.label}>{t("settings.memberEmoji")}</Text>
-      <View style={styles.pickerRow}>
-        {EMOJI_OPTIONS.map((emoji) => (
-          <Pressable
-            key={emoji}
-            onPress={() => setAvatarEmoji(emoji)}
-            style={[styles.emojiCell, avatarEmoji === emoji && styles.emojiSelected]}
-          >
-            <Text style={styles.emojiText}>{emoji}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <PaginatedPicker
+        kind="emoji"
+        options={EMOJI_OPTIONS}
+        value={avatarEmoji}
+        onChange={setAvatarEmoji}
+        testIDPrefix="member-emoji"
+      />
 
       <Text style={MS.label}>{t("settings.memberColor")}</Text>
-      <View style={styles.pickerRow}>
-        {COLOR_SWATCHES.map((c) => (
-          <Pressable
-            key={c}
-            onPress={() => setColor(c)}
-            style={[styles.colorCell, { backgroundColor: c }, color === c && styles.colorSelected]}
-          />
-        ))}
-      </View>
+      <PaginatedPicker
+        kind="color"
+        options={COLOR_SWATCHES}
+        value={color}
+        onChange={setColor}
+        testIDPrefix="member-color"
+      />
 
       <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>
@@ -126,34 +119,3 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
     </ModalWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  pickerRow: {
-    flexDirection: RTL_ROW,
-    flexWrap: "wrap",
-    gap: S.sm,
-    marginBottom: S.xs,
-  },
-  emojiCell: {
-    width: 40,
-    height: 40,
-    borderRadius: R.xl,
-    backgroundColor: C.surfaceSubtle,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emojiSelected: {
-    borderWidth: 2,
-    borderColor: C.purple,
-  },
-  emojiText: { fontSize: 22 },
-  colorCell: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  colorSelected: {
-    borderWidth: 3,
-    borderColor: C.textPrimary,
-  },
-});

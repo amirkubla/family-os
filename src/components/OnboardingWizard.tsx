@@ -31,16 +31,12 @@ import { t, memberRoleLabel } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { MS } from "@src/ui/modalStyles";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { KID_COLOR_SWATCHES, MEMBER_EMOJI_OPTIONS } from "@src/ui/semanticColors";
+import { AVATAR_EMOJI_OPTIONS, COLOR_SWATCHES_LARGE } from "@src/ui/semanticColors";
+import PaginatedPicker from "./PaginatedPicker";
 
-const COLOR_SWATCHES = KID_COLOR_SWATCHES;
-const MEMBER_EMOJIS = MEMBER_EMOJI_OPTIONS;
-
-const KID_EMOJIS = [
-  "🧸", "🦄", "🌸", "🐰", "🐣", "🌈", "🦋", "🐱",
-  "🐶", "🐻", "🍭", "⭐", "🎀", "🐠", "🦊", "🐝",
-  "🌻", "🍓", "👸", "🧚", "💃", "🤴", "🦸‍♂️", "🏎️",
-];
+const COLOR_SWATCHES = COLOR_SWATCHES_LARGE;
+const MEMBER_EMOJIS = AVATAR_EMOJI_OPTIONS;
+const KID_EMOJIS = AVATAR_EMOJI_OPTIONS;
 
 const TOTAL_STEPS = 5;
 
@@ -400,28 +396,22 @@ function Step2AboutYou({
           </View>
 
           <Text style={MS.label}>{t("settings.memberEmoji")}</Text>
-          <View style={styles.pickerRow}>
-            {MEMBER_EMOJIS.map((e) => (
-              <Pressable
-                key={e}
-                onPress={() => setAvatarEmoji(e)}
-                style={[styles.emojiCell, avatarEmoji === e && styles.emojiSelected]}
-              >
-                <Text style={styles.emojiText}>{e}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <PaginatedPicker
+            kind="emoji"
+            options={MEMBER_EMOJIS}
+            value={avatarEmoji}
+            onChange={setAvatarEmoji}
+            testIDPrefix="self-emoji"
+          />
 
           <Text style={MS.label}>{t("settings.memberColor")}</Text>
-          <View style={styles.pickerRow}>
-            {COLOR_SWATCHES.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => setColor(c)}
-                style={[styles.colorCell, { backgroundColor: c }, color === c && styles.colorSelected]}
-              />
-            ))}
-          </View>
+          <PaginatedPicker
+            kind="color"
+            options={COLOR_SWATCHES}
+            value={color}
+            onChange={setColor}
+            testIDPrefix="self-color"
+          />
 
           {editing ? (
             <View style={[styles.navRow, { gap: S.sm, marginTop: S.sm }]}>
@@ -493,28 +483,22 @@ function Step2AboutYou({
           </View>
 
           <Text style={MS.label}>{t("settings.memberEmoji")}</Text>
-          <View style={styles.pickerRow}>
-            {MEMBER_EMOJIS.map((e) => (
-              <Pressable
-                key={e}
-                onPress={() => setPartnerEmoji(e)}
-                style={[styles.emojiCell, partnerEmoji === e && styles.emojiSelected]}
-              >
-                <Text style={styles.emojiText}>{e}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <PaginatedPicker
+            kind="emoji"
+            options={MEMBER_EMOJIS}
+            value={partnerEmoji}
+            onChange={setPartnerEmoji}
+            testIDPrefix="partner-emoji"
+          />
 
           <Text style={MS.label}>{t("settings.memberColor")}</Text>
-          <View style={styles.pickerRow}>
-            {COLOR_SWATCHES.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => setPartnerColor(c)}
-                style={[styles.colorCell, { backgroundColor: c }, partnerColor === c && styles.colorSelected]}
-              />
-            ))}
-          </View>
+          <PaginatedPicker
+            kind="color"
+            options={COLOR_SWATCHES}
+            value={partnerColor}
+            onChange={setPartnerColor}
+            testIDPrefix="partner-color"
+          />
 
           <View style={[styles.navRow, { gap: S.sm }]}>
             <Button onPress={() => setShowPartnerForm(false)}>
@@ -639,28 +623,22 @@ function Step3Kids({
           {nameError ? <Text style={MS.error}>{nameError}</Text> : null}
 
           <Text style={MS.label}>{t("settings.kidEmoji")}</Text>
-          <View style={styles.pickerRow}>
-            {KID_EMOJIS.map((e) => (
-              <Pressable
-                key={e}
-                onPress={() => setEmoji(e)}
-                style={[styles.emojiCell, emoji === e && styles.emojiSelected]}
-              >
-                <Text style={styles.emojiText}>{e}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <PaginatedPicker
+            kind="emoji"
+            options={KID_EMOJIS}
+            value={emoji}
+            onChange={setEmoji}
+            testIDPrefix="kid-emoji"
+          />
 
           <Text style={MS.label}>{t("settings.kidColor")}</Text>
-          <View style={styles.pickerRow}>
-            {COLOR_SWATCHES.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => setColor(c)}
-                style={[styles.colorCell, { backgroundColor: c }, color === c && styles.colorSelected]}
-              />
-            ))}
-          </View>
+          <PaginatedPicker
+            kind="color"
+            options={COLOR_SWATCHES}
+            value={color}
+            onChange={setColor}
+            testIDPrefix="kid-color"
+          />
 
           <View style={[styles.navRow, { gap: S.sm }]}>
             <Button onPress={() => { resetForm(); setShowForm(false); }}>
@@ -1007,34 +985,6 @@ const styles = StyleSheet.create({
     borderRadius: R.md,
     padding: S.md,
     marginTop: S.sm,
-  },
-  pickerRow: {
-    flexDirection: RTL_ROW,
-    flexWrap: "wrap",
-    gap: S.sm,
-    marginBottom: S.xs,
-  },
-  emojiCell: {
-    width: 40,
-    height: 40,
-    borderRadius: R.xl,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emojiSelected: {
-    borderWidth: 2,
-    borderColor: C.purple,
-  },
-  emojiText: { fontSize: 22 },
-  colorCell: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  colorSelected: {
-    borderWidth: 3,
-    borderColor: C.textPrimary,
   },
   telegramBtn: {
     borderRadius: R.md,
