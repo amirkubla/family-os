@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, TextInput as RNTextInput, Switch } from "react-native";
+import { View, StyleSheet, Pressable, TextInput as RNTextInput } from "react-native";
 import { Text, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import WheelPicker from "./WheelPicker";
 import { MS } from "@src/ui/modalStyles";
-import { C, S, R } from "@src/ui/tokens";
+import { C, S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 import { toYMD } from "@src/utils/date";
@@ -51,58 +51,99 @@ interface Props {
 // Component
 // ---------------------------------------------------------------------------
 
+type PaymentType = "single" | "recurring";
+
+interface FormState {
+  amountText: string;
+  categoryName: string;
+  payerMemberId?: string;
+  note: string;
+  recurrenceType: RecurrenceType; // only used in recurring mode
+  recurrenceDay: number;          // 0-6 weekly, 1-31 monthly (recurring only)
+}
+
+const EMPTY_FORM: FormState = {
+  amountText: "",
+  categoryName: "",
+  payerMemberId: undefined,
+  note: "",
+  recurrenceType: "monthly",
+  recurrenceDay: 1,
+};
+
 export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }: Props) {
   const budgetCategories = useFamilyStore((s) => s.budgetCategories);
   const familyMembers = useFamilyStore((s) => s.familyMembers).filter((m) => m.isActive);
 
   const today = toYMD(new Date());
 
-  const [amountText, setAmountText] = useState("");
-  const [categoryName, setCategoryName] = useState("");
-  const [payerMemberId, setPayerMemberId] = useState<string | undefined>(undefined);
+  // Two independent operations behind one modal — a one-time payment and a
+  // recurring payment. Each keeps its own field state, so flipping the type
+  // selector never bleeds one form into the other.
+  const [paymentType, setPaymentType] = useState<PaymentType>("single");
+  const [single, setSingle] = useState<FormState>(EMPTY_FORM);
+  const [recurring, setRecurring] = useState<FormState>(EMPTY_FORM);
   const [date, setDate] = useState(today);
-  const [note, setNote] = useState("");
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>("monthly");
-  const [recurrenceDay, setRecurrenceDay] = useState(1);   // 0-6 weekly, 1-31 monthly
   const [amountError, setAmountError] = useState("");
   const [categoryError, setCategoryError] = useState("");
 
+  const form = paymentType === "single" ? single : recurring;
+  const setForm = paymentType === "single" ? setSingle : setRecurring;
+  const patch = (p: Partial<FormState>) => setForm((f) => ({ ...f, ...p }));
+
   useEffect(() => {
     if (!visible) return;
+    const base: FormState = { ...EMPTY_FORM, categoryName: budgetCategories[0]?.name ?? "" };
     if (editExpense) {
-      setAmountText(String(editExpense.amount / 100));
-      setCategoryName(editExpense.categoryName);
-      setPayerMemberId(editExpense.payerMemberId);
+      const filled: FormState = {
+        amountText: String(editExpense.amount / 100),
+        categoryName: editExpense.categoryName,
+        payerMemberId: editExpense.payerMemberId,
+        note: editExpense.note ?? "",
+        recurrenceType: (editExpense.recurrenceType as RecurrenceType) ?? "monthly",
+        recurrenceDay: editExpense.recurrenceDay ?? 1,
+      };
+      if (editExpense.isRecurring) {
+        setPaymentType("recurring");
+        setRecurring(filled);
+        setSingle(base);
+      } else {
+        setPaymentType("single");
+        setSingle(filled);
+        setRecurring(base);
+      }
       setDate(editExpense.date);
-      setNote(editExpense.note ?? "");
-      setIsRecurring(editExpense.isRecurring);
-      setRecurrenceType((editExpense.recurrenceType as RecurrenceType) ?? "monthly");
-      setRecurrenceDay(editExpense.recurrenceDay ?? 1);
     } else {
-      setAmountText("");
-      setCategoryName(budgetCategories[0]?.name ?? "");
-      setPayerMemberId(undefined);
+      setPaymentType("single");
+      setSingle(base);
+      setRecurring(base);
       setDate(today);
-      setNote("");
-      setIsRecurring(false);
-      setRecurrenceType("monthly");
-      setRecurrenceDay(1);
     }
     setAmountError("");
     setCategoryError("");
   }, [visible, editExpense, budgetCategories, today]);
 
-  const handleSave = () => {
-    const amount = parseILS(amountText);
-    if (!amount || amount <= 0) { setAmountError("יש להזין סכום תקין"); return; }
-    if (!categoryName) { setCategoryError("יש לבחור קטגוריה"); return; }
+  const switchType = (type: PaymentType) => {
+    setPaymentType(type);
+    setAmountError("");
     setCategoryError("");
+  };
+
+  const handleSave = () => {
+    const amount = parseILS(form.amountText);
+    if (!amount || amount <= 0) { setAmountError("יש להזין סכום תקין"); return; }
+    if (!form.categoryName) { setCategoryError("יש לבחור קטגוריה"); return; }
+    setCategoryError("");
+    const isRecurring = paymentType === "recurring";
     onSave({
-      amount, categoryName, payerMemberId, date, note: note.trim() || undefined,
+      amount,
+      categoryName: form.categoryName,
+      payerMemberId: form.payerMemberId,
+      date,
+      note: form.note.trim() || undefined,
       isRecurring,
-      recurrenceType: isRecurring ? recurrenceType : undefined,
-      recurrenceDay: isRecurring ? recurrenceDay : undefined,
+      recurrenceType: isRecurring ? form.recurrenceType : undefined,
+      recurrenceDay: isRecurring ? form.recurrenceDay : undefined,
     });
     onDismiss();
   };
@@ -113,11 +154,32 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         {editExpense ? t("budget.editExpense") : t("budget.addExpense")}
       </Text>
 
+      {/* Payment-type selector — switches between two independent operations */}
+      <View style={styles.typeSelector}>
+        {([
+          { key: "single" as PaymentType, label: t("budget.typeSingle") },
+          { key: "recurring" as PaymentType, label: t("budget.typeRecurring") },
+        ]).map((opt) => {
+          const active = paymentType === opt.key;
+          return (
+            <Pressable
+              key={opt.key}
+              onPress={() => switchType(opt.key)}
+              style={[styles.typeSelectorChip, active && styles.typeSelectorChipActive]}
+            >
+              <Text style={[styles.typeSelectorText, active && styles.typeSelectorTextActive]}>
+                {opt.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       {/* Amount */}
       <Text style={MS.label}>{t("budget.amount")}</Text>
       <RNTextInput
-        value={amountText}
-        onChangeText={(v) => { setAmountText(v); setAmountError(""); }}
+        value={form.amountText}
+        onChangeText={(v) => { patch({ amountText: v }); setAmountError(""); }}
         placeholder={t("budget.amountPlaceholder")}
         keyboardType="numeric"
         style={[styles.amountInput, amountError ? styles.inputError : null]}
@@ -131,10 +193,10 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         {budgetCategories.map((cat) => (
           <Pressable
             key={cat.id}
-            onPress={() => { setCategoryName(cat.name); setCategoryError(""); }}
-            style={[styles.catChip, categoryName === cat.name && { backgroundColor: cat.color }]}
+            onPress={() => { patch({ categoryName: cat.name }); setCategoryError(""); }}
+            style={[styles.catChip, form.categoryName === cat.name && { backgroundColor: cat.color }]}
           >
-            <Text style={[styles.catChipText, categoryName === cat.name && styles.catChipTextActive]}>
+            <Text style={[styles.catChipText, form.categoryName === cat.name && styles.catChipTextActive]}>
               {cat.icon} {cat.name}
             </Text>
           </Pressable>
@@ -148,23 +210,23 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           <Text style={MS.label}>{t("budget.payer")}</Text>
           <View style={styles.chipRow}>
             <Pressable
-              onPress={() => setPayerMemberId(undefined)}
-              style={[styles.memberChip, !payerMemberId && styles.memberChipActive]}
+              onPress={() => patch({ payerMemberId: undefined })}
+              style={[styles.memberChip, !form.payerMemberId && styles.memberChipActive]}
             >
-              <Text style={[styles.memberChipText, !payerMemberId && styles.memberChipTextActive]}>
+              <Text style={[styles.memberChipText, !form.payerMemberId && styles.memberChipTextActive]}>
                 {t("budget.anyone")}
               </Text>
             </Pressable>
             {familyMembers.map((m) => (
               <Pressable
                 key={m.id}
-                onPress={() => setPayerMemberId(m.id)}
+                onPress={() => patch({ payerMemberId: m.id })}
                 style={[
                   styles.memberChip,
-                  payerMemberId === m.id && { backgroundColor: m.color ?? C.purple, borderColor: m.color ?? C.purple },
+                  form.payerMemberId === m.id && { backgroundColor: m.color ?? C.purple, borderColor: m.color ?? C.purple },
                 ]}
               >
-                <Text style={[styles.memberChipText, payerMemberId === m.id && styles.memberChipTextActive]}>
+                <Text style={[styles.memberChipText, form.payerMemberId === m.id && styles.memberChipTextActive]}>
                   {m.avatarEmoji ?? "👤"} {m.name}
                 </Text>
               </Pressable>
@@ -176,39 +238,26 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       {/* Note */}
       <Text style={MS.label}>{t("budget.note")}</Text>
       <RNTextInput
-        value={note}
-        onChangeText={setNote}
+        value={form.note}
+        onChangeText={(v) => patch({ note: v })}
         placeholder={t("budget.notePlaceholder")}
         style={styles.noteInput}
         placeholderTextColor={C.textSecondary}
         multiline
       />
 
-      {/* Recurring toggle */}
-      <View style={styles.recurringRow}>
-        <Text style={styles.recurringLabel}>{t("budget.recurringToggle")}</Text>
-        <Switch
-          value={isRecurring}
-          onValueChange={setIsRecurring}
-          thumbColor={isRecurring ? C.purple : C.textSecondary}
-          trackColor={{ false: C.border, true: C.purple + "55" }}
-        />
-      </View>
-
-      {isRecurring && (
+      {/* Recurrence config — only in recurring mode */}
+      {paymentType === "recurring" && (
         <View style={styles.recurringPanel}>
-          {/* Type selector */}
+          {/* Weekly / monthly selector */}
           <View style={styles.typeRow}>
             {RECURRENCE_TYPES.map((rt) => (
               <Pressable
                 key={rt.key}
-                onPress={() => {
-                  setRecurrenceType(rt.key);
-                  setRecurrenceDay(rt.key === "weekly" ? 0 : 1);
-                }}
-                style={[styles.typeChip, recurrenceType === rt.key && styles.typeChipActive]}
+                onPress={() => patch({ recurrenceType: rt.key, recurrenceDay: rt.key === "weekly" ? 0 : 1 })}
+                style={[styles.typeChip, form.recurrenceType === rt.key && styles.typeChipActive]}
               >
-                <Text style={[styles.typeChipText, recurrenceType === rt.key && styles.typeChipTextActive]}>
+                <Text style={[styles.typeChipText, form.recurrenceType === rt.key && styles.typeChipTextActive]}>
                   {rt.label}
                 </Text>
               </Pressable>
@@ -216,25 +265,25 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           </View>
 
           {/* Pickers */}
-          {recurrenceType === "weekly" && (
+          {form.recurrenceType === "weekly" && (
             <View style={styles.pickerRow}>
               <Text style={styles.pickerLabel}>ביום</Text>
               <WheelPicker
                 data={DAYS_OF_WEEK}
-                selectedIndex={recurrenceDay}
-                onChange={(i) => setRecurrenceDay(i)}
+                selectedIndex={form.recurrenceDay}
+                onChange={(i) => patch({ recurrenceDay: i })}
                 width={110}
               />
             </View>
           )}
 
-          {recurrenceType === "monthly" && (
+          {form.recurrenceType === "monthly" && (
             <View style={styles.pickerRow}>
               <Text style={styles.pickerLabel}>ביום</Text>
               <WheelPicker
                 data={DAYS_OF_MONTH.map(String)}
-                selectedIndex={recurrenceDay - 1}
-                onChange={(i) => setRecurrenceDay(i + 1)}
+                selectedIndex={form.recurrenceDay - 1}
+                onChange={(i) => patch({ recurrenceDay: i + 1 })}
                 width={72}
               />
               <Text style={styles.pickerLabel}>בחודש</Text>
@@ -308,20 +357,34 @@ const styles = StyleSheet.create({
     marginBottom: S.sm,
     writingDirection: "rtl",
   },
-  recurringRow: {
+  typeSelector: {
     flexDirection: RTL_ROW,
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: S.sm,
-    marginBottom: S.xs,
+    gap: S.xs,
+    backgroundColor: C.surfaceSubtle,
+    borderRadius: R.xl,
+    padding: 4,
+    marginBottom: S.md,
   },
-  recurringLabel: {
-    fontSize: 14,
-    color: C.textPrimary,
-    fontWeight: "600",
+  typeSelectorChip: {
     flex: 1,
-    textAlign: TEXT_RIGHT ?? "right",
+    paddingVertical: S.sm,
+    borderRadius: R.xl,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  typeSelectorChipActive: {
+    backgroundColor: C.surface,
+    ...SHADOW.sm,
+  },
+  typeSelectorText: {
+    fontSize: 14,
+    color: C.textSecondary,
+    fontWeight: "600",
     writingDirection: "rtl",
+  },
+  typeSelectorTextActive: {
+    color: C.purple,
+    fontWeight: "800",
   },
   recurringPanel: {
     backgroundColor: C.surfaceSubtle,

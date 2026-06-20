@@ -489,6 +489,8 @@ const he = {
     noExpenses: "אין עדיין הוצאות — לחצו + כדי להוסיף",
     addExpense: "הוצאה חדשה",
     editExpense: "עריכת הוצאה",
+    typeSingle: "חד פעמי",
+    typeRecurring: "קבוע",
     amount: "סכום (₪)",
     amountPlaceholder: "0",
     category: "קטגוריה",
