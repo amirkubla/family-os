@@ -535,7 +535,7 @@ const he = {
     toPay: "לתשלום",
     paid: "שולם",
     markPaid: "סמן כשולם",
-    markUnpaid: "החזר ללתשלום",
+    markUnpaid: "החזר לתשלום",
     overdue: "באיחור",
     recurringToggle: "תשלום חוזר",
     weekly: "שבועי",

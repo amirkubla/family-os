@@ -14,6 +14,7 @@ import {
   addExpenseRemote,
   deleteExpenseRemote,
   markKidPaymentPaidRemote,
+  markKidPaymentUnpaidRemote,
 } from "@src/lib/sync/remoteCrud";
 import { t, LOCALE } from "@src/i18n";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
@@ -513,12 +514,25 @@ export default function BudgetScreen() {
                 </Pressable>
                 <View style={styles.expRight}>
                   <Text style={styles.expAmount}>{formatILS(exp.amount)}</Text>
-                  <IconButton
-                    icon="trash-can-outline"
-                    size={16}
-                    onPress={() => handleDeleteExpense(exp)}
-                    iconColor={C.textSecondary}
-                  />
+                  <View style={styles.expActions}>
+                    {/* Undo a settled kid payment — for recurring ones this also
+                        removes the auto-queued next occurrence. */}
+                    {exp.kidId ? (
+                      <IconButton
+                        icon="undo-variant"
+                        size={16}
+                        iconColor={C.teal}
+                        accessibilityLabel={t("payment.markUnpaid")}
+                        onPress={() => markKidPaymentUnpaidRemote(exp)}
+                      />
+                    ) : null}
+                    <IconButton
+                      icon="trash-can-outline"
+                      size={16}
+                      onPress={() => handleDeleteExpense(exp)}
+                      iconColor={C.textSecondary}
+                    />
+                  </View>
                 </View>
               </View>
             );
@@ -769,6 +783,7 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
   },
   expRight: { alignItems: "center" },
+  expActions: { flexDirection: RTL_ROW, alignItems: "center" },
   expAmount: { fontSize: 15, fontWeight: "700", color: C.red },
 
   fab: {
