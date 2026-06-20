@@ -36,9 +36,12 @@ import GrocerySubcategoryModal from "@src/components/GrocerySubcategoryModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import type { BudgetCategory } from "@src/models/budget";
 import SectionHeader from "@src/components/SectionHeader";
+import PaginatedPicker from "@src/components/PaginatedPicker";
+import { FAMILY_EMOJI_OPTIONS } from "@src/ui/semanticColors";
 import {
   effectiveSubcategories,
   OTHER_SUBCATEGORY,
+  DEFAULT_FAMILY_EMOJI,
   type FamilyCustomizations,
   type GrocerySubcategory,
 } from "@src/models/customization";
@@ -221,6 +224,33 @@ function BudgetCategoriesSection() {
 // Screen
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Family icon section
+// ---------------------------------------------------------------------------
+
+function FamilyIconSection() {
+  const customizations = useFamilyStore((s) => s.customizations);
+  const current = customizations.familyEmoji ?? DEFAULT_FAMILY_EMOJI;
+  return (
+    <>
+      <SectionHeader label={t("customization.familyIcon")} />
+      <Card style={styles.card} mode="elevated">
+        <Card.Content>
+          <PaginatedPicker
+            kind="emoji"
+            options={FAMILY_EMOJI_OPTIONS}
+            value={current}
+            onChange={(emoji) => updateCustomizationsRemote({ ...customizations, familyEmoji: emoji })}
+            testIDPrefix="family-emoji"
+          />
+        </Card.Content>
+      </Card>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
 export default function CustomizationScreen() {
   const router = useRouter();
   const customizations = useFamilyStore((s) => s.customizations);
@@ -252,6 +282,9 @@ export default function CustomizationScreen() {
       <PageHeader title={t("customization.title")} onBack={() => router.replace("/settings")} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.subtitle}>{t("customization.subtitle")}</Text>
+
+        <FamilyIconSection />
+
         <Text style={styles.hint}>{t("customization.subcategoriesHint")}</Text>
 
         {SHOPPING_CATEGORIES.map((cat) => (

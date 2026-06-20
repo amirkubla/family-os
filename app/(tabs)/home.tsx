@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 
 import { useAuthStore } from "@src/auth/useAuthStore";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
 import { t } from "@src/i18n";
 import FeatureTile from "@src/components/FeatureTile";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -44,6 +45,7 @@ export default function HomeScreen() {
   const allExpenses = useFamilyStore((s) => s.expenses);
   const kids = useFamilyStore((s) => s.kids);
   const familyName = useFamilyStore((s) => s.familyName);
+  const familyEmoji = useFamilyStore((s) => s.customizations.familyEmoji) || DEFAULT_FAMILY_EMOJI;
   const familyMembers = useFamilyStore((s) => s.familyMembers);
   const userId = useAuthStore((s) => s.session?.user?.id);
 
@@ -101,7 +103,10 @@ export default function HomeScreen() {
           <View style={[styles.avatar, { backgroundColor: (me?.color ?? "#2AACB4") + "22" }]}>
             <Text style={styles.avatarEmoji}>{me?.avatarEmoji ?? "👤"}</Text>
           </View>
-          <View style={styles.headerCenter}>
+          <View style={[{ flexDirection: RTL_ROW }, styles.headerCenter]}>
+            <View style={styles.familyBadge}>
+              <Text style={styles.familyBadgeEmoji}>{familyEmoji}</Text>
+            </View>
             {!!familyName && (
               <Text style={styles.headerFamily} numberOfLines={1}>
                 {t("familyBadge.prefix")} {familyName}
@@ -201,8 +206,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarEmoji: { fontSize: 24 },
-  headerCenter: { flex: 1 },
+  headerCenter: { flex: 1, alignItems: "center", gap: S.xs },
+  familyBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: C.purple + "18",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  familyBadgeEmoji: { fontSize: 19 },
   headerFamily: {
+    flexShrink: 1,
     fontSize: 19,
     fontWeight: "800",
     color: C.textPrimary,

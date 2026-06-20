@@ -20,7 +20,12 @@ export interface GrocerySubcategory {
 
 export interface FamilyCustomizations {
   grocerySubcategories?: Partial<Record<ShoppingCategory, GrocerySubcategory[]>>;
+  /** Family avatar shown at the top of the home screen. */
+  familyEmoji?: string;
 }
+
+/** Default family icon when none has been set. */
+export const DEFAULT_FAMILY_EMOJI = "🏡";
 
 /**
  * Hebrew defaults with icons and colors, used when a family hasn't set its
