@@ -33,10 +33,6 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        // In carousel mode let the scroll content fill the card so a child
-        // field (e.g. a note/project description) can flex:1 into the space.
-        style={carousel ? styles.scrollFill : undefined}
-        contentContainerStyle={carousel ? styles.scrollContentFill : undefined}
       >
         {children}
       </ScrollView>
@@ -160,6 +156,4 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 24,
   },
-  scrollFill: { flex: 1 },
-  scrollContentFill: { flexGrow: 1 },
 });
