@@ -49,6 +49,14 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 // "ילדים" entry + its nested kid layer.
 const KIDS_PAL = { active: "#E0699B", bg: "#FBE9F1" };
 
+// "ניהול" (ops) entry + its nested chores/notes/projects layer.
+const OPS_PAL = { active: "#5B6CCF", bg: "#ECEEFB" };
+const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; color: string; labelKey: string }[] = [
+  { route: "chores",   icon: "checkbox-outline",      color: "#2D9F6F", labelKey: "home.chores" },
+  { route: "notes",    icon: "document-text-outline", color: "#C49A2A", labelKey: "home.notes" },
+  { route: "projects", icon: "rocket-outline",        color: "#9B59B6", labelKey: "home.projects" },
+];
+
 const C_TEXT_MUTED = "#A8A3B8";
 
 const isWeb = Platform.OS === "web";
@@ -72,8 +80,9 @@ export default function CustomTabBar({
   const activeKids = kids.filter((k) => k.isActive);
 
   const [expanded, setExpanded] = useState(false);
-  // Which menu layer is showing: the main tabs, or the nested kid list.
-  const [view, setView] = useState<"main" | "kids">("main");
+  // Which menu layer is showing: the main tabs, the nested kid list, or the
+  // nested ops (chores/notes/projects) list.
+  const [view, setView] = useState<"main" | "kids" | "ops">("main");
   const anim = useRef(new Animated.Value(0)).current;
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -108,6 +117,14 @@ export default function CustomTabBar({
   const handleKidSelect = useCallback(
     (kidId: string) => {
       router.push(`/kid/${kidId}`);
+      collapse();
+    },
+    [router, collapse],
+  );
+
+  const handleOpSelect = useCallback(
+    (route: string) => {
+      router.push(`/${route}` as any);
       collapse();
     },
     [router, collapse],
@@ -197,6 +214,17 @@ export default function CustomTabBar({
                   );
                 })}
 
+                {/* "ניהול" — opens the nested chores/notes/projects layer */}
+                <Pressable
+                  onPress={() => setView("ops")}
+                  style={[styles.circle, webCursor]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("nav.ops")}
+                  testID="nav-ops"
+                >
+                  <Ionicons name="apps-outline" size={24} color={OPS_PAL.active} />
+                </Pressable>
+
                 {/* "ילדים" — opens the nested kid layer (does not navigate) */}
                 {activeKids.length > 0 && (
                   <Pressable
@@ -210,7 +238,7 @@ export default function CustomTabBar({
                   </Pressable>
                 )}
               </>
-            ) : (
+            ) : view === "kids" ? (
               <>
                 {activeKids.map((kid) => {
                   const color = kid.color ?? KIDS_PAL.active;
@@ -235,6 +263,32 @@ export default function CustomTabBar({
                   accessibilityRole="button"
                   accessibilityLabel={t("nav.back")}
                   testID="nav-kids-back"
+                >
+                  <Ionicons name="chevron-back" size={24} color={C_TEXT_MUTED} />
+                </Pressable>
+              </>
+            ) : (
+              <>
+                {OPS_ITEMS.map((op) => (
+                  <Pressable
+                    key={op.route}
+                    onPress={() => handleOpSelect(op.route)}
+                    style={[styles.circle, webCursor, { borderColor: op.color, borderWidth: 2 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t(op.labelKey)}
+                    testID={`nav-op-${op.route}`}
+                  >
+                    <Ionicons name={op.icon} size={24} color={op.color} />
+                  </Pressable>
+                ))}
+
+                {/* Back to the main layer */}
+                <Pressable
+                  onPress={() => setView("main")}
+                  style={[styles.circle, webCursor]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("nav.back")}
+                  testID="nav-ops-back"
                 >
                   <Ionicons name="chevron-back" size={24} color={C_TEXT_MUTED} />
                 </Pressable>

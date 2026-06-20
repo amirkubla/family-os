@@ -27,6 +27,7 @@ const he = {
   // ── Floating nav ──
   nav: {
     back: "חזרה",
+    ops: "ניהול",
   },
 
   // ── Today screen ──
