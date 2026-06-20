@@ -102,7 +102,6 @@ export default function TodayScreen() {
   const familyMembers = useFamilyStore((s) => s.familyMembers);
   const syncStatus = useFamilyStore((s) => s.syncStatus);
   const lastSyncedAt = useFamilyStore((s) => s.lastSyncedAt);
-  const budgetCategories = useFamilyStore((s) => s.budgetCategories);
   const allExpenses = useFamilyStore((s) => s.expenses);
 
   // Current month budget summary
@@ -114,10 +113,6 @@ export default function TodayScreen() {
   const budgetSpent = useMemo(
     () => monthExpenses.reduce((sum, e) => sum + e.amount, 0),
     [monthExpenses],
-  );
-  const budgetCap = useMemo(
-    () => budgetCategories.reduce((sum, c) => sum + (c.monthlyCap ?? 0), 0),
-    [budgetCategories],
   );
 
   const [syncing, setSyncing] = useState(false);
@@ -391,8 +386,8 @@ export default function TodayScreen() {
           </View>
         </Card>
 
-        {/* ── Budget mini-card ── */}
-        {(budgetSpent > 0 || budgetCap > 0) && (
+        {/* ── Budget mini-card — total spent only (no overall budget bar) ── */}
+        {budgetSpent > 0 && (
           <Pressable
             style={styles.budgetCard}
             onPress={() => router.push("/budget" as any)}
@@ -403,27 +398,6 @@ export default function TodayScreen() {
               <Text style={styles.budgetLabel}>{t("budget.thisMonth")}</Text>
               <Text style={styles.budgetAmount}>{formatILS(budgetSpent)}</Text>
             </View>
-            {budgetCap > 0 && (
-              <>
-                <View style={styles.budgetBar}>
-                  <View
-                    style={[
-                      styles.budgetBarFill,
-                      {
-                        width: `${Math.min(budgetSpent / budgetCap, 1) * 100}%` as any,
-                        backgroundColor:
-                          budgetSpent / budgetCap > 0.9 ? C.red
-                          : budgetSpent / budgetCap > 0.7 ? C.amber
-                          : "#9B59B6",
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.budgetCapText}>
-                  {t("budget.ofBudget", { cap: formatILS(budgetCap) })}
-                </Text>
-              </>
-            )}
           </Pressable>
         )}
 
@@ -691,20 +665,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     color: C.textPrimary,
-  },
-  budgetBar: {
-    height: 5,
-    backgroundColor: C.surfaceSubtle,
-    borderRadius: 3,
-    overflow: "hidden",
-    marginBottom: 4,
-  },
-  budgetBarFill: { height: "100%", borderRadius: 3 },
-  budgetCapText: {
-    fontSize: 11,
-    color: C.textSecondary,
-    textAlign: TEXT_RIGHT,
-    writingDirection: "rtl",
   },
 
   // ── Unified Today card ────────────────────────────────────────────────────

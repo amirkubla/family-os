@@ -116,11 +116,6 @@ export default function BudgetScreen() {
     [monthExpenses],
   );
 
-  const totalCap = useMemo(
-    () => budgetCategories.reduce((sum, c) => sum + (c.monthlyCap ?? 0), 0),
-    [budgetCategories],
-  );
-
   const categoryTotals = useMemo(() => {
     const map: Record<string, number> = {};
     for (const e of monthExpenses) {
@@ -239,9 +234,6 @@ export default function BudgetScreen() {
     setExpenseModalVisible(true);
   };
 
-  const spendPct = totalCap > 0 ? Math.min(totalSpent / totalCap, 1) : 0;
-  const barColor = spendPct > 0.9 ? C.red : spendPct > 0.7 ? C.amber : C.teal;
-
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
@@ -268,28 +260,11 @@ export default function BudgetScreen() {
           />
         </View>
 
-        {/* Summary card */}
+        {/* Summary card — total spent only. Budget progress is shown per
+            category below, not as an overall bar on the main number. */}
         <View style={styles.summaryCard}>
           <Text style={styles.summarySubtitle}>{t("budget.totalSpent", { month: "" }).trim()}</Text>
           <Text style={styles.summaryAmount}>{formatILS(totalSpent)}</Text>
-          {totalCap > 0 && (
-            <>
-              <Text style={styles.summaryOf}>{t("budget.ofBudget", { cap: formatILS(totalCap) })}</Text>
-              <View style={styles.barTrack}>
-                <View
-                  style={[
-                    styles.barFill,
-                    { width: `${spendPct * 100}%` as any, backgroundColor: barColor },
-                  ]}
-                />
-              </View>
-              {totalSpent < totalCap && (
-                <Text style={styles.summaryRemaining}>
-                  {t("budget.remaining", { amount: formatILS(totalCap - totalSpent) })}
-                </Text>
-              )}
-            </>
-          )}
         </View>
 
         {/* Per-member breakdown — only when 2+ payers have expenses this month */}
@@ -666,30 +641,6 @@ const styles = StyleSheet.create({
     color: C.textPrimary,
     textAlign: TEXT_RIGHT,
   },
-  summaryOf: {
-    fontSize: 13,
-    color: C.textSecondary,
-    textAlign: TEXT_RIGHT,
-    marginTop: 2,
-    writingDirection: "rtl",
-  },
-  summaryRemaining: {
-    fontSize: 12,
-    color: C.teal,
-    textAlign: TEXT_RIGHT,
-    marginTop: 4,
-    fontWeight: "600",
-    writingDirection: "rtl",
-  },
-
-  barTrack: {
-    height: 8,
-    backgroundColor: C.surfaceSubtle,
-    borderRadius: 4,
-    overflow: "hidden",
-    marginTop: S.xs,
-  },
-  barFill: { height: "100%", borderRadius: 4 },
   barTrackSmall: {
     height: 5,
     backgroundColor: C.surfaceSubtle,
