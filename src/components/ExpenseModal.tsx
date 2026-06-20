@@ -84,6 +84,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
   const [single, setSingle] = useState<FormState>(EMPTY_FORM);
   const [recurring, setRecurring] = useState<FormState>(EMPTY_FORM);
   const [date, setDate] = useState(today);
+  const [titleError, setTitleError] = useState("");
   const [amountError, setAmountError] = useState("");
   const [categoryError, setCategoryError] = useState("");
 
@@ -119,17 +120,21 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       setRecurring(base);
       setDate(today);
     }
+    setTitleError("");
     setAmountError("");
     setCategoryError("");
   }, [visible, editExpense, budgetCategories, today]);
 
   const switchType = (type: PaymentType) => {
     setPaymentType(type);
+    setTitleError("");
     setAmountError("");
     setCategoryError("");
   };
 
   const handleSave = () => {
+    const title = form.note.trim();
+    if (!title) { setTitleError("יש להזין כותרת"); return; }
     const amount = parseILS(form.amountText);
     if (!amount || amount <= 0) { setAmountError("יש להזין סכום תקין"); return; }
     if (!form.categoryName) { setCategoryError("יש לבחור קטגוריה"); return; }
@@ -138,9 +143,10 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
     onSave({
       amount,
       categoryName: form.categoryName,
-      payerMemberId: form.payerMemberId,
+      // Recurring templates have no per-occurrence payer.
+      payerMemberId: isRecurring ? undefined : form.payerMemberId,
       date,
-      note: form.note.trim() || undefined,
+      note: title,
       isRecurring,
       recurrenceType: isRecurring ? form.recurrenceType : undefined,
       recurrenceDay: isRecurring ? form.recurrenceDay : undefined,
@@ -175,6 +181,17 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         })}
       </View>
 
+      {/* Title (required) */}
+      <Text style={MS.label}>{t("budget.paymentTitle")}</Text>
+      <RNTextInput
+        value={form.note}
+        onChangeText={(v) => { patch({ note: v }); setTitleError(""); }}
+        placeholder={t("budget.paymentTitlePlaceholder")}
+        style={[styles.titleInput, titleError ? { borderColor: C.red } : null]}
+        placeholderTextColor={C.textSecondary}
+      />
+      {titleError ? <Text style={MS.error}>{titleError}</Text> : null}
+
       {/* Amount */}
       <Text style={MS.label}>{t("budget.amount")}</Text>
       <RNTextInput
@@ -204,8 +221,8 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       </View>
       {categoryError ? <Text style={MS.error}>{categoryError}</Text> : null}
 
-      {/* Payer */}
-      {familyMembers.length > 0 && (
+      {/* Payer — one-time payments only; recurring templates have no payer */}
+      {paymentType === "single" && familyMembers.length > 0 && (
         <>
           <Text style={MS.label}>{t("budget.payer")}</Text>
           <View style={styles.chipRow}>
@@ -234,17 +251,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           </View>
         </>
       )}
-
-      {/* Note */}
-      <Text style={MS.label}>{t("budget.note")}</Text>
-      <RNTextInput
-        value={form.note}
-        onChangeText={(v) => patch({ note: v })}
-        placeholder={t("budget.notePlaceholder")}
-        style={styles.noteInput}
-        placeholderTextColor={C.textSecondary}
-        multiline
-      />
 
       {/* Recurrence config — only in recurring mode */}
       {paymentType === "recurring" && (
@@ -345,8 +351,9 @@ const styles = StyleSheet.create({
   memberChipActive: { backgroundColor: C.purple, borderColor: C.purple },
   memberChipText: { fontSize: 13, color: C.textSecondary },
   memberChipTextActive: { color: "#fff", fontWeight: "600" },
-  noteInput: {
-    fontSize: 14,
+  titleInput: {
+    fontSize: 16,
+    fontWeight: "600",
     color: C.textPrimary,
     textAlign: TEXT_RIGHT ?? "right",
     borderWidth: 1,
