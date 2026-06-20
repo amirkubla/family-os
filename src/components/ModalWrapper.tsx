@@ -28,13 +28,12 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
   if (!visible) return null;
 
   const card = (
-    <View style={[styles.container, carousel && styles.containerCarousel]}>
+    <View style={styles.container}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        // In carousel mode the card is stretched tall (flexGrow), so let the
-        // scroll content fill it — this lets a child field (e.g. a note/project
-        // description) flex:1 to take over the otherwise-empty space.
+        // In carousel mode let the scroll content fill the card so a child
+        // field (e.g. a note/project description) can flex:1 into the space.
         style={carousel ? styles.scrollFill : undefined}
         contentContainerStyle={carousel ? styles.scrollContentFill : undefined}
       >
@@ -58,28 +57,29 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
       >
         {carousel ? (
           <View style={styles.carouselRow} pointerEvents="box-none">
-            {/* physical-left arrow */}
+            {card}
+            {/* Arrows overlaid at the screen edges so the card keeps full width.
+                A translucent disc keeps the white chevron visible whether it sits
+                over the dark backdrop (web) or the card edge (phone). */}
             <Pressable
-              style={styles.sideArrow}
+              style={[styles.sideArrow, styles.arrowStart]}
               onPress={carousel.onPrev}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="הקודם"
               testID="carousel-prev"
             >
-              <Ionicons name="chevron-forward" size={40} color="#FFFFFF" style={styles.arrowIcon} />
+              <Ionicons name="chevron-forward" size={26} color="#FFFFFF" style={styles.arrowIcon} />
             </Pressable>
-            {card}
-            {/* physical-right arrow */}
             <Pressable
-              style={styles.sideArrow}
+              style={[styles.sideArrow, styles.arrowEnd]}
               onPress={carousel.onNext}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="הבא"
               testID="carousel-next"
             >
-              <Ionicons name="chevron-back" size={40} color="#FFFFFF" style={styles.arrowIcon} />
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" style={styles.arrowIcon} />
             </Pressable>
           </View>
         ) : (
@@ -113,26 +113,30 @@ const styles = StyleSheet.create({
     flex: 1,
     pointerEvents: "box-none",
   },
-  // Carousel: [arrow] [card] [arrow], centered as a group.
-  // flex:1 gives the row a definite height so the card's maxHeight "85%"
-  // resolves (otherwise the card grows unbounded and the inner ScrollView
-  // can't scroll — content spills off-screen).
+  // Carousel: the card keeps full width (same as a regular modal) and the
+  // arrows are overlaid at the screen edges. flex:1 gives the row a definite
+  // height so the card's maxHeight "85%" resolves and the inner ScrollView can
+  // scroll instead of spilling off-screen.
   carouselRow: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
     flex: 1,
-    paddingHorizontal: S.xs,
-    gap: S.xs,
   },
   sideArrow: {
-    width: 52,
-    height: 52,
+    position: "absolute",
+    top: "50%",
+    marginTop: -22,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(15,15,30,0.45)",
   },
-  // White chevron with a soft dark halo so it stands out on any background.
+  arrowStart: { right: S.xs },
+  arrowEnd: { left: S.xs },
+  // Soft dark halo so the white chevron stands out on any background.
   arrowIcon: {
     textShadowColor: "rgba(0,0,0,0.45)",
     textShadowOffset: { width: 0, height: 1 },
@@ -148,13 +152,6 @@ const styles = StyleSheet.create({
     ...SHADOW.lg,
     shadowOpacity: 0.2,
     shadowRadius: 24,
-  },
-  // In carousel mode the card shrinks so the arrows sit beside it.
-  containerCarousel: {
-    width: undefined,
-    flexShrink: 1,
-    flexGrow: 1,
-    maxWidth: 420,
   },
   scrollFill: { flex: 1 },
   scrollContentFill: { flexGrow: 1 },

@@ -207,6 +207,28 @@ export default function BudgetScreen() {
     });
   };
 
+  // Has this recurring template already been logged for the current period?
+  const isRecurringLogged = (template: Expense): boolean => {
+    const key = template.categoryName + "|" + template.amount;
+    return (template.recurrenceType ?? "monthly") === "weekly"
+      ? recurringLoggedThisWeek.has(key)
+      : recurringLoggedThisMonth.has(key);
+  };
+
+  // Undo a logged recurring entry for the current period (delete the 🔄 row).
+  const unlogRecurringNow = (template: Expense) => {
+    const weekly = (template.recurrenceType ?? "monthly") === "weekly";
+    const logged = useFamilyStore.getState().expenses.find(
+      (e) =>
+        !e.isRecurring &&
+        e.note?.startsWith("🔄") &&
+        e.categoryName === template.categoryName &&
+        e.amount === template.amount &&
+        (weekly ? e.date >= startOfWeekStr && e.date <= todayStr : e.date.startsWith(selectedYM)),
+    );
+    if (logged) deleteExpenseRemote(logged.id);
+  };
+
   const handleDeleteExpense = (expense: Expense) => {
     requestDelete(() => deleteExpenseRemote(expense.id));
   };
@@ -464,12 +486,34 @@ export default function BudgetScreen() {
                 </Pressable>
                 <View style={styles.expRight}>
                   <Text style={styles.expAmount}>{formatILS(exp.amount)}</Text>
-                  <IconButton
-                    icon="trash-can-outline"
-                    size={16}
-                    onPress={() => handleDeleteExpense(exp)}
-                    iconColor={C.textSecondary}
-                  />
+                  <View style={styles.expActions}>
+                    {/* Set / unset this period's payment — like kid payments. */}
+                    {isCurrentMonth && (
+                      isRecurringLogged(exp) ? (
+                        <IconButton
+                          icon="undo-variant"
+                          size={16}
+                          iconColor={C.teal}
+                          accessibilityLabel={t("payment.markUnpaid")}
+                          onPress={() => unlogRecurringNow(exp)}
+                        />
+                      ) : (
+                        <IconButton
+                          icon="check-circle-outline"
+                          size={16}
+                          iconColor={C.teal}
+                          accessibilityLabel={t("payment.markPaid")}
+                          onPress={() => logRecurringNow(exp)}
+                        />
+                      )
+                    )}
+                    <IconButton
+                      icon="trash-can-outline"
+                      size={16}
+                      onPress={() => handleDeleteExpense(exp)}
+                      iconColor={C.textSecondary}
+                    />
+                  </View>
                 </View>
               </View>
             );
