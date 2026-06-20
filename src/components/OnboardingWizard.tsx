@@ -17,6 +17,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useAuthStore } from "@src/auth/useAuthStore";
 import {
   addFamilyMemberRemote,
+  updateFamilyMemberRemote,
   addKidRemote,
   updateFamilyNameRemote,
   setKidActiveRemote,
@@ -92,7 +93,9 @@ export default function OnboardingWizard() {
             {step === 2 && (
               <Step2AboutYou
                 onNext={() => setStep(3)}
-                onBack={() => setStep(firstStep === 2 ? 2 : 1)}
+                // Step 1 (family name) is skipped when it was set at registration,
+                // making step 2 the first step — so there's nothing to go back to.
+                onBack={firstStep === 1 ? () => setStep(1) : undefined}
               />
             )}
             {step === 3 && (
@@ -195,7 +198,8 @@ function Step2AboutYou({
   onBack,
 }: {
   onNext: () => void;
-  onBack: () => void;
+  /** Omitted when step 2 is the first step (step 1 was skipped) — no back. */
+  onBack?: () => void;
 }) {
   const members = useFamilyStore((s) => s.familyMembers).filter((m) => m.isActive);
   const currentUserId = useAuthStore((s) => s.session?.user.id);
@@ -216,6 +220,27 @@ function Step2AboutYou({
   );
   const [nameError, setNameError] = useState("");
   const [selfSaved, setSelfSaved] = useState(!!alreadyClaimed);
+  // The claimed member's id — drives edit (update) vs first-time (create+claim).
+  const [claimedMemberId, setClaimedMemberId] = useState<string | null>(
+    alreadyClaimed?.id ?? null,
+  );
+  // True while re-opening the saved member for editing.
+  const [editing, setEditing] = useState(false);
+
+  // The user's claimed member can arrive after mount (pullAll completes after
+  // the wizard opens). Sync it in once, so the saved/editable view shows and we
+  // never create a duplicate. Guarded by claimedMemberId so it never fights an
+  // in-progress create or edit.
+  useEffect(() => {
+    if (alreadyClaimed && !claimedMemberId) {
+      setClaimedMemberId(alreadyClaimed.id);
+      setName(alreadyClaimed.name);
+      setRole((alreadyClaimed.role as MemberRole) ?? "parent");
+      setAvatarEmoji(alreadyClaimed.avatarEmoji ?? "👨");
+      setColor(alreadyClaimed.color ?? COLOR_SWATCHES[0]);
+      setSelfSaved(true);
+    }
+  }, [alreadyClaimed, claimedMemberId]);
 
   // Partner sub-step state
   const [showPartnerForm, setShowPartnerForm] = useState(false);
@@ -239,10 +264,18 @@ function Step2AboutYou({
     if (!trimmed) { setNameError(t("settings.nameRequired")); return; }
     if (trimmed.length < 2) { setNameError(t("settings.nameMinLength")); return; }
 
-    // Create the member and claim it
+    // Editing an existing claimed member → update in place (no duplicate).
+    if (claimedMemberId) {
+      updateFamilyMemberRemote(claimedMemberId, { name: trimmed, role, avatarEmoji, color });
+      setEditing(false);
+      setSelfSaved(true);
+      return;
+    }
+
+    // First time → create the member and claim it.
     setClaiming(true);
     try {
-      const newMember = addFamilyMemberRemote({
+      addFamilyMemberRemote({
         name: trimmed,
         role,
         avatarEmoji,
@@ -257,6 +290,7 @@ function Step2AboutYou({
           );
           if (created) {
             await claimFamilyMemberRemote(created.id);
+            setClaimedMemberId(created.id);
           }
         } catch {
           // Non-fatal — user can fix later
@@ -268,6 +302,26 @@ function Step2AboutYou({
     } catch {
       setClaiming(false);
     }
+  };
+
+  // Re-open the saved member for editing (form pre-filled from current state).
+  const handleEditSelf = () => {
+    setEditing(true);
+    setSelfSaved(false);
+  };
+
+  // Discard edits and return to the saved view, restoring stored values.
+  const handleCancelEdit = () => {
+    const m = useFamilyStore.getState().familyMembers.find((x) => x.id === claimedMemberId);
+    if (m) {
+      setName(m.name);
+      setRole((m.role as MemberRole) ?? "parent");
+      setAvatarEmoji(m.avatarEmoji ?? "👨");
+      setColor(m.color ?? COLOR_SWATCHES[0]);
+    }
+    setNameError("");
+    setEditing(false);
+    setSelfSaved(true);
   };
 
   const handleSavePartner = () => {
@@ -312,6 +366,15 @@ function Step2AboutYou({
           <Text style={styles.addedName}>{name}</Text>
           <Text style={styles.addedRole}>{memberRoleLabel(role)}</Text>
           <Text style={{ fontSize: 14, color: C.teal }}>✓</Text>
+          <Pressable
+            onPress={handleEditSelf}
+            style={styles.editBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t("onboarding.editSelf")}
+            testID="onboarding-edit-self"
+          >
+            <Text style={styles.editBtnText}>✏️</Text>
+          </Pressable>
         </View>
       ) : (
         <View style={styles.inlineForm}>
@@ -360,15 +423,29 @@ function Step2AboutYou({
             ))}
           </View>
 
-          <Button
-            mode="contained"
-            onPress={handleSaveSelf}
-            loading={claiming}
-            buttonColor={C.purple}
-            style={{ borderRadius: R.md, marginTop: S.sm }}
-          >
-            {t("onboarding.next")}
-          </Button>
+          {editing ? (
+            <View style={[styles.navRow, { gap: S.sm, marginTop: S.sm }]}>
+              <Button onPress={handleCancelEdit}>{t("cancel")}</Button>
+              <Button
+                mode="contained"
+                onPress={handleSaveSelf}
+                loading={claiming}
+                buttonColor={C.purple}
+              >
+                {t("save")}
+              </Button>
+            </View>
+          ) : (
+            <Button
+              mode="contained"
+              onPress={handleSaveSelf}
+              loading={claiming}
+              buttonColor={C.purple}
+              style={{ borderRadius: R.md, marginTop: S.sm }}
+            >
+              {t("onboarding.next")}
+            </Button>
+          )}
         </View>
       )}
 
@@ -470,10 +547,11 @@ function Step2AboutYou({
         </View>
       ))}
 
-      {/* Navigation */}
+      {/* Navigation. Back is omitted when step 2 is the first step (nothing
+          to go back to); a spacer keeps Next aligned to its side. */}
       {selfSaved && (
         <View style={styles.navRow}>
-          <Button onPress={onBack}>{t("onboarding.back")}</Button>
+          {onBack ? <Button onPress={onBack}>{t("onboarding.back")}</Button> : <View />}
           <Button mode="contained" onPress={handleNext} buttonColor={C.purple}>
             {t("onboarding.next")}
           </Button>
@@ -897,6 +975,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: C.textSecondary,
   },
+  editBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: C.surface,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editBtnText: { fontSize: 15 },
   removeBtn: {
     width: 28,
     height: 28,

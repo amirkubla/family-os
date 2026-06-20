@@ -451,6 +451,7 @@ const he = {
     step1Subtitle: "השם הזה יופיע בראש המסכים",
     step2Title: "קצת עליך",
     step2Subtitle: "איך קוראים לך ואיך תרצו להופיע באפליקציה?",
+    editSelf: "עריכה",
     step2AddPartner: "רוצה להוסיף את בן/בת הזוג?",
     step2AddPartnerSubtitle: "ככה הפרופיל שלהם יהיה מוכן כשיצטרפו",
     step2PartnerAdded: "מעולה! כשבן/בת הזוג ירשמו עם קוד ההזמנה, הפרופיל יחכה להם",
