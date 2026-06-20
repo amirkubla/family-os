@@ -1,15 +1,17 @@
 /**
  * PaginatedPicker — a paged ("carousel") grid for choosing one option from a
- * large pool, without a long vertical scroll. Shows `perPage` items at a time;
- * ‹ › arrows page forward/back and a "page/total" label shows position. The
- * page containing the current value is shown first.
+ * large pool, without a long vertical scroll. Shows `perPage` items at a time
+ * in a fixed `columns`-wide grid (so every row is full); ‹ › arrows page
+ * forward/back and a "page/total" label shows position. The page holding the
+ * current value is shown first.
  *
  * Two kinds:
  *   - "emoji"  → renders each option as an emoji glyph in a square cell
  *   - "color"  → renders each option (a hex string) as a colour swatch
  *
- * RTL-aware: in the pager row the previous arrow sits on the right (→) and the
- * next arrow on the left (←), matching the calendar/budget month navigators.
+ * Cells are sized as a percentage of their column slot (not fixed px), so the
+ * grid stays even across phone and web widths. RTL-aware: in the pager the
+ * previous arrow sits on the right (→) and the next arrow on the left (←).
  */
 
 import React, { useState } from "react";
@@ -25,7 +27,9 @@ interface Props {
   options: readonly string[];
   value: string;
   onChange: (value: string) => void;
-  /** Items shown per page (default 24). */
+  /** Cells per row (default 8). Pool length should be a multiple of this. */
+  columns?: number;
+  /** Items shown per page (default 40 = 8 × 5). Keep a multiple of columns. */
   perPage?: number;
   /** Test id prefix → `${testIDPrefix}-${option}` per cell, `-prev`/`-next`. */
   testIDPrefix?: string;
@@ -39,7 +43,8 @@ export default function PaginatedPicker({
   options,
   value,
   onChange,
-  perPage = 24,
+  columns = 8,
+  perPage = 40,
   testIDPrefix,
 }: Props) {
   const pageCount = Math.max(1, Math.ceil(options.length / perPage));
@@ -54,40 +59,36 @@ export default function PaginatedPicker({
 
   const atStart = clampedPage === 0;
   const atEnd = clampedPage >= pageCount - 1;
+  const slotWidth = `${100 / columns}%`;
 
   return (
     <View>
       <View style={styles.grid}>
-        {pageItems.map((opt) =>
-          kind === "color" ? (
-            <Pressable
-              key={opt}
-              onPress={() => onChange(opt)}
-              accessibilityRole="button"
-              accessibilityLabel={opt}
-              accessibilityState={{ selected: opt === value }}
-              testID={testIDPrefix ? `${testIDPrefix}-${opt}` : undefined}
-              style={[
-                styles.colorCell,
-                { backgroundColor: opt },
-                opt === value && styles.colorSelected,
-                webCursor,
-              ]}
-            />
-          ) : (
-            <Pressable
-              key={opt}
-              onPress={() => onChange(opt)}
-              accessibilityRole="button"
-              accessibilityLabel={opt}
-              accessibilityState={{ selected: opt === value }}
-              testID={testIDPrefix ? `${testIDPrefix}-${opt}` : undefined}
-              style={[styles.emojiCell, opt === value && styles.emojiSelected, webCursor]}
-            >
-              <Text style={styles.emojiText}>{opt}</Text>
-            </Pressable>
-          ),
-        )}
+        {pageItems.map((opt) => (
+          <View key={opt} style={[styles.slot, { width: slotWidth as any }]}>
+            {kind === "color" ? (
+              <Pressable
+                onPress={() => onChange(opt)}
+                accessibilityRole="button"
+                accessibilityLabel={opt}
+                accessibilityState={{ selected: opt === value }}
+                testID={testIDPrefix ? `${testIDPrefix}-${opt}` : undefined}
+                style={[styles.colorCell, { backgroundColor: opt }, opt === value && styles.colorSelected, webCursor]}
+              />
+            ) : (
+              <Pressable
+                onPress={() => onChange(opt)}
+                accessibilityRole="button"
+                accessibilityLabel={opt}
+                accessibilityState={{ selected: opt === value }}
+                testID={testIDPrefix ? `${testIDPrefix}-${opt}` : undefined}
+                style={[styles.emojiCell, opt === value && styles.emojiSelected, webCursor]}
+              >
+                <Text style={styles.emojiText}>{opt}</Text>
+              </Pressable>
+            )}
+          </View>
+        ))}
       </View>
 
       {pageCount > 1 && (
@@ -126,15 +127,19 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: RTL_ROW,
     flexWrap: "wrap",
-    gap: S.sm,
     marginBottom: S.xs,
-    minHeight: 96, // keep page height steady so the modal doesn't jump
+  },
+  // One column slot — fixed fraction of the row so every row is full.
+  slot: {
+    paddingVertical: 5,
+    alignItems: "center",
+    justifyContent: "center",
   },
   emojiCell: {
-    width: 40,
-    height: 40,
-    borderRadius: R.xl,
-    backgroundColor: "#FFFFFF",
+    width: "84%",
+    aspectRatio: 1,
+    borderRadius: R.md,
+    backgroundColor: C.surfaceSubtle,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -142,11 +147,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.purple,
   },
-  emojiText: { fontSize: 22 },
+  emojiText: { fontSize: 20 },
   colorCell: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: "70%",
+    aspectRatio: 1,
+    borderRadius: 999,
   },
   colorSelected: {
     borderWidth: 3,
