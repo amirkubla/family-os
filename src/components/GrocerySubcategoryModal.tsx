@@ -1,29 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
+import PaginatedPicker from "./PaginatedPicker";
 import { MS } from "@src/ui/modalStyles";
-import { C, S, R } from "@src/ui/tokens";
-import { RTL_ROW } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 import type { GrocerySubcategory } from "@src/models/customization";
+import { CATEGORY_ICON_OPTIONS, CATEGORY_COLOR_SWATCHES } from "@src/ui/semanticColors";
 
-const ICON_OPTIONS = [
-  // Grocery
-  "🥬", "🧀", "🥩", "🐟", "🥖", "🧊", "🍿", "🥤", "🥫", "🌶️",
-  "🍎", "🫐", "🥚", "🍗", "🌽", "🥑", "🍞", "🧁", "🫙", "🥜",
-  // Health
-  "💊", "💪", "🧴", "🍼", "🩹", "✨", "💇", "🩺", "🌿", "🧼",
-  // Home
-  "🧹", "👕", "🍳", "🚿", "🧻", "🔧", "🖼️", "🏠", "🪣", "🪴",
-  // Generic
-  "📦", "🛍️", "⭐",
-];
-
-const COLOR_SWATCHES = [
-  "#2D9F6F", "#3A7BD5", "#E0699B", "#F59E0B", "#9B59B6",
-  "#EF4444", "#20B2AA", "#E67E22", "#888888", "#2ECC71",
-];
+const ICON_OPTIONS = CATEGORY_ICON_OPTIONS;
+const COLOR_SWATCHES = CATEGORY_COLOR_SWATCHES;
 
 interface Props {
   visible: boolean;
@@ -79,28 +65,22 @@ export default function GrocerySubcategoryModal({ visible, onDismiss, editSubcat
       {nameError ? <Text style={MS.error}>{nameError}</Text> : null}
 
       <Text style={MS.label}>{t("customization.subcategoryIcon")}</Text>
-      <View style={styles.row}>
-        {ICON_OPTIONS.map((em) => (
-          <Pressable
-            key={em}
-            onPress={() => setIcon(em)}
-            style={[styles.iconCell, icon === em && { borderColor: color, borderWidth: 2 }]}
-          >
-            <Text style={styles.iconText}>{em}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <PaginatedPicker
+        kind="emoji"
+        options={ICON_OPTIONS}
+        value={icon}
+        onChange={setIcon}
+        testIDPrefix="subcat-icon"
+      />
 
       <Text style={MS.label}>{t("customization.subcategoryColor")}</Text>
-      <View style={styles.row}>
-        {COLOR_SWATCHES.map((sw) => (
-          <Pressable
-            key={sw}
-            onPress={() => setColor(sw)}
-            style={[styles.colorCell, { backgroundColor: sw }, color === sw && styles.colorSelected]}
-          />
-        ))}
-      </View>
+      <PaginatedPicker
+        kind="color"
+        options={COLOR_SWATCHES}
+        value={color}
+        onChange={setColor}
+        testIDPrefix="subcat-color"
+      />
 
       <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>
@@ -109,32 +89,3 @@ export default function GrocerySubcategoryModal({ visible, onDismiss, editSubcat
     </ModalWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: RTL_ROW,
-    flexWrap: "wrap",
-    gap: S.xs,
-    marginBottom: S.sm,
-  },
-  iconCell: {
-    width: 40,
-    height: 40,
-    borderRadius: R.sm,
-    backgroundColor: C.surfaceSubtle,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  iconText: { fontSize: 20 },
-  colorCell: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  colorSelected: {
-    borderWidth: 3,
-    borderColor: C.textPrimary,
-  },
-});

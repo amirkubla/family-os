@@ -14,7 +14,7 @@
  * previous arrow sits on the right (→) and the next arrow on the left (←).
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -52,6 +52,13 @@ export default function PaginatedPicker({
   // Start on the page holding the current value (e.g. when editing).
   const valueIndex = options.indexOf(value);
   const [page, setPage] = useState(valueIndex >= 0 ? Math.floor(valueIndex / perPage) : 0);
+
+  // Re-sync to the value's page when the value changes (e.g. reopening this
+  // shared, still-mounted picker for a different item). Selecting an option on
+  // the current page is a no-op since it resolves to the same page.
+  useEffect(() => {
+    if (valueIndex >= 0) setPage(Math.floor(valueIndex / perPage));
+  }, [valueIndex, perPage]);
 
   const clampedPage = Math.min(page, pageCount - 1);
   const start = clampedPage * perPage;

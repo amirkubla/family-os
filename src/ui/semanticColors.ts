@@ -159,5 +159,44 @@ function buildColorPool(): string[] {
   return out;
 }
 
-/** Large colour pool (~104) for the paginated colour picker. */
+/** Large colour pool (~104) for the paginated avatar colour picker. */
 export const COLOR_SWATCHES_LARGE: readonly string[] = buildColorPool();
+
+/**
+ * Category icon pool (96) for grocery subcategories + budget categories —
+ * food, drinks, health/care, home, kids, money/bills, clothing/leisure.
+ * Object/food emojis (not avatars). Multiple of 8 so picker rows stay full.
+ */
+export const CATEGORY_ICON_OPTIONS: readonly string[] = [
+  // Food & groceries
+  "🛒", "🛍️", "🥬", "🥦", "🥕", "🌽", "🍅", "🥑", "🍎", "🍌", "🍓", "🫐", "🍇", "🍉", "🍊", "🍋",
+  "🥖", "🍞", "🥐", "🧀", "🥚", "🥩", "🍗", "🐟", "🦐", "🍤", "🍚", "🍝", "🍕", "🍔", "🌮", "🥗",
+  // Drinks & snacks
+  "☕", "🍵", "🥤", "🧃", "🍿", "🍪", "🍫", "🍩",
+  // Health & care
+  "💊", "🩹", "🩺", "💉", "🌡️", "🧴", "🧼", "🪥", "🧻", "🧽", "💇", "✨", "💪", "🧘", "🦷", "🌿",
+  // Home & household
+  "🏠", "🛋️", "🛏️", "🚿", "🚽", "🧹", "🧺", "🍳", "🔧", "🔨", "🪛", "🪜", "💡", "🔌", "🪴", "🖼️",
+  // Kids & misc
+  "👶", "🍼", "🧸", "🎒", "📚", "✏️", "🖍️", "🎨",
+  // Money / bills / transport
+  "💰", "💳", "🧾", "🏦", "⚡", "💧", "🚗", "⛽",
+  // Clothing / leisure / pets
+  "👕", "👗", "👟", "🎉", "🎮", "✈️", "🐾", "📦",
+] as const;
+
+// 16 hues × 3 tones = 48 swatches for the category colour picker.
+function buildCategoryColors(): string[] {
+  const hues = [0, 15, 30, 45, 60, 80, 120, 150, 170, 190, 210, 230, 260, 285, 310, 335];
+  const tones = [
+    { s: 80, l: 55 }, // vivid
+    { s: 68, l: 42 }, // deep
+    { s: 55, l: 70 }, // light
+  ];
+  const out: string[] = [];
+  for (const tone of tones) for (const h of hues) out.push(hslToHex(h, tone.s, tone.l));
+  return out;
+}
+
+/** Category colour pool (48) for the paginated category colour picker. */
+export const CATEGORY_COLOR_SWATCHES: readonly string[] = buildCategoryColors();
