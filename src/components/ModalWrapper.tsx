@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Portal } from "react-native-paper";
 import { R, S, SHADOW } from "@src/ui/tokens";
 
 /** When provided, ModalWrapper renders prev/next arrows flanking the card. */
@@ -43,6 +44,11 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
   );
 
   return (
+    // Portal teleports the overlay to the app root (PaperProvider host), so a
+    // modal opened from inside a ScrollView is positioned relative to the
+    // screen — not the scrolled content — and stays put on native (iOS) instead
+    // of jumping to the top of the page.
+    <Portal>
     <View
       style={[
         styles.overlay,
@@ -87,6 +93,7 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
         )}
       </KeyboardAvoidingView>
     </View>
+    </Portal>
   );
 }
 
