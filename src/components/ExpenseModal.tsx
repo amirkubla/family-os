@@ -3,8 +3,9 @@ import { View, StyleSheet, Pressable, TextInput as RNTextInput } from "react-nat
 import { Text, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import WheelPicker from "./WheelPicker";
+import SegmentedPills from "./SegmentedPills";
 import { MS } from "@src/ui/modalStyles";
-import { C, S, R, SHADOW } from "@src/ui/tokens";
+import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 import { toYMD } from "@src/utils/date";
@@ -160,25 +161,17 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         {editExpense ? t("budget.editExpense") : t("budget.addExpense")}
       </Text>
 
-      {/* Payment-type selector — switches between two independent operations */}
+      {/* Payment-type selector — underline tabs (same as grocery/calendar) */}
       <View style={styles.typeSelector}>
-        {([
-          { key: "single" as PaymentType, label: t("budget.typeSingle") },
-          { key: "recurring" as PaymentType, label: t("budget.typeRecurring") },
-        ]).map((opt) => {
-          const active = paymentType === opt.key;
-          return (
-            <Pressable
-              key={opt.key}
-              onPress={() => switchType(opt.key)}
-              style={[styles.typeSelectorChip, active && styles.typeSelectorChipActive]}
-            >
-              <Text style={[styles.typeSelectorText, active && styles.typeSelectorTextActive]}>
-                {opt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        <SegmentedPills
+          value={paymentType}
+          onChange={(v) => switchType(v as PaymentType)}
+          options={[
+            { value: "single", label: t("budget.typeSingle"), color: C.purple },
+            { value: "recurring", label: t("budget.typeRecurring"), color: C.purple },
+          ]}
+          testIDPrefix="expense-type"
+        />
       </View>
 
       {/* Title (required) */}
@@ -365,33 +358,7 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
   },
   typeSelector: {
-    flexDirection: RTL_ROW,
-    gap: S.xs,
-    backgroundColor: C.surfaceSubtle,
-    borderRadius: R.xl,
-    padding: 4,
     marginBottom: S.md,
-  },
-  typeSelectorChip: {
-    flex: 1,
-    paddingVertical: S.sm,
-    borderRadius: R.xl,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  typeSelectorChipActive: {
-    backgroundColor: C.surface,
-    ...SHADOW.sm,
-  },
-  typeSelectorText: {
-    fontSize: 14,
-    color: C.textSecondary,
-    fontWeight: "600",
-    writingDirection: "rtl",
-  },
-  typeSelectorTextActive: {
-    color: C.purple,
-    fontWeight: "800",
   },
   recurringPanel: {
     backgroundColor: C.surfaceSubtle,
