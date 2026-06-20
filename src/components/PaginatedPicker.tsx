@@ -66,13 +66,18 @@ export default function PaginatedPicker({
 
   const atStart = clampedPage === 0;
   const atEnd = clampedPage >= pageCount - 1;
-  const slotWidth = `${100 / columns}%`;
+
+  // Measure the grid and use integer cell widths so exactly `columns` fit per
+  // row on every platform. Percentage widths round-wrap to 7/row on iOS, which
+  // left a ragged last line even on full pages.
+  const [gridW, setGridW] = useState(0);
+  const cellW = gridW > 0 ? Math.floor(gridW / columns) : 0;
 
   return (
     <View>
-      <View style={styles.grid}>
-        {pageItems.map((opt) => (
-          <View key={opt} style={[styles.slot, { width: slotWidth as any }]}>
+      <View style={styles.grid} onLayout={(e) => setGridW(e.nativeEvent.layout.width)}>
+        {cellW > 0 && pageItems.map((opt) => (
+          <View key={opt} style={[styles.slot, { width: cellW }]}>
             {kind === "color" ? (
               <Pressable
                 onPress={() => onChange(opt)}

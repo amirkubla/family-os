@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
     paddingVertical: S.sm,
     paddingHorizontal: S.md,
     marginBottom: S.xs,
-    gap: S.sm,
+    gap: S.md,
     ...SHADOW.sm,
   },
   kidPayAvatar: {
@@ -711,6 +711,7 @@ const styles = StyleSheet.create({
     borderRadius: R.md,
     padding: S.md,
     marginBottom: S.sm,
+    gap: S.md,
     ...SHADOW.sm,
   },
   catIcon: {
@@ -719,7 +720,6 @@ const styles = StyleSheet.create({
     borderRadius: R.sm,
     alignItems: "center",
     justifyContent: "center",
-    marginStart: S.sm,
   },
   catEmoji: { fontSize: 20 },
   catInfo: { flex: 1 },
@@ -759,6 +759,7 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     flex: 1,
+    gap: S.md,
   },
   expAvatar: {
     width: 36,
@@ -766,7 +767,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginStart: S.sm,
   },
   expAvatarEmoji: { fontSize: 18 },
   expInfo: { flex: 1 },
