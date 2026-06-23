@@ -193,6 +193,16 @@ export default function CalendarScreen() {
   const dayEvents = useFamilyEventsForDate(selectedDate, selectedDow);
   const dayBlocks = useAllKidBlocksForDate(selectedDate, selectedDow);
 
+  // Single agenda for the selected day, events + kid blocks merged and ordered
+  // by start time (each list is already time-sorted; this interleaves them).
+  const dayAgenda = useMemo(
+    () => [
+      ...dayEvents.map((e) => ({ kind: "event" as const, item: e })),
+      ...dayBlocks.map((b) => ({ kind: "block" as const, item: b })),
+    ].sort((a, b) => a.item.startMinutes - b.item.startMinutes),
+    [dayEvents, dayBlocks],
+  );
+
   // For calendar dots — family events
   const recurringByDay = useFamilyEventRecurringByDay();
   const oneTimeEvents = useFamilyEventOneTimeBlocks();
@@ -371,22 +381,23 @@ export default function CalendarScreen() {
         ) : (
           <Card style={styles.card} mode="elevated">
             <Card.Content>
-              {dayEvents.map((event) => (
-                <EventRow
-                  key={event.id}
-                  event={event}
-                  onEdit={() => openEdit(event)}
-                  onDelete={() => requestDelete(() => deleteFamilyEventRemote(event.id))}
-                />
-              ))}
-              {dayBlocks.map((block) => (
-                <KidBlockRow
-                  key={block.id}
-                  block={block}
-                  onEdit={() => openEditBlock(block)}
-                  onDelete={() => requestDelete(() => deleteScheduleBlockRemote(block.id))}
-                />
-              ))}
+              {dayAgenda.map((row) =>
+                row.kind === "event" ? (
+                  <EventRow
+                    key={`e-${row.item.id}`}
+                    event={row.item}
+                    onEdit={() => openEdit(row.item)}
+                    onDelete={() => requestDelete(() => deleteFamilyEventRemote(row.item.id))}
+                  />
+                ) : (
+                  <KidBlockRow
+                    key={`b-${row.item.id}`}
+                    block={row.item}
+                    onEdit={() => openEditBlock(row.item)}
+                    onDelete={() => requestDelete(() => deleteScheduleBlockRemote(row.item.id))}
+                  />
+                ),
+              )}
             </Card.Content>
           </Card>
         )}

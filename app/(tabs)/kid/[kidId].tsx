@@ -275,6 +275,15 @@ export default function KidScheduleScreen() {
     [familyEventsForDate, kidId],
   );
 
+  // Single day agenda — kid blocks + kid events merged and ordered by start time.
+  const dayAgenda = useMemo(
+    () => [
+      ...dayBlocks.map((b) => ({ kind: "block" as const, item: b })),
+      ...dayEvents.map((e) => ({ kind: "event" as const, item: e })),
+    ].sort((a, b) => a.item.startMinutes - b.item.startMinutes),
+    [dayBlocks, dayEvents],
+  );
+
   // Template — all recurring blocks grouped by day
   const allBlocks = useKidBlocks(kidId!);
   const blocksByDay = useMemo(() => {
@@ -617,23 +626,24 @@ export default function KidScheduleScreen() {
               ) : (
                 <Card style={styles.card} mode="elevated">
                   <Card.Content>
-                    {dayBlocks.map((b) => (
-                      <BlockRow
-                        key={b.id}
-                        block={b}
-                        kidColor={kidColor}
-                        onEdit={() => openEdit(b)}
-                        onDelete={() => requestDelete(() => deleteScheduleBlockRemote(b.id))}
-                      />
-                    ))}
-                    {dayEvents.map((e) => (
-                      <KidEventRow
-                        key={e.id}
-                        event={e}
-                        onEdit={() => openEditEvent(e)}
-                        onDelete={() => requestDelete(() => deleteFamilyEventRemote(e.id))}
-                      />
-                    ))}
+                    {dayAgenda.map((row) =>
+                      row.kind === "block" ? (
+                        <BlockRow
+                          key={`b-${row.item.id}`}
+                          block={row.item}
+                          kidColor={kidColor}
+                          onEdit={() => openEdit(row.item)}
+                          onDelete={() => requestDelete(() => deleteScheduleBlockRemote(row.item.id))}
+                        />
+                      ) : (
+                        <KidEventRow
+                          key={`e-${row.item.id}`}
+                          event={row.item}
+                          onEdit={() => openEditEvent(row.item)}
+                          onDelete={() => requestDelete(() => deleteFamilyEventRemote(row.item.id))}
+                        />
+                      ),
+                    )}
                   </Card.Content>
                 </Card>
               )}
