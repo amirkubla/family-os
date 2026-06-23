@@ -382,3 +382,14 @@ internalRoutes.get("/family/:familyId/members", async (c) => {
     }));
   return c.json(active, 200);
 });
+
+// ── kids (read-only; for labelling events in the bot) ─────────────────────
+
+internalRoutes.get("/family/:familyId/kids", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const rows = await kidsRepo.listByFamily(familyId);
+  const active = rows
+    .filter((k) => k.isActive)
+    .map((k) => ({ id: k.id, name: k.name, emoji: k.emoji }));
+  return c.json(active, 200);
+});

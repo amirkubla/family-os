@@ -224,7 +224,7 @@ export const invitesApi = {
 // Telegram (calls the Assistant service, not the family-os backend)
 // ---------------------------------------------------------------------------
 
-const ASSISTANT_URL = process.env.EXPO_PUBLIC_ASSISTANT_URL ?? "http://localhost:8000";
+const ASSISTANT_URL = process.env.EXPO_PUBLIC_ASSISTANT_URL ?? "https://family-ai-assistant-m7braajria-zf.a.run.app";
 
 export const telegramApi = {
   generateCode: async (familyId: string) => {
