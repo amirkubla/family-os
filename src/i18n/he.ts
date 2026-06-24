@@ -367,6 +367,12 @@ const he = {
     pickMember: "בחרו את הפרופיל שלכם במשפחה",
     familyNamePlaceholder: "שם משפחה (למשל: כהן)",
     genericError: "שגיאה — נסו שנית",
+    // ── Google sign-in ──
+    or: "או",
+    continueWithGoogle: "המשך עם Google",
+    googleNoAccount: "לא נמצא חשבון Google. יש להירשם תחילה.",
+    googleNeedFamily: "יש להזין שם משפחה או קוד הזמנה כדי להירשם עם Google",
+    googleFailed: "ההתחברות עם Google נכשלה — נסו שנית",
     loading: "טוען…",
     logout: "התנתק",
     account: "חשבון",

@@ -7,9 +7,20 @@
 
 export type AuthUser = {
   id: string;
-  username: string;
+  /** Null for social-login (Google/Apple) users who have no username. */
+  username: string | null;
   familyId: string;
   createdAt: number;
+};
+
+export type GoogleAuthInput = {
+  idToken: string;
+  /** New-family creation (first sign-in). */
+  familyName?: string;
+  /** Join an existing family via invite (first sign-in). */
+  familyCode?: string;
+  /** Member to claim when joining via invite. */
+  memberId?: string;
 };
 
 export type AuthSession = {

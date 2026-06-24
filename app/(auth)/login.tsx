@@ -7,18 +7,47 @@ import { t } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
 import { TEXT_RIGHT } from "@src/ui/rtl";
 import AuthShell, { AuthFooterLink, AuthField } from "@src/components/auth/AuthShell";
+import GoogleSignInButton from "@src/components/auth/GoogleSignInButton";
+import AuthDivider from "@src/components/auth/AuthDivider";
+import { useGoogleAuth } from "@src/auth/useGoogleAuth";
 
 export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   const usernameError = username.length > 0 && username.length < 3;
   const passwordError = password.length > 0 && password.length < 4;
+
+  // Login screen handles *existing* Google users. A brand-new Google account
+  // has no family yet → backend returns NEEDS_FAMILY; we send them to register
+  // (which has the family-name / invite fields) to finish signing up.
+  const handleGoogleToken = async (idToken: string) => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle({ idToken });
+      router.replace("/(tabs)/today");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg === "NEEDS_FAMILY") {
+        setError(t("auth.googleNoAccount"));
+        router.replace("/(auth)/register");
+      } else {
+        setError(t("auth.googleFailed"));
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const { promptAsync, ready: googleReady } = useGoogleAuth(handleGoogleToken);
 
   // Auth-call path is unchanged — this redesign is presentational only.
   // Validation rules and the error → message mapping both stay as they were.
@@ -100,6 +129,14 @@ export default function LoginScreen() {
       >
         {t("auth.login")}
       </Button>
+
+      <AuthDivider label={t("auth.or")} />
+
+      <GoogleSignInButton
+        onPress={() => promptAsync()}
+        loading={googleLoading}
+        disabled={!googleReady || googleLoading || loading}
+      />
     </AuthShell>
   );
 }

@@ -5,11 +5,17 @@
  * (ApiAuthService) can be swapped without changing UI code.
  */
 
-import type { AuthSession, RegisterInput, LoginInput } from "./types";
+import type { AuthSession, RegisterInput, LoginInput, GoogleAuthInput } from "./types";
 
 export interface AuthService {
   register(input: RegisterInput): Promise<AuthSession>;
   login(input: LoginInput): Promise<AuthSession>;
+  /**
+   * Sign in / register with a Google ID token. Throws Error("NEEDS_FAMILY")
+   * for a brand-new Google user with no family yet — the caller should collect
+   * a family name or invite code and retry.
+   */
+  signInWithGoogle(input: GoogleAuthInput): Promise<AuthSession>;
   logout(): Promise<void>;
   getSession(): Promise<AuthSession | null>;
 }

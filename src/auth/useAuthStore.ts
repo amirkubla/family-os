@@ -7,7 +7,7 @@
  */
 
 import { create } from "zustand";
-import type { AuthSession, RegisterInput, LoginInput } from "./types";
+import type { AuthSession, RegisterInput, LoginInput, GoogleAuthInput } from "./types";
 import { authService } from "./ApiAuthService";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
@@ -27,6 +27,7 @@ interface AuthState {
   bootstrap: () => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   login: (input: LoginInput) => Promise<void>;
+  loginWithGoogle: (input: GoogleAuthInput) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -87,6 +88,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (err) {
       const msg = err instanceof Error ? err.message : "LOGIN_FAILED";
       set({ error: msg });
+      throw err;
+    }
+  },
+
+  loginWithGoogle: async (input) => {
+    set({ error: undefined });
+    try {
+      const session = await authService.signInWithGoogle(input);
+      set({ session, status: "loggedIn", error: undefined });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "GOOGLE_SIGNIN_FAILED";
+      // NEEDS_FAMILY is an expected control-flow signal, not a UI error.
+      if (msg !== "NEEDS_FAMILY") set({ error: msg });
       throw err;
     }
   },

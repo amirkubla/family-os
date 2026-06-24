@@ -6,7 +6,7 @@
  */
 
 import type { AuthService } from "./AuthService";
-import type { AuthSession, RegisterInput, LoginInput } from "./types";
+import type { AuthSession, RegisterInput, LoginInput, GoogleAuthInput } from "./types";
 import { saveSession, loadSession, clearSession } from "./storage";
 import { ApiError } from "@src/lib/api/http";
 import { getApiBaseUrl } from "@src/lib/api/baseUrl";
@@ -78,6 +78,31 @@ class ApiAuthServiceImpl implements AuthService {
         if (body?.error === "WRONG_PASSWORD") throw new Error("WRONG_PASSWORD");
       }
       throw new Error("LOGIN_FAILED");
+    }
+  }
+
+  async signInWithGoogle(input: GoogleAuthInput): Promise<AuthSession> {
+    const { idToken, familyName, familyCode, memberId } = input;
+    try {
+      const body: Record<string, string> = { idToken };
+      if (familyName) body.familyName = familyName;
+      if (familyCode) body.inviteCode = familyCode;
+      if (memberId) body.memberId = memberId;
+
+      const session = await authPost<AuthSession>("/v1/auth/google", body);
+      await saveSession(session);
+      return session;
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: string } | undefined;
+        // Brand-new Google user with no family yet — caller prompts + retries.
+        if (err.status === 409 && body?.error === "NEEDS_FAMILY") {
+          throw new Error("NEEDS_FAMILY");
+        }
+        if (body?.error === "INVALID_INVITE") throw new Error("INVALID_INVITE");
+        if (body?.error === "INVALID_GOOGLE_TOKEN") throw new Error("INVALID_GOOGLE_TOKEN");
+      }
+      throw new Error("GOOGLE_SIGNIN_FAILED");
     }
   }
 

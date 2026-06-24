@@ -7,6 +7,9 @@ import { t } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import AuthShell, { AuthFooterLink, AuthField } from "@src/components/auth/AuthShell";
+import GoogleSignInButton from "@src/components/auth/GoogleSignInButton";
+import AuthDivider from "@src/components/auth/AuthDivider";
+import { useGoogleAuth } from "@src/auth/useGoogleAuth";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 
@@ -22,6 +25,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ invite?: string }>();
   const register = useAuthStore((s) => s.register);
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +37,7 @@ export default function RegisterScreen() {
   const [validatingInvite, setValidatingInvite] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   const usernameError = username.length > 0 && username.length < 3;
@@ -114,6 +119,32 @@ export default function RegisterScreen() {
       setLoading(false);
     }
   };
+
+  // Google register — reuses the family-name / invite fields already on this
+  // screen. familyName (new family) or inviteCode+member (join) gives the
+  // backend the family context, so no NEEDS_FAMILY round-trip is needed.
+  const handleGoogleToken = async (idToken: string) => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle({
+        idToken,
+        familyName: joiningFamily ? undefined : newFamilyName.trim() || undefined,
+        familyCode: inviteCode || undefined,
+        memberId: selectedMemberId ?? undefined,
+      });
+      router.replace("/(tabs)/today");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg === "NEEDS_FAMILY") setError(t("auth.googleNeedFamily"));
+      else if (msg === "INVALID_INVITE") setError(t("auth.invalidFamilyCode"));
+      else setError(t("auth.googleFailed"));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const { promptAsync, ready: googleReady } = useGoogleAuth(handleGoogleToken);
 
   return (
     <AuthShell
@@ -284,6 +315,19 @@ export default function RegisterScreen() {
       >
         {joiningFamily ? t("auth.joinFamily") : t("auth.register")}
       </Button>
+
+      <AuthDivider label={t("auth.or")} />
+
+      <GoogleSignInButton
+        onPress={() => promptAsync()}
+        loading={googleLoading}
+        disabled={
+          !googleReady ||
+          googleLoading ||
+          loading ||
+          (!joiningFamily && newFamilyName.trim().length < 2)
+        }
+      />
     </AuthShell>
   );
 }
