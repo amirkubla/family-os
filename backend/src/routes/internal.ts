@@ -19,6 +19,7 @@ import { familyMembersRepo } from "../repos/familyMembersRepo.js";
 import { groceryRepo } from "../repos/groceryRepo.js";
 import { kidsRepo } from "../repos/kidsRepo.js";
 import { notesRepo } from "../repos/notesRepo.js";
+import { projectsRepo } from "../repos/projectsRepo.js";
 import { scheduleBlocksRepo } from "../repos/scheduleBlocksRepo.js";
 import { createFamilyEventSchema } from "../schemas/familyEvents.js";
 import { materializeForSource } from "../services/reminderService.js";
@@ -392,4 +393,75 @@ internalRoutes.get("/family/:familyId/kids", async (c) => {
     .filter((k) => k.isActive)
     .map((k) => ({ id: k.id, name: k.name, emoji: k.emoji }));
   return c.json(active, 200);
+});
+
+// ── notes ────────────────────────────────────────────────────────────────
+
+internalRoutes.get("/family/:familyId/notes", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const rows = await notesRepo.listByFamily(familyId);
+  // Return pinned notes first, then by creation time.
+  rows.sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  return c.json(
+    rows.map((n) => ({
+      id: n.id,
+      title: n.title,
+      body: n.body,
+      pinned: n.pinned,
+    })),
+    200,
+  );
+});
+
+// ── projects ─────────────────────────────────────────────────────────────
+
+internalRoutes.get("/family/:familyId/projects", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const statusParam = c.req.query("status") ?? "active";
+  if (statusParam !== "active" && statusParam !== "done" && statusParam !== "all") {
+    return c.json({ error: "status must be active|done|all" }, 400);
+  }
+  const rows = await projectsRepo.listByFamily(familyId);
+  const filtered =
+    statusParam === "all"
+      ? rows
+      : statusParam === "done"
+        ? rows.filter((p) => p.status === "done")
+        : rows.filter((p) => p.status !== "done");
+  return c.json(
+    filtered.map((p) => ({
+      id: p.id,
+      title: p.title,
+      status: p.status,
+      progress: p.progress,
+    })),
+    200,
+  );
+});
+
+internalRoutes.post("/family/:familyId/projects", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const body = (await c.req.json()) as {
+    title?: unknown;
+    status?: unknown;
+  };
+
+  if (typeof body.title !== "string" || body.title.trim().length === 0) {
+    return c.json({ error: "title is required" }, 400);
+  }
+  const validStatuses = ["idea", "in_progress", "done"];
+  const status =
+    typeof body.status === "string" && validStatuses.includes(body.status)
+      ? (body.status as "idea" | "in_progress" | "done")
+      : "in_progress";
+
+  const row = await projectsRepo.create({
+    familyId,
+    title: body.title.trim(),
+    status,
+  });
+  return c.json(row, 201);
 });
