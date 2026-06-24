@@ -22,6 +22,19 @@ export const usersRepo = {
     return row;
   },
 
+  async getByGoogleSub(googleSub: string): Promise<User | undefined> {
+    const [row] = await db
+      .select()
+      .from(users)
+      .where(eq(users.googleSub, googleSub));
+    return row;
+  },
+
+  async getByEmail(email: string): Promise<User | undefined> {
+    const [row] = await db.select().from(users).where(eq(users.email, email));
+    return row;
+  },
+
   async getByFamilyId(familyId: string): Promise<User[]> {
     return db.select().from(users).where(eq(users.familyId, familyId));
   },

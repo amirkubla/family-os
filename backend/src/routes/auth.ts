@@ -9,6 +9,7 @@
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import bcrypt from "bcryptjs";
+import { OAuth2Client } from "google-auth-library";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { families, familyMembers } from "../db/schema.js";
@@ -194,6 +195,11 @@ authRoutes.post("/login", async (c) => {
     return c.json({ error: "USER_NOT_FOUND" }, 401);
   }
 
+  // Social-login accounts have no password.
+  if (!user.passwordHash) {
+    return c.json({ error: "USE_SOCIAL_LOGIN" }, 401);
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     return c.json({ error: "WRONG_PASSWORD" }, 401);
@@ -220,6 +226,140 @@ authRoutes.post("/login", async (c) => {
     },
     issuedAt: now * 1000,
   });
+});
+
+// ---------------------------------------------------------------------------
+// POST /google — sign in / register with a Google ID token
+// ---------------------------------------------------------------------------
+//
+// First-time users have no family yet, so the client must also send either a
+// `familyName` (create new family → onboarding) or an `inviteCode` (join).
+// If neither is provided for a brand-new Google user, we return 409
+// NEEDS_FAMILY so the client can prompt and retry.
+
+const googleClient = new OAuth2Client();
+
+/** Allowed audiences = our Google OAuth client IDs (web/iOS/Android), CSV env. */
+function googleAudiences(): string[] {
+  return (process.env.GOOGLE_CLIENT_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Build the standard auth response (JWT + user) for any authenticated user. */
+async function issueSession(user: {
+  id: string;
+  username: string | null;
+  familyId: string;
+  createdAt: Date | number;
+}) {
+  const secret = process.env.JWT_SECRET!;
+  const now = Math.floor(Date.now() / 1000);
+  const token = await sign(
+    {
+      sub: user.id,
+      familyId: user.familyId,
+      username: user.username ?? null,
+      iat: now,
+      exp: now + TOKEN_EXPIRY_SECONDS,
+    },
+    secret,
+  );
+  return {
+    token,
+    user: {
+      id: user.id,
+      username: user.username ?? null,
+      familyId: user.familyId,
+      createdAt: new Date(user.createdAt).getTime(),
+    },
+    issuedAt: now * 1000,
+  };
+}
+
+authRoutes.post("/google", async (c) => {
+  const { idToken, familyName, inviteCode, memberId } = await c.req.json<{
+    idToken?: string;
+    familyName?: string;
+    inviteCode?: string;
+    memberId?: string;
+  }>();
+
+  if (!idToken) return c.json({ error: "Missing idToken" }, 400);
+
+  const audiences = googleAudiences();
+  if (audiences.length === 0) {
+    return c.json({ error: "GOOGLE_NOT_CONFIGURED" }, 500);
+  }
+
+  // Verify the Google ID token (signature, expiry, audience) via Google's keys.
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken, audience: audiences });
+    payload = ticket.getPayload();
+  } catch {
+    return c.json({ error: "INVALID_GOOGLE_TOKEN" }, 401);
+  }
+  if (!payload?.sub || !payload.email || !payload.email_verified) {
+    return c.json({ error: "INVALID_GOOGLE_TOKEN" }, 401);
+  }
+
+  const googleSub = payload.sub;
+  const email = payload.email;
+  const displayName = payload.name?.trim() || email.split("@")[0] || "חבר";
+
+  // ── Returning Google user → sign in ──
+  const existing = await usersRepo.getByGoogleSub(googleSub);
+  if (existing) {
+    return c.json(await issueSession(existing));
+  }
+
+  // ── New Google user → join via invite ──
+  if (inviteCode) {
+    const invite = await invitesRepo.getValidByCode(inviteCode);
+    if (!invite) return c.json({ error: "INVALID_INVITE" }, 400);
+    const familyId = invite.familyId;
+
+    const user = await usersRepo.create({ googleSub, email, familyId });
+    await invitesRepo.markUsed(invite.id, user.id);
+
+    if (memberId) {
+      const [member] = await db
+        .select()
+        .from(familyMembers)
+        .where(eq(familyMembers.id, memberId));
+      if (member && member.familyId === familyId && !member.userId) {
+        await db
+          .update(familyMembers)
+          .set({ userId: user.id })
+          .where(eq(familyMembers.id, memberId));
+      } else {
+        await db
+          .insert(familyMembers)
+          .values({ familyId, userId: user.id, displayName, role: "parent", isActive: true });
+      }
+    } else {
+      await db
+        .insert(familyMembers)
+        .values({ familyId, userId: user.id, displayName, role: "parent", isActive: true });
+    }
+
+    return c.json(await issueSession(user), 201);
+  }
+
+  // ── New Google user → create a new family (onboarding creates the member) ──
+  if (familyName && familyName.trim()) {
+    const [family] = await db
+      .insert(families)
+      .values({ name: familyName.trim() })
+      .returning();
+    const user = await usersRepo.create({ googleSub, email, familyId: family.id });
+    return c.json(await issueSession(user), 201);
+  }
+
+  // First Google sign-in with no family context — client must prompt + retry.
+  return c.json({ error: "NEEDS_FAMILY" }, 409);
 });
 
 // ---------------------------------------------------------------------------

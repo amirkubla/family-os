@@ -441,15 +441,22 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    username: text("username").notNull(),
-    passwordHash: text("password_hash").notNull(),
+    // Nullable: social-login users (Google/Apple) have no username/password.
+    username: text("username"),
+    passwordHash: text("password_hash"),
+    // Email + provider subject for social login. NULL for password-only users.
+    email: text("email"),
+    googleSub: text("google_sub"),
     familyId: uuid("family_id")
       .notNull()
       .references(() => families.id, { onDelete: "cascade" }),
     ...timestamps,
   },
   (t) => [
+    // Postgres treats NULLs as distinct, so multiple NULL usernames/subs are
+    // allowed while real values stay unique.
     uniqueIndex("users_username_uniq").on(t.username),
+    uniqueIndex("users_google_sub_uniq").on(t.googleSub),
     index("users_family_id_idx").on(t.familyId),
   ],
 );
