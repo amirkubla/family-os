@@ -14,6 +14,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { choresRepo } from "../repos/choresRepo.js";
+import { expensesRepo } from "../repos/expensesRepo.js";
 import { familyEventsRepo } from "../repos/familyEventsRepo.js";
 import { familyMembersRepo } from "../repos/familyMembersRepo.js";
 import { groceryRepo } from "../repos/groceryRepo.js";
@@ -23,6 +24,13 @@ import { projectsRepo } from "../repos/projectsRepo.js";
 import { scheduleBlocksRepo } from "../repos/scheduleBlocksRepo.js";
 import { createFamilyEventSchema } from "../schemas/familyEvents.js";
 import { materializeForSource } from "../services/reminderService.js";
+import {
+  buildOutstanding,
+  nextDueForSeries,
+  nextMonthlyDate,
+  nextWeeklyDate,
+  KID_PAYMENT_CATEGORY,
+} from "../services/paymentsService.js";
 
 export const internalRoutes = new Hono();
 
@@ -470,4 +478,207 @@ internalRoutes.post("/family/:familyId/projects", async (c) => {
     status,
   });
   return c.json(row, 201);
+});
+
+// ── kid payments ─────────────────────────────────────────────────────────
+//
+// Kid payments are expenses rows (categoryName "ילדים וחוגים", kidId set,
+// paid=false until settled). The template+occurrence recurring model and the
+// outstanding/next-due computation are ported from the frontend in
+// services/paymentsService.ts so the bot answers exactly like the app does.
+
+// List outstanding ("to pay") kid payments, with computed next-due dates.
+// Optional ?kidName= scopes to one kid.
+internalRoutes.get("/family/:familyId/payments", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const kidNameParam = c.req.query("kidName")?.trim();
+
+  let kidIdFilter: string | null = null;
+  if (kidNameParam) {
+    kidIdFilter = await resolveKidId(familyId, kidNameParam);
+    if (kidIdFilter === null) return c.json([], 200);
+  }
+
+  const all = await expensesRepo.listByFamily(familyId);
+  let outstanding = buildOutstanding(all);
+  if (kidIdFilter) {
+    outstanding = outstanding.filter((p) => p.kidId === kidIdFilter);
+  }
+  return c.json(outstanding, 200);
+});
+
+// Create a kid payment (one-time or recurring). amount is in agorot.
+internalRoutes.post("/family/:familyId/payments", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const body = (await c.req.json()) as {
+    kidName?: unknown;
+    note?: unknown;
+    amount?: unknown;
+    date?: unknown;
+    isRecurring?: unknown;
+    recurrenceType?: unknown;
+    recurrenceDay?: unknown;
+  };
+
+  if (typeof body.kidName !== "string" || body.kidName.trim().length === 0) {
+    return c.json({ error: "kidName is required" }, 400);
+  }
+  if (typeof body.note !== "string" || body.note.trim().length === 0) {
+    return c.json({ error: "note (payment name) is required" }, 400);
+  }
+  const amount =
+    typeof body.amount === "number" && Number.isFinite(body.amount) && body.amount > 0
+      ? Math.round(body.amount)
+      : null;
+  if (amount === null) {
+    return c.json({ error: "amount (agorot, > 0) is required" }, 400);
+  }
+
+  const kidId = await resolveKidId(familyId, body.kidName);
+  if (kidId === null) {
+    return c.json({ error: `kid not found: ${body.kidName}` }, 404);
+  }
+
+  const isRecurring = body.isRecurring === true;
+  const recurrenceType =
+    body.recurrenceType === "weekly" || body.recurrenceType === "monthly"
+      ? body.recurrenceType
+      : isRecurring
+        ? "monthly"
+        : null;
+  const recurrenceDay =
+    typeof body.recurrenceDay === "number" ? Math.round(body.recurrenceDay) : null;
+
+  // Due/anchor date: recurring → next matching day for the cadence; one-time →
+  // provided date or today (Jerusalem).
+  let date: string;
+  if (isRecurring) {
+    date =
+      recurrenceType === "weekly"
+        ? nextWeeklyDate(recurrenceDay ?? 0)
+        : nextMonthlyDate(recurrenceDay ?? 1);
+  } else if (typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+    date = body.date;
+  } else {
+    date = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
+  }
+
+  const row = await expensesRepo.create({
+    familyId,
+    amount,
+    categoryName: KID_PAYMENT_CATEGORY,
+    kidId,
+    date,
+    note: body.note.trim(),
+    paid: false,
+    isRecurring,
+    recurrenceType: isRecurring ? recurrenceType : null,
+    recurrenceDay: isRecurring ? recurrenceDay : null,
+  });
+  return c.json(row, 201);
+});
+
+// Settle a kid payment by id. Recurring template → create a settled occurrence
+// at the computed next-due (template untouched). One-time → toggle paid=true.
+internalRoutes.post("/family/:familyId/payments/pay", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const body = (await c.req.json()) as { id?: unknown };
+  if (typeof body.id !== "string" || body.id.length === 0) {
+    return c.json({ error: "id is required" }, 400);
+  }
+
+  const all = await expensesRepo.listByFamily(familyId);
+  const payment = all.find((e) => e.id === body.id);
+  if (!payment) {
+    return c.json({ error: "payment not found" }, 404);
+  }
+
+  if (payment.isRecurring) {
+    const due = nextDueForSeries(payment, all);
+    const occurrence = await expensesRepo.create({
+      familyId,
+      amount: payment.amount,
+      categoryName: payment.categoryName,
+      kidId: payment.kidId,
+      date: due,
+      note: payment.note,
+      paid: true,
+      isRecurring: false,
+      recurrenceType: payment.recurrenceType,
+      recurrenceDay: payment.recurrenceDay,
+    });
+    return c.json({ settled: true, occurrence }, 201);
+  }
+
+  const row = await expensesRepo.update(payment.id, { paid: true });
+  return c.json({ settled: true, expense: row }, 200);
+});
+
+// ── expenses (general spending) ────────────────────────────────────────────
+
+// Log a settled expense in any budget category. amount is in agorot.
+internalRoutes.post("/family/:familyId/expenses", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const body = (await c.req.json()) as {
+    amount?: unknown;
+    categoryName?: unknown;
+    note?: unknown;
+    date?: unknown;
+  };
+
+  const amount =
+    typeof body.amount === "number" && Number.isFinite(body.amount) && body.amount > 0
+      ? Math.round(body.amount)
+      : null;
+  if (amount === null) {
+    return c.json({ error: "amount (agorot, > 0) is required" }, 400);
+  }
+
+  const categoryName =
+    typeof body.categoryName === "string" && body.categoryName.trim().length > 0
+      ? body.categoryName.trim()
+      : "אחר";
+  const date =
+    typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date)
+      ? body.date
+      : new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
+
+  const row = await expensesRepo.create({
+    familyId,
+    amount,
+    categoryName,
+    date,
+    note:
+      typeof body.note === "string" && body.note.trim().length > 0
+        ? body.note.trim()
+        : null,
+    paid: true,
+    isRecurring: false,
+  });
+  return c.json(row, 201);
+});
+
+// List paid expenses for a month (default current Jerusalem month), for the
+// bot's spending-summary reply. Excludes unpaid kid-payment rows.
+internalRoutes.get("/family/:familyId/expenses", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const month =
+    c.req.query("month") ??
+    new Date()
+      .toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" })
+      .slice(0, 7); // YYYY-MM
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    return c.json({ error: "month must be YYYY-MM" }, 400);
+  }
+  const rows = await expensesRepo.listByMonth(familyId, month);
+  const paid = rows
+    .filter((e) => e.paid !== false)
+    .map((e) => ({
+      id: e.id,
+      amount: e.amount,
+      categoryName: e.categoryName,
+      note: e.note,
+      date: e.date,
+    }));
+  return c.json({ month, expenses: paid }, 200);
 });
