@@ -407,7 +407,18 @@ internalRoutes.get("/family/:familyId/kids", async (c) => {
 
 internalRoutes.get("/family/:familyId/notes", async (c) => {
   const familyId = c.req.param("familyId")!;
-  const rows = await notesRepo.listByFamily(familyId);
+
+  // Optional kid scope: only notes owned by this kid (kidId). Mirrors the
+  // family-events / payments kidName pattern. Unknown kid → empty list.
+  const kidNameParam = c.req.query("kidName")?.trim();
+  let kidIdFilter: string | null = null;
+  if (kidNameParam) {
+    kidIdFilter = await resolveKidId(familyId, kidNameParam);
+    if (kidIdFilter === null) return c.json([], 200);
+  }
+
+  let rows = await notesRepo.listByFamily(familyId);
+  if (kidIdFilter) rows = rows.filter((n) => n.kidId === kidIdFilter);
   // Return pinned notes first, then by creation time.
   rows.sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
@@ -435,13 +446,24 @@ internalRoutes.get("/family/:familyId/projects", async (c) => {
   if (statusParam !== "active" && statusParam !== "done" && statusParam !== "all") {
     return c.json({ error: "status must be active|done|all" }, 400);
   }
+
+  // Optional kid scope: only projects owned by this kid (kidId). Mirrors the
+  // family-events / payments kidName pattern. Unknown kid → empty list.
+  const kidNameParam = c.req.query("kidName")?.trim();
+  let kidIdFilter: string | null = null;
+  if (kidNameParam) {
+    kidIdFilter = await resolveKidId(familyId, kidNameParam);
+    if (kidIdFilter === null) return c.json([], 200);
+  }
+
   const rows = await projectsRepo.listByFamily(familyId);
-  const filtered =
+  let filtered =
     statusParam === "all"
       ? rows
       : statusParam === "done"
         ? rows.filter((p) => p.status === "done")
         : rows.filter((p) => p.status !== "done");
+  if (kidIdFilter) filtered = filtered.filter((p) => p.kidId === kidIdFilter);
   return c.json(
     filtered.map((p) => ({
       id: p.id,
