@@ -759,3 +759,10 @@ This is a long entry because a lot landed. Skim the headers.
 - **RTL bug CONFIRMED via qa-verify**: modal action buttons (Save/Add/Cancel row) appear on **LEFT** side instead of RIGHT in Hebrew RTL. Affects ALL modals. Root cause: `src/ui/modalStyles.ts` `MS.actions` style. Fix needed.
 - **Secondary RTL issue**: FAB "+" buttons on Home screen appear on physical LEFT — should be RIGHT for RTL.
 - **Report**: `qa-reports/latest.md` — includes functional results + RTL verdict table + fix action items.
+
+### 2026-06-24 — Google sign-in frontend complete (branch `feature/google-signin`)
+- Added `useGoogleAuth` hook (expo-auth-session, client IDs in `src/auth/googleConfig.ts`), `GoogleSignInButton` + `AuthDivider` ("או"), `loginWithGoogle` action in `useAuthStore` (NEEDS_FAMILY = control flow, not UI error), `ApiAuthService.signInWithGoogle` → POST `/v1/auth/google`.
+- Wired "המשך עם Google" into `login.tsx` (existing users; NEEDS_FAMILY → register) and `register.tsx` (reuses family-name/invite fields so backend has family context). `AuthUser.username` now nullable — tsc clean. Committed `7a8a029`.
+- Verified on web preview: both screens render button + divider in RTL, zero console errors.
+- **BLOCKER**: live OAuth blocked until user publishes the Google consent screen (or adds self as test user) + sets openid/email/profile scopes. Backend (`2c9b943`) + `GOOGLE_CLIENT_IDS` Cloud Run env already deployed.
+- **Remaining**: user publishes consent screen → test live web → merge to master. Native needs reversed-iOS-client-ID scheme in app.json + Android SHA-1. Apple deferred.
