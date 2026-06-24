@@ -411,6 +411,9 @@ internalRoutes.get("/family/:familyId/notes", async (c) => {
       title: n.title,
       body: n.body,
       pinned: n.pinned,
+      // kidId labels a note as a kid's personal note; the bot resolves it to
+      // the kid's name. NULL = family-wide note (no owner badge).
+      kidId: n.kidId,
     })),
     200,
   );
@@ -437,6 +440,9 @@ internalRoutes.get("/family/:familyId/projects", async (c) => {
       title: p.title,
       status: p.status,
       progress: p.progress,
+      // kidId labels a project as a kid's personal project; the bot resolves
+      // it to the kid's name. NULL = family-wide project (no owner badge).
+      kidId: p.kidId,
     })),
     200,
   );
