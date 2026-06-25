@@ -13,7 +13,6 @@ import { Text, IconButton } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
-import { useAuthStore } from "@src/auth/useAuthStore";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
 import { t } from "@src/i18n";
@@ -46,14 +45,6 @@ export default function HomeScreen() {
   const kids = useFamilyStore((s) => s.kids);
   const familyName = useFamilyStore((s) => s.familyName);
   const familyEmoji = useFamilyStore((s) => s.customizations.familyEmoji) || DEFAULT_FAMILY_EMOJI;
-  const familyMembers = useFamilyStore((s) => s.familyMembers);
-  const userId = useAuthStore((s) => s.session?.user?.id);
-
-  // The family member linked to the logged-in user → header avatar.
-  const me = useMemo(
-    () => familyMembers.find((m) => m.userId === userId),
-    [familyMembers, userId],
-  );
 
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
 
@@ -98,11 +89,9 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* ── Header: avatar · family name · settings ── */}
+        {/* ── Header: family name · settings (spacer balances the cog) ── */}
         <View style={styles.headerRow}>
-          <View style={[styles.avatar, { backgroundColor: (me?.color ?? "#2AACB4") + "22" }]}>
-            <Text style={styles.avatarEmoji}>{me?.avatarEmoji ?? "👤"}</Text>
-          </View>
+          <View style={styles.headerSpacer} />
           <View style={[{ flexDirection: RTL_ROW }, styles.headerCenter]}>
             <View style={styles.familyBadge}>
               <Text style={styles.familyBadgeEmoji}>{familyEmoji}</Text>
@@ -198,15 +187,8 @@ const styles = StyleSheet.create({
     gap: S.sm,
     marginBottom: S.lg,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarEmoji: { fontSize: 24 },
-  headerCenter: { flex: 1, alignItems: "center", gap: S.xs },
+  headerSpacer: { width: 40 },
+  headerCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: S.xs },
   familyBadge: {
     width: 34,
     height: 34,
