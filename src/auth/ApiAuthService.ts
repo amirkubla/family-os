@@ -6,7 +6,13 @@
  */
 
 import type { AuthService } from "./AuthService";
-import type { AuthSession, RegisterInput, LoginInput, GoogleAuthInput } from "./types";
+import type {
+  AuthSession,
+  RegisterInput,
+  LoginInput,
+  GoogleAuthInput,
+  AppleAuthInput,
+} from "./types";
 import { saveSession, loadSession, clearSession } from "./storage";
 import { ApiError } from "@src/lib/api/http";
 import { getApiBaseUrl } from "@src/lib/api/baseUrl";
@@ -103,6 +109,32 @@ class ApiAuthServiceImpl implements AuthService {
         if (body?.error === "INVALID_GOOGLE_TOKEN") throw new Error("INVALID_GOOGLE_TOKEN");
       }
       throw new Error("GOOGLE_SIGNIN_FAILED");
+    }
+  }
+
+  async signInWithApple(input: AppleAuthInput): Promise<AuthSession> {
+    const { identityToken, fullName, familyName, familyCode, memberId } = input;
+    try {
+      const body: Record<string, string> = { identityToken };
+      if (fullName) body.fullName = fullName;
+      if (familyName) body.familyName = familyName;
+      if (familyCode) body.inviteCode = familyCode;
+      if (memberId) body.memberId = memberId;
+
+      const session = await authPost<AuthSession>("/v1/auth/apple", body);
+      await saveSession(session);
+      return session;
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: string } | undefined;
+        // Brand-new Apple user with no family yet — caller prompts + retries.
+        if (err.status === 409 && body?.error === "NEEDS_FAMILY") {
+          throw new Error("NEEDS_FAMILY");
+        }
+        if (body?.error === "INVALID_INVITE") throw new Error("INVALID_INVITE");
+        if (body?.error === "INVALID_APPLE_TOKEN") throw new Error("INVALID_APPLE_TOKEN");
+      }
+      throw new Error("APPLE_SIGNIN_FAILED");
     }
   }
 

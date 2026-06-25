@@ -447,6 +447,7 @@ export const users = pgTable(
     // Email + provider subject for social login. NULL for password-only users.
     email: text("email"),
     googleSub: text("google_sub"),
+    appleSub: text("apple_sub"),
     familyId: uuid("family_id")
       .notNull()
       .references(() => families.id, { onDelete: "cascade" }),
@@ -457,6 +458,7 @@ export const users = pgTable(
     // allowed while real values stay unique.
     uniqueIndex("users_username_uniq").on(t.username),
     uniqueIndex("users_google_sub_uniq").on(t.googleSub),
+    uniqueIndex("users_apple_sub_uniq").on(t.appleSub),
     index("users_family_id_idx").on(t.familyId),
   ],
 );

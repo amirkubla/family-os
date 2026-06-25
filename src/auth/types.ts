@@ -23,6 +23,18 @@ export type GoogleAuthInput = {
   memberId?: string;
 };
 
+export type AppleAuthInput = {
+  identityToken: string;
+  /** Apple returns the name ONLY on first authorization — forward it then. */
+  fullName?: string;
+  /** New-family creation (first sign-in). */
+  familyName?: string;
+  /** Join an existing family via invite (first sign-in). */
+  familyCode?: string;
+  /** Member to claim when joining via invite. */
+  memberId?: string;
+};
+
 export type AuthSession = {
   /** Opaque token string (dummy for now, JWT later). */
   token: string;

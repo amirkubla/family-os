@@ -1,151 +1,220 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
-import { Text, TextInput, Button, HelperText } from "react-native-paper";
+import React, { useState, useCallback } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { TextInput, Button, HelperText } from "react-native-paper";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuthStore } from "@src/auth/useAuthStore";
 import { t } from "@src/i18n";
 import { C, R, S } from "@src/ui/tokens";
-import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 import AuthShell, { AuthFooterLink, AuthField } from "@src/components/auth/AuthShell";
+import FamilyChooser, { FamilyChoice } from "@src/components/auth/FamilyChooser";
 import GoogleSignInButton from "@src/components/auth/GoogleSignInButton";
+import AppleSignInButton from "@src/components/auth/AppleSignInButton";
 import AuthDivider from "@src/components/auth/AuthDivider";
 import { useGoogleAuth } from "@src/auth/useGoogleAuth";
+import { useAppleAuth } from "@src/auth/useAppleAuth";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
+const EMPTY_CHOICE: FamilyChoice = { ready: false, joining: false };
 
-type InviteMember = {
-  id: string;
-  displayName: string;
-  role: string | null;
-  avatarEmoji: string | null;
-  color: string | null;
-};
-
+/**
+ * Two-step registration:
+ *   1. "identity" — pick how to sign up (Google OR username/password).
+ *   2. "family"   — only after the identity is accepted, choose a family
+ *                   (create new OR join via invite + member).
+ *
+ * Google: tapping the button runs OAuth immediately; a brand-new account
+ * (NEEDS_FAMILY) advances to the family step carrying the verified id_token.
+ * Password: filling valid credentials + "המשך" advances to the family step;
+ * the account is actually created on family-step submit.
+ */
 export default function RegisterScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ invite?: string }>();
   const register = useAuthStore((s) => s.register);
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
+  const loginWithApple = useAuthStore((s) => s.loginWithApple);
+
+  const [step, setStep] = useState<"identity" | "family">("identity");
+  const [method, setMethod] = useState<"google" | "apple" | "password">("password");
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [newFamilyName, setNewFamilyName] = useState(""); // surname for new families
-  const [inviteCode, setInviteCode] = useState(params.invite ?? "");
-  const [inviteFamilyName, setInviteFamilyName] = useState(""); // from invite validation
-  const [members, setMembers] = useState<InviteMember[]>([]);
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [validatingInvite, setValidatingInvite] = useState(false);
-  const [inviteError, setInviteError] = useState("");
+  // Verified social token + name awaiting a family choice (social methods).
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [pendingFullName, setPendingFullName] = useState<string | undefined>(undefined);
+  const [choice, setChoice] = useState<FamilyChoice>(EMPTY_CHOICE);
+  const handleChoice = useCallback((c: FamilyChoice) => setChoice(c), []);
+
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
   const [error, setError] = useState("");
 
   const usernameError = username.length > 0 && username.length < 3;
   const passwordError = password.length > 0 && password.length < 4;
 
-  // Validate invite code when it reaches 6 chars — UNCHANGED from the
-  // pre-redesign version; the form logic, API calls, and validation rules
-  // are intentionally untouched by this presentational redesign.
-  const validateInvite = useCallback(async (code: string) => {
-    if (code.length < 6) {
-      setInviteFamilyName("");
-      setMembers([]);
-      setSelectedMemberId(null);
-      setInviteError("");
-      return;
-    }
-    setValidatingInvite(true);
-    setInviteError("");
+  // ── Step 1: Google ──
+  const handleGoogleToken = async (idToken: string) => {
+    setError("");
+    setSocialLoading(true);
     try {
-      const res = await fetch(
-        `${BASE_URL}/v1/auth/invite/${encodeURIComponent(code.toUpperCase())}`,
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setInviteFamilyName(data.familyName);
-        setMembers(data.members ?? []);
-        setSelectedMemberId(null);
+      await loginWithGoogle({ idToken }); // returning user → straight in
+      router.replace("/(tabs)/today");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg === "NEEDS_FAMILY") {
+        setPendingToken(idToken);
+        setPendingFullName(undefined);
+        setMethod("google");
+        setStep("family");
       } else {
-        setInviteFamilyName("");
-        setMembers([]);
-        setSelectedMemberId(null);
-        setInviteError(t("auth.invalidFamilyCode"));
+        setError(t("auth.googleFailed"));
       }
-    } catch {
-      setInviteFamilyName("");
-      setMembers([]);
-      setSelectedMemberId(null);
-      setInviteError(t("auth.genericError"));
     } finally {
-      setValidatingInvite(false);
+      setSocialLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    if (inviteCode.length >= 6) {
-      validateInvite(inviteCode);
-    } else {
-      setInviteFamilyName("");
-      setMembers([]);
-      setSelectedMemberId(null);
-      setInviteError("");
+  // ── Step 1: Apple ──
+  const handleAppleCredential = async (identityToken: string, fullName?: string) => {
+    setError("");
+    setSocialLoading(true);
+    try {
+      await loginWithApple({ identityToken, fullName });
+      router.replace("/(tabs)/today");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg === "NEEDS_FAMILY") {
+        setPendingToken(identityToken);
+        setPendingFullName(fullName);
+        setMethod("apple");
+        setStep("family");
+      } else {
+        setError(t("auth.appleFailed"));
+      }
+    } finally {
+      setSocialLoading(false);
     }
-  }, [inviteCode, validateInvite]);
+  };
 
-  const joiningFamily = !!inviteFamilyName;
-  const familyNameError = !joiningFamily && newFamilyName.length > 0 && newFamilyName.length < 2;
+  const { promptAsync, ready: googleReady } = useGoogleAuth(handleGoogleToken);
+  const { available: appleAvailable, signIn: appleSignIn } = useAppleAuth(handleAppleCredential);
 
-  const handleRegister = async () => {
+  // ── Step 1: username/password → advance (account created on family submit) ──
+  const handlePasswordContinue = () => {
     setError("");
     if (username.length < 3 || password.length < 4) return;
-    if (inviteCode && inviteCode.length < 6) return;
-    if (!joiningFamily && newFamilyName.trim().length < 2) return;
+    setMethod("password");
+    setStep("family");
+  };
+
+  // ── Step 2: family chosen → finish ──
+  const handleFamilySubmit = async () => {
+    if (!choice.ready) return;
+    setError("");
+
+    if (method === "google" || method === "apple") {
+      if (!pendingToken) return;
+      setSocialLoading(true);
+      try {
+        if (method === "google") {
+          await loginWithGoogle({
+            idToken: pendingToken,
+            familyName: choice.familyName,
+            familyCode: choice.inviteCode,
+            memberId: choice.memberId,
+          });
+        } else {
+          await loginWithApple({
+            identityToken: pendingToken,
+            fullName: pendingFullName,
+            familyName: choice.familyName,
+            familyCode: choice.inviteCode,
+            memberId: choice.memberId,
+          });
+        }
+        router.replace("/(tabs)/today");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
+        if (msg === "INVALID_INVITE") setError(t("auth.invalidFamilyCode"));
+        else setError(method === "google" ? t("auth.googleFailed") : t("auth.appleFailed"));
+      } finally {
+        setSocialLoading(false);
+      }
+      return;
+    }
 
     setLoading(true);
     try {
       await register({
         username,
         password,
-        familyName: joiningFamily ? undefined : newFamilyName.trim(),
-        familyCode: inviteCode || undefined,
-        memberId: selectedMemberId ?? undefined,
+        familyName: choice.familyName,
+        familyCode: choice.inviteCode,
+        memberId: choice.memberId,
       });
+      router.replace("/(tabs)/today");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
-      if (msg === "USERNAME_TAKEN") setError(t("auth.usernameTaken"));
-      else if (msg === "INVALID_INVITE") setError(t("auth.invalidFamilyCode"));
-      else setError(t("auth.genericError"));
+      if (msg === "USERNAME_TAKEN") {
+        setError(t("auth.usernameTaken"));
+        setStep("identity"); // bounce back so they can fix the username
+      } else if (msg === "INVALID_INVITE") {
+        setError(t("auth.invalidFamilyCode"));
+      } else {
+        setError(t("auth.genericError"));
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Google register — reuses the family-name / invite fields already on this
-  // screen. familyName (new family) or inviteCode+member (join) gives the
-  // backend the family context, so no NEEDS_FAMILY round-trip is needed.
-  const handleGoogleToken = async (idToken: string) => {
+  const goBackToIdentity = () => {
+    setStep("identity");
     setError("");
-    setGoogleLoading(true);
-    try {
-      await loginWithGoogle({
-        idToken,
-        familyName: joiningFamily ? undefined : newFamilyName.trim() || undefined,
-        familyCode: inviteCode || undefined,
-        memberId: selectedMemberId ?? undefined,
-      });
-      router.replace("/(tabs)/today");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg === "NEEDS_FAMILY") setError(t("auth.googleNeedFamily"));
-      else if (msg === "INVALID_INVITE") setError(t("auth.invalidFamilyCode"));
-      else setError(t("auth.googleFailed"));
-    } finally {
-      setGoogleLoading(false);
-    }
   };
 
-  const { promptAsync, ready: googleReady } = useGoogleAuth(handleGoogleToken);
+  // ── Step 2: family ──
+  if (step === "family") {
+    const busy = loading || socialLoading;
+    return (
+      <AuthShell title={t("auth.chooseFamilyTitle")}>
+        <Text style={styles.subtitle}>{t("auth.chooseFamilySubtitle")}</Text>
 
+        <FamilyChooser onChange={handleChoice} initialInvite={params.invite} />
+
+        {error ? (
+          <HelperText type="error" visible padding="none" style={styles.helper}>
+            {error}
+          </HelperText>
+        ) : null}
+
+        <Button
+          mode="contained"
+          onPress={handleFamilySubmit}
+          loading={busy}
+          disabled={busy || !choice.ready}
+          buttonColor={C.purple}
+          style={styles.btn}
+          contentStyle={styles.btnContent}
+          labelStyle={styles.btnLabel}
+        >
+          {choice.joining ? t("auth.joinFamily") : t("auth.register")}
+        </Button>
+
+        <Button
+          mode="text"
+          onPress={goBackToIdentity}
+          disabled={busy}
+          textColor={C.textSecondary}
+          style={styles.backBtn}
+        >
+          {t("auth.back")}
+        </Button>
+      </AuthShell>
+    );
+  }
+
+  // ── Step 1: identity ──
   return (
     <AuthShell
       title={t("auth.registerTitle")}
@@ -157,110 +226,15 @@ export default function RegisterScreen() {
         />
       }
     >
-      {/* Invite code — trailing icon switches to a teal check when the
-          code resolves, giving instant feedback that the family was found. */}
-      <View>
-        <AuthField
-          label={t("auth.familyCode")}
-          value={inviteCode}
-          onChangeText={(text) => setInviteCode(text.toUpperCase())}
-          autoCapitalize="characters"
-          maxLength={6}
-          right={
-            validatingInvite ? (
-              <TextInput.Icon icon="loading" />
-            ) : inviteCode.length >= 6 && inviteFamilyName ? (
-              <TextInput.Icon icon="check-circle" color={C.teal} />
-            ) : (
-              <TextInput.Icon icon="account-group" />
-            )
-          }
-        />
-        {inviteError ? (
-          <HelperText type="error" visible padding="none" style={styles.helper}>
-            {inviteError}
-          </HelperText>
-        ) : !joiningFamily ? (
-          <HelperText type="info" visible padding="none" style={styles.helperInfo}>
-            {t("auth.inviteHint")}
-          </HelperText>
-        ) : null}
-        {joiningFamily ? (
-          <View style={styles.familyBadge}>
-            <Text style={styles.familyBadgeText}>
-              {t("auth.joiningFamily")} {inviteFamilyName} ✨
-            </Text>
-          </View>
-        ) : null}
-      </View>
+      <GoogleSignInButton
+        onPress={() => promptAsync()}
+        loading={socialLoading}
+        disabled={!googleReady || socialLoading || loading}
+      />
 
-      {/* Member picker — shown when invite is valid and has unlinked members */}
-      {joiningFamily && members.length > 0 && (
-        <View style={styles.memberPickerContainer}>
-          <Text style={styles.memberPickerTitle}>{t("auth.whoAreYou")}</Text>
-          <Text style={styles.memberPickerSubtitle}>{t("auth.pickMember")}</Text>
-          <View style={styles.memberPickerRow}>
-            {members.map((m) => {
-              const selected = selectedMemberId === m.id;
-              const memberColor = m.color ?? C.purple;
-              return (
-                <Pressable
-                  key={m.id}
-                  style={[
-                    styles.memberChip,
-                    {
-                      backgroundColor: selected ? memberColor + "20" : C.surface,
-                      borderColor: selected ? memberColor : C.border,
-                      borderWidth: selected ? 2 : 1,
-                    },
-                  ]}
-                  onPress={() => setSelectedMemberId(selected ? null : m.id)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={m.displayName}
-                >
-                  <View
-                    style={[
-                      styles.memberChipEmoji,
-                      { backgroundColor: memberColor + "18" },
-                    ]}
-                  >
-                    <Text style={styles.memberEmojiText}>
-                      {m.avatarEmoji ?? "👤"}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.memberChipName,
-                      selected && { color: memberColor, fontWeight: "800" },
-                    ]}
-                  >
-                    {m.displayName}
-                  </Text>
-                  {selected && <Text style={{ fontSize: 14 }}>✓</Text>}
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
+      <AppleSignInButton onPress={appleSignIn} available={appleAvailable} />
 
-      {/* Family name — only for new families (not invite join) */}
-      {!joiningFamily && (
-        <View>
-          <AuthField
-            label={t("auth.familyNamePlaceholder")}
-            value={newFamilyName}
-            onChangeText={setNewFamilyName}
-            right={<TextInput.Icon icon="home-heart" />}
-          />
-          {familyNameError ? (
-            <HelperText type="error" visible padding="none" style={styles.helper}>
-              {t("settings.nameMinLength")}
-            </HelperText>
-          ) : null}
-        </View>
-      )}
+      <AuthDivider label={t("auth.orWithPassword")} />
 
       <View>
         <AuthField
@@ -283,6 +257,8 @@ export default function RegisterScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          onSubmitEditing={handlePasswordContinue}
+          returnKeyType="next"
           right={<TextInput.Icon icon="lock" />}
         />
         {passwordError ? (
@@ -300,103 +276,30 @@ export default function RegisterScreen() {
 
       <Button
         mode="contained"
-        onPress={handleRegister}
-        loading={loading}
-        disabled={
-          loading ||
-          username.length < 3 ||
-          password.length < 4 ||
-          (!joiningFamily && newFamilyName.trim().length < 2)
-        }
+        onPress={handlePasswordContinue}
+        disabled={loading || username.length < 3 || password.length < 4}
         buttonColor={C.purple}
         style={styles.btn}
         contentStyle={styles.btnContent}
         labelStyle={styles.btnLabel}
       >
-        {joiningFamily ? t("auth.joinFamily") : t("auth.register")}
+        {t("auth.continue")}
       </Button>
-
-      <AuthDivider label={t("auth.or")} />
-
-      <GoogleSignInButton
-        onPress={() => promptAsync()}
-        loading={googleLoading}
-        disabled={
-          !googleReady ||
-          googleLoading ||
-          loading ||
-          (!joiningFamily && newFamilyName.trim().length < 2)
-        }
-      />
     </AuthShell>
   );
 }
 
 const styles = StyleSheet.create({
   helper: { textAlign: TEXT_RIGHT, marginTop: 2 },
-  helperInfo: { textAlign: TEXT_RIGHT, marginTop: 2, color: C.textMuted },
   btn: { borderRadius: R.md, marginTop: S.sm },
   btnContent: { paddingVertical: 8 },
   btnLabel: { fontSize: 16, fontWeight: "600" },
-
-  // Family badge — quiet teal confirmation when an invite resolves.
-  familyBadge: {
-    backgroundColor: C.teal + "14",
-    borderRadius: R.md,
-    paddingVertical: S.sm,
-    paddingHorizontal: S.md,
-    marginTop: S.sm,
-    alignSelf: "center",
-  },
-  familyBadgeText: {
-    color: C.teal,
+  backBtn: { marginTop: S.xs },
+  subtitle: {
     fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-
-  // Member picker
-  memberPickerContainer: { gap: S.xs },
-  memberPickerTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: C.textPrimary,
-    textAlign: TEXT_RIGHT,
-    writingDirection: "rtl",
-  },
-  memberPickerSubtitle: {
-    fontSize: 13,
     color: C.textSecondary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
     marginBottom: S.sm,
-  },
-  memberPickerRow: {
-    flexDirection: RTL_ROW,
-    flexWrap: "wrap",
-    gap: S.sm,
-  },
-  memberChip: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    gap: S.sm,
-    paddingVertical: S.sm + 2,
-    paddingHorizontal: S.md,
-    borderRadius: R.lg,
-    minWidth: 100,
-  },
-  memberChipEmoji: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  memberEmojiText: { fontSize: 20 },
-  memberChipName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: C.textPrimary,
-    flex: 1,
   },
 });

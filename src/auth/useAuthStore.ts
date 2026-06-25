@@ -7,7 +7,13 @@
  */
 
 import { create } from "zustand";
-import type { AuthSession, RegisterInput, LoginInput, GoogleAuthInput } from "./types";
+import type {
+  AuthSession,
+  RegisterInput,
+  LoginInput,
+  GoogleAuthInput,
+  AppleAuthInput,
+} from "./types";
 import { authService } from "./ApiAuthService";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
@@ -28,6 +34,7 @@ interface AuthState {
   register: (input: RegisterInput) => Promise<void>;
   login: (input: LoginInput) => Promise<void>;
   loginWithGoogle: (input: GoogleAuthInput) => Promise<void>;
+  loginWithApple: (input: AppleAuthInput) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -99,6 +106,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ session, status: "loggedIn", error: undefined });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "GOOGLE_SIGNIN_FAILED";
+      // NEEDS_FAMILY is an expected control-flow signal, not a UI error.
+      if (msg !== "NEEDS_FAMILY") set({ error: msg });
+      throw err;
+    }
+  },
+
+  loginWithApple: async (input) => {
+    set({ error: undefined });
+    try {
+      const session = await authService.signInWithApple(input);
+      set({ session, status: "loggedIn", error: undefined });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "APPLE_SIGNIN_FAILED";
       // NEEDS_FAMILY is an expected control-flow signal, not a UI error.
       if (msg !== "NEEDS_FAMILY") set({ error: msg });
       throw err;

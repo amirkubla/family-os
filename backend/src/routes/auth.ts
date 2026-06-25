@@ -10,6 +10,7 @@ import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import bcrypt from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { families, familyMembers } from "../db/schema.js";
@@ -278,6 +279,34 @@ async function issueSession(user: {
   };
 }
 
+/**
+ * Claim the chosen unlinked member for a joining user, or create a fresh
+ * member if no valid one was picked. Shared by the Google + Apple join paths.
+ */
+async function linkOrCreateMember(
+  familyId: string,
+  userId: string,
+  displayName: string,
+  memberId?: string,
+) {
+  if (memberId) {
+    const [member] = await db
+      .select()
+      .from(familyMembers)
+      .where(eq(familyMembers.id, memberId));
+    if (member && member.familyId === familyId && !member.userId) {
+      await db
+        .update(familyMembers)
+        .set({ userId })
+        .where(eq(familyMembers.id, memberId));
+      return;
+    }
+  }
+  await db
+    .insert(familyMembers)
+    .values({ familyId, userId, displayName, role: "parent", isActive: true });
+}
+
 authRoutes.post("/google", async (c) => {
   const { idToken, familyName, inviteCode, memberId } = await c.req.json<{
     idToken?: string;
@@ -323,27 +352,7 @@ authRoutes.post("/google", async (c) => {
 
     const user = await usersRepo.create({ googleSub, email, familyId });
     await invitesRepo.markUsed(invite.id, user.id);
-
-    if (memberId) {
-      const [member] = await db
-        .select()
-        .from(familyMembers)
-        .where(eq(familyMembers.id, memberId));
-      if (member && member.familyId === familyId && !member.userId) {
-        await db
-          .update(familyMembers)
-          .set({ userId: user.id })
-          .where(eq(familyMembers.id, memberId));
-      } else {
-        await db
-          .insert(familyMembers)
-          .values({ familyId, userId: user.id, displayName, role: "parent", isActive: true });
-      }
-    } else {
-      await db
-        .insert(familyMembers)
-        .values({ familyId, userId: user.id, displayName, role: "parent", isActive: true });
-    }
+    await linkOrCreateMember(familyId, user.id, displayName, memberId);
 
     return c.json(await issueSession(user), 201);
   }
@@ -359,6 +368,99 @@ authRoutes.post("/google", async (c) => {
   }
 
   // First Google sign-in with no family context — client must prompt + retry.
+  return c.json({ error: "NEEDS_FAMILY" }, 409);
+});
+
+// ---------------------------------------------------------------------------
+// POST /apple — sign in / register with an Apple identity token
+// ---------------------------------------------------------------------------
+//
+// Mirrors /google. Apple's identity token is a JWT signed with Apple's keys;
+// we verify it against Apple's JWKS (issuer + audience = our app's client IDs,
+// i.e. the iOS bundle ID). Apple returns the user's name ONLY on the first
+// authorization, so the client forwards `fullName` then; afterwards we fall
+// back to the email's local part. Brand-new users with no family yet get a
+// 409 NEEDS_FAMILY, exactly like Google.
+
+const APPLE_JWKS = createRemoteJWKSet(
+  new URL("https://appleid.apple.com/auth/keys"),
+);
+
+/** Allowed audiences = our Apple client IDs (iOS bundle ID, +Services ID for web). */
+function appleAudiences(): string[] {
+  return (process.env.APPLE_CLIENT_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+authRoutes.post("/apple", async (c) => {
+  const { identityToken, fullName, familyName, inviteCode, memberId } =
+    await c.req.json<{
+      identityToken?: string;
+      fullName?: string;
+      familyName?: string;
+      inviteCode?: string;
+      memberId?: string;
+    }>();
+
+  if (!identityToken) return c.json({ error: "Missing identityToken" }, 400);
+
+  const audiences = appleAudiences();
+  if (audiences.length === 0) {
+    return c.json({ error: "APPLE_NOT_CONFIGURED" }, 500);
+  }
+
+  // Verify the Apple identity token (signature, issuer, audience, expiry).
+  let payload;
+  try {
+    const result = await jwtVerify(identityToken, APPLE_JWKS, {
+      issuer: "https://appleid.apple.com",
+      audience: audiences,
+    });
+    payload = result.payload;
+  } catch {
+    return c.json({ error: "INVALID_APPLE_TOKEN" }, 401);
+  }
+  if (!payload?.sub) {
+    return c.json({ error: "INVALID_APPLE_TOKEN" }, 401);
+  }
+
+  const appleSub = payload.sub;
+  const email = typeof payload.email === "string" ? payload.email : undefined;
+  const displayName =
+    fullName?.trim() || (email ? email.split("@")[0] : "") || "חבר";
+
+  // ── Returning Apple user → sign in ──
+  const existing = await usersRepo.getByAppleSub(appleSub);
+  if (existing) {
+    return c.json(await issueSession(existing));
+  }
+
+  // ── New Apple user → join via invite ──
+  if (inviteCode) {
+    const invite = await invitesRepo.getValidByCode(inviteCode);
+    if (!invite) return c.json({ error: "INVALID_INVITE" }, 400);
+    const familyId = invite.familyId;
+
+    const user = await usersRepo.create({ appleSub, email, familyId });
+    await invitesRepo.markUsed(invite.id, user.id);
+    await linkOrCreateMember(familyId, user.id, displayName, memberId);
+
+    return c.json(await issueSession(user), 201);
+  }
+
+  // ── New Apple user → create a new family (onboarding creates the member) ──
+  if (familyName && familyName.trim()) {
+    const [family] = await db
+      .insert(families)
+      .values({ name: familyName.trim() })
+      .returning();
+    const user = await usersRepo.create({ appleSub, email, familyId: family.id });
+    return c.json(await issueSession(user), 201);
+  }
+
+  // First Apple sign-in with no family context — client must prompt + retry.
   return c.json({ error: "NEEDS_FAMILY" }, 409);
 });
 

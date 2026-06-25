@@ -30,6 +30,14 @@ export const usersRepo = {
     return row;
   },
 
+  async getByAppleSub(appleSub: string): Promise<User | undefined> {
+    const [row] = await db
+      .select()
+      .from(users)
+      .where(eq(users.appleSub, appleSub));
+    return row;
+  },
+
   async getByEmail(email: string): Promise<User | undefined> {
     const [row] = await db.select().from(users).where(eq(users.email, email));
     return row;

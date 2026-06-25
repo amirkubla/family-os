@@ -183,6 +183,13 @@
       "when": 1781800000000,
       "tag": "0025_users_social_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1781900000000,
+      "tag": "0026_users_apple_sub",
+      "breakpoints": true
     }
   ]
 }
