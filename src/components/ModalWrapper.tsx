@@ -64,7 +64,7 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
                 A translucent disc keeps the white chevron visible whether it sits
                 over the dark backdrop (web) or the card edge (phone). */}
             <Pressable
-              style={[styles.sideArrow, styles.arrowStart]}
+              style={[styles.sideArrow, styles.arrowRight]}
               onPress={carousel.onPrev}
               hitSlop={8}
               accessibilityRole="button"
@@ -74,7 +74,7 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
               <Ionicons name="chevron-forward" size={26} color="#FFFFFF" style={styles.arrowIcon} />
             </Pressable>
             <Pressable
-              style={[styles.sideArrow, styles.arrowEnd]}
+              style={[styles.sideArrow, styles.arrowLeft]}
               onPress={carousel.onNext}
               hitSlop={8}
               accessibilityRole="button"
@@ -137,8 +137,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(15,15,30,0.45)",
   },
-  arrowStart: { right: S.xs },
-  arrowEnd: { left: S.xs },
+  // Native (iOS/Android) auto-swaps absolute left/right under RTL
+  // (I18nManager.swapLeftAndRightInRTL); RN-Web does not. Pick the inset that
+  // lands on the intended PHYSICAL edge per platform so the chevrons always
+  // point outward (→ on the right, ← on the left) on every platform.
+  arrowRight: Platform.OS === "web" ? { right: S.xs } : { left: S.xs },
+  arrowLeft: Platform.OS === "web" ? { left: S.xs } : { right: S.xs },
   // Soft dark halo so the white chevron stands out on any background.
   arrowIcon: {
     textShadowColor: "rgba(0,0,0,0.45)",

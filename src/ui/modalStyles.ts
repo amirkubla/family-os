@@ -145,6 +145,13 @@ export const MS = StyleSheet.create({
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
   },
+  // Numeric fields (amounts, quantities): numbers are inherently LTR, and a
+  // numeric-keyboard TextInput with writingDirection "rtl" SWALLOWS typed
+  // digits on iOS. Always use this for keyboardType="numeric" inputs.
+  inputContentNumeric: {
+    textAlign: TEXT_RIGHT,
+    writingDirection: "ltr",
+  },
   error: {
     color: C.red,
     fontSize: 12,

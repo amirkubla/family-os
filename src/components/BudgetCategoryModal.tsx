@@ -94,7 +94,7 @@ export default function BudgetCategoryModal({ visible, onDismiss, editCategory, 
         keyboardType="numeric"
         mode="outlined"
         style={MS.input}
-        contentStyle={MS.inputContent}
+        contentStyle={MS.inputContentNumeric}
       />
 
       <View style={MS.actions}>
