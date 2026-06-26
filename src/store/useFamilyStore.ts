@@ -192,6 +192,8 @@ interface FamilyState {
     color?: string;
     isRecurring?: boolean;
     date?: string;
+    endDate?: string;
+    allDay?: boolean;
     reminders?: number[];
   }) => FamilyEvent;
   updateFamilyEvent: (
@@ -199,7 +201,7 @@ interface FamilyState {
     patch: Partial<
       Pick<
         FamilyEvent,
-        "title" | "assigneeType" | "assigneeId" | "daysOfWeek" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "reminders"
+        "title" | "assigneeType" | "assigneeId" | "daysOfWeek" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "endDate" | "allDay" | "reminders"
       >
     >
   ) => void;

@@ -148,6 +148,8 @@ export interface ApiFamilyEvent {
   color: string | null;
   isRecurring: boolean;
   date: string | null;
+  endDate: string | null;
+  allDay: boolean;
   reminders: string | null; // JSON string e.g. "[1440,60,5]"
   createdAt: string;
   updatedAt: string;

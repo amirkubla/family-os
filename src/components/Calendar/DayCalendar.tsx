@@ -242,13 +242,13 @@ export default function DayCalendar({
 
   return (
     <View style={styles.root}>
-      {/* Header: prev  date label  next */}
+      {/* Header (RTL): left arrow = next day, right arrow = previous. */}
       <View style={styles.header}>
-        <IconButton icon="chevron-right" size={22} onPress={goForward} />
+        <IconButton icon="chevron-right" size={22} onPress={goBack} />
         <Text variant="titleMedium" style={styles.dateLabel}>
           {formatDateHe(selectedDate)}
         </Text>
-        <IconButton icon="chevron-left" size={22} onPress={goBack} />
+        <IconButton icon="chevron-left" size={22} onPress={goForward} />
       </View>
 
       {/* Time grid */}

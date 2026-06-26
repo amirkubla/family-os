@@ -19,6 +19,15 @@ function getDays(e: FamilyEvent): number[] {
 }
 
 /**
+ * Does a one-time event fall on `dateStr`? Multi-day events span their full
+ * [date … endDate] range (inclusive); single-day events match the exact date.
+ */
+export function oneTimeEventOnDate(e: FamilyEvent, dateStr: string): boolean {
+  if (e.isRecurring || !e.date) return false;
+  return dateStr >= e.date && dateStr <= (e.endDate || e.date);
+}
+
+/**
  * Family events for a specific date.
  * Returns both recurring events for that date's DOW and one-time events on that exact date.
  */
@@ -33,7 +42,7 @@ export function useFamilyEventsForDate(
         .filter(
           (e) =>
             (e.isRecurring && getDays(e).includes(dayOfWeek)) ||
-            (!e.isRecurring && e.date === dateStr),
+            oneTimeEventOnDate(e, dateStr),
         )
         .sort((a, b) => a.startMinutes - b.startMinutes),
     [events, dateStr, dayOfWeek],
@@ -55,7 +64,7 @@ export function useTodayFamilyEvents(
         .filter(
           (e) =>
             (e.isRecurring && getDays(e).includes(dayOfWeek)) ||
-            (!e.isRecurring && e.date === dateStr),
+            oneTimeEventOnDate(e, dateStr),
         )
         .sort((a, b) => a.startMinutes - b.startMinutes),
     [events, dateStr, dayOfWeek],

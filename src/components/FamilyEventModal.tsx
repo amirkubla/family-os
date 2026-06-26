@@ -40,8 +40,10 @@ const schema = z
     assigneeType: z.enum(["family", "member", "kid"]),
     assigneeId: z.string().optional(),
     isRecurring: z.boolean(),
+    allDay: z.boolean(),
     daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1),
     date: z.string().optional(),
+    endDate: z.string().optional(),
     startTime: z
       .string()
       .regex(timeRegex, t("eventModal.useHHMM"))
@@ -54,6 +56,7 @@ const schema = z
   })
   .refine(
     (d) => {
+      if (d.allDay) return true; // all-day ignores the time range
       const s = hhmmToMinutes(d.startTime);
       const e = hhmmToMinutes(d.endTime);
       return !isNaN(s) && !isNaN(e) && e > s;
@@ -73,6 +76,11 @@ const schema = z
       );
     },
     { message: t("eventModal.invalidDate"), path: ["date"] },
+  )
+  .refine(
+    // Multi-day end date must not precede the start date.
+    (d) => d.isRecurring || !d.endDate || !d.date || d.endDate >= d.date,
+    { message: t("eventModal.endDateBeforeStart"), path: ["endDate"] },
   );
 
 type FormData = z.infer<typeof schema>;
@@ -95,6 +103,8 @@ interface Props {
     location?: string;
     isRecurring: boolean;
     date?: string;
+    endDate?: string;
+    allDay?: boolean;
     reminders?: number[];
   }) => void;
   onDelete?: () => void;
@@ -132,8 +142,10 @@ export default function FamilyEventModal({
       assigneeType: "family",
       assigneeId: undefined,
       isRecurring: true,
+      allDay: false,
       daysOfWeek: defaultDaysOfWeek,
       date: defaultDate ?? toYMD(new Date()),
+      endDate: undefined,
       startTime: "09:00",
       endTime: "10:00",
       location: "",
@@ -147,8 +159,10 @@ export default function FamilyEventModal({
         assigneeType: editEvent.assigneeType,
         assigneeId: editEvent.assigneeId,
         isRecurring: editEvent.isRecurring,
+        allDay: editEvent.allDay ?? false,
         daysOfWeek: editEvent.daysOfWeek,
         date: editEvent.date ?? toYMD(new Date()),
+        endDate: editEvent.endDate,
         startTime: minutesToHHMM(editEvent.startMinutes),
         endTime: minutesToHHMM(editEvent.endMinutes),
         location: editEvent.location ?? "",
@@ -161,8 +175,10 @@ export default function FamilyEventModal({
         assigneeType: "family",
         assigneeId: undefined,
         isRecurring: hasSlotTime ? false : true,
+        allDay: false,
         daysOfWeek: defaultDaysOfWeek,
         date: defaultDate ?? toYMD(new Date()),
+        endDate: undefined,
         startTime: defaultStartTime ?? "09:00",
         endTime: defaultEndTime ?? "10:00",
         location: "",
@@ -174,6 +190,8 @@ export default function FamilyEventModal({
   const assigneeType = watch("assigneeType");
   const selectedDays = watch("daysOfWeek");
   const isRecurring = watch("isRecurring");
+  const allDay = watch("allDay");
+  const startDate = watch("date");
   const assigneeId = watch("assigneeId");
 
   // In-flight guard against rapid double-clicks (QA Pass 1 BUG #2).
@@ -195,16 +213,25 @@ export default function FamilyEventModal({
       ? data.daysOfWeek
       : [dayOfWeekFromYMD(data.date!)];
 
+    // Multi-day end date only when it's a one-time event and is after the start.
+    const endDate =
+      !data.isRecurring && data.endDate && data.date && data.endDate > data.date
+        ? data.endDate
+        : undefined;
+
     onSubmit({
       title: data.title.trim(),
       assigneeType: data.assigneeType as AssigneeType,
       assigneeId: data.assigneeType === "family" ? undefined : data.assigneeId,
       daysOfWeek,
-      startMinutes: hhmmToMinutes(data.startTime),
-      endMinutes: hhmmToMinutes(data.endTime),
+      // All-day events span the whole day (0–1440) and ignore the pickers.
+      startMinutes: data.allDay ? 0 : hhmmToMinutes(data.startTime),
+      endMinutes: data.allDay ? 1440 : hhmmToMinutes(data.endTime),
       location: data.location?.trim() || undefined,
       isRecurring: data.isRecurring,
       date: data.isRecurring ? undefined : data.date,
+      endDate,
+      allDay: data.allDay,
       reminders: selectedReminders.length > 0 ? selectedReminders : undefined,
     });
     onDismiss();
@@ -391,6 +418,24 @@ export default function FamilyEventModal({
               )}
             />
             {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
+
+            {/* Optional multi-day end date — leave equal to the start for a
+                single-day event; pick a later date to span a range. */}
+            <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
+              <Text style={MS.sectionIcon}>📆</Text>
+              <Text style={MS.sectionLabel}>{t("eventModal.endDate")}</Text>
+            </View>
+            <Controller
+              control={control}
+              name="endDate"
+              render={({ field: { onChange, value } }) => (
+                <DatePicker
+                  value={value || startDate || toYMD(new Date())}
+                  onChange={onChange}
+                />
+              )}
+            />
+            {errors.endDate && <Text style={MS.error}>{errors.endDate.message}</Text>}
           </>
         )}
       </View>
@@ -399,31 +444,45 @@ export default function FamilyEventModal({
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
           <Text style={MS.sectionIcon}>⏰</Text>
-          <Text style={MS.sectionLabel}>{t("eventModal.startTime")}</Text>
+          <Text style={MS.sectionLabel}>{t("eventModal.time")}</Text>
         </View>
-        <View style={MS.timeRow}>
-          <View style={MS.timeCol}>
-            <Text style={MS.timeLabel}>{t("eventModal.startTime")}</Text>
-            <Controller
-              control={control}
-              name="startTime"
-              render={({ field: { onChange, value } }) => (
-                <WheelTimePicker value={value} onChange={onChange} />
-              )}
-            />
-          </View>
-          <View style={MS.timeCol}>
-            <Text style={MS.timeLabel}>{t("eventModal.endTime")}</Text>
-            <Controller
-              control={control}
-              name="endTime"
-              render={({ field: { onChange, value } }) => (
-                <WheelTimePicker value={value} onChange={onChange} />
-              )}
-            />
-          </View>
+        <View style={MS.segmented}>
+          <SegmentedPills
+            value={allDay ? "allDay" : "timed"}
+            onChange={(v) => setValue("allDay", v === "allDay")}
+            options={[
+              { value: "timed", label: t("eventModal.timed") },
+              { value: "allDay", label: t("eventModal.allDay") },
+            ]}
+          />
         </View>
-        {errors.endTime && <Text style={MS.error}>{errors.endTime.message}</Text>}
+        {!allDay && (
+          <>
+            <View style={MS.timeRow}>
+              <View style={MS.timeCol}>
+                <Text style={MS.timeLabel}>{t("eventModal.startTime")}</Text>
+                <Controller
+                  control={control}
+                  name="startTime"
+                  render={({ field: { onChange, value } }) => (
+                    <WheelTimePicker value={value} onChange={onChange} />
+                  )}
+                />
+              </View>
+              <View style={MS.timeCol}>
+                <Text style={MS.timeLabel}>{t("eventModal.endTime")}</Text>
+                <Controller
+                  control={control}
+                  name="endTime"
+                  render={({ field: { onChange, value } }) => (
+                    <WheelTimePicker value={value} onChange={onChange} />
+                  )}
+                />
+              </View>
+            </View>
+            {errors.endTime && <Text style={MS.error}>{errors.endTime.message}</Text>}
+          </>
+        )}
       </View>
 
       {/* ── Location section ── */}

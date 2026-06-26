@@ -56,6 +56,8 @@ export const familyEventsRepo = {
           location: sql`excluded.location`,
           color: sql`excluded.color`,
           date: sql`excluded.date`,
+          endDate: sql`excluded.end_date`,
+          allDay: sql`excluded.all_day`,
           isRecurring: sql`excluded.is_recurring`,
           reminders: sql`excluded.reminders`,
           updatedAt: new Date(),

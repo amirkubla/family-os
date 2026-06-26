@@ -117,13 +117,15 @@ export default function MonthCalendar({
 
   return (
     <View style={styles.root}>
-      {/* Header: > Month Year < (RTL: forward on left, back on right) */}
+      {/* Header: RTL — left arrow advances (next), right arrow goes back.
+          `flexDirection:row` mirrors in RTL, so chevron-right sits on the right
+          (→ back) and chevron-left on the left (→ forward/next). */}
       <View style={styles.header}>
-        <IconButton icon="chevron-right" size={22} onPress={goForward} />
+        <IconButton icon="chevron-right" size={22} onPress={goBack} />
         <Text variant="titleMedium" style={styles.monthLabel}>
           {monthLabel}
         </Text>
-        <IconButton icon="chevron-left" size={22} onPress={goBack} />
+        <IconButton icon="chevron-left" size={22} onPress={goForward} />
       </View>
 
       {/* Day-of-week labels */}

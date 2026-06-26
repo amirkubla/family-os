@@ -102,7 +102,12 @@ function EventRow({
         </View>
         <View style={styles.eventMetaRow}>
           <Text variant="bodySmall" style={styles.eventTime}>
-            {minutesToHHMM(event.startMinutes)} – {minutesToHHMM(event.endMinutes)}
+            {event.allDay
+              ? t("eventModal.allDay")
+              : `${minutesToHHMM(event.startMinutes)} – ${minutesToHHMM(event.endMinutes)}`}
+            {event.endDate && event.date && event.endDate > event.date
+              ? `  ·  ${event.date.slice(8, 10)}/${event.date.slice(5, 7)}–${event.endDate.slice(8, 10)}/${event.endDate.slice(5, 7)}`
+              : ""}
             {event.location ? `  ·  ${event.location}` : ""}
           </Text>
           <Text
@@ -269,6 +274,8 @@ export default function CalendarScreen() {
     location?: string;
     isRecurring: boolean;
     date?: string;
+    endDate?: string;
+    allDay?: boolean;
   }) => {
     if (editingEvent) {
       updateFamilyEventRemote(editingEvent.id, data);
@@ -313,7 +320,15 @@ export default function CalendarScreen() {
       }
     }
     for (const e of oneTimeEvents) {
-      if (e.date) marks[e.date] = { dotColor: C.purple };
+      if (!e.date) continue;
+      // Multi-day events: mark every day in the [date…endDate] range.
+      const end = e.endDate && e.endDate > e.date ? e.endDate : e.date;
+      const cur = new Date(e.date + "T00:00:00");
+      const last = new Date(end + "T00:00:00");
+      for (let i = 0; i < 366 && cur <= last; i++) {
+        marks[toYMD(cur)] = { dotColor: C.purple };
+        cur.setDate(cur.getDate() + 1);
+      }
     }
     for (const b of kidOneTimeBlocks) {
       if (b.date) marks[b.date] = { dotColor: C.purple };

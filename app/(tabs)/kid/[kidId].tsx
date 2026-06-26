@@ -535,6 +535,8 @@ export default function KidScheduleScreen() {
     location?: string;
     isRecurring: boolean;
     date?: string;
+    endDate?: string;
+    allDay?: boolean;
     reminders?: number[];
   }) => {
     if (editingEvent) {

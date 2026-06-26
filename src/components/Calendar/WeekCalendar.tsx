@@ -18,6 +18,7 @@ import { minutesToHHMM } from "@src/utils/time";
 import {
   useFamilyEventRecurringByDay,
   useFamilyEventOneTimeBlocks,
+  oneTimeEventOnDate,
 } from "@src/store/familyEventSelectors";
 import {
   useAllKidRecurringByDay,
@@ -271,9 +272,9 @@ export default function WeekCalendar({
           icon,
         });
       }
-      // Family – one-time
+      // Family – one-time (multi-day events span their whole [date…endDate])
       for (const e of familyOneTimeEvents.filter(keepEvent)) {
-        if (e.date === dateStr) {
+        if (oneTimeEventOnDate(e, dateStr)) {
           const icon = e.assigneeType === "kid" && e.assigneeId
             ? (kids.find((k) => k.id === e.assigneeId)?.emoji ?? "👨‍👩‍👧‍👦")
             : e.assigneeType === "member" && e.assigneeId
@@ -340,13 +341,13 @@ export default function WeekCalendar({
   // ── Render ──
   return (
     <View style={styles.root}>
-      {/* Header: chevron  week-range  chevron */}
+      {/* Header (RTL): left arrow = next week, right arrow = previous. */}
       <View style={styles.header}>
-        <IconButton icon="chevron-right" size={22} onPress={goForward} />
+        <IconButton icon="chevron-right" size={22} onPress={goBack} />
         <Text variant="titleMedium" style={styles.weekLabel}>
           {weekLabel}
         </Text>
-        <IconButton icon="chevron-left" size={22} onPress={goBack} />
+        <IconButton icon="chevron-left" size={22} onPress={goForward} />
       </View>
 
       {/* Day headers — spacer at end so it sits on the LEFT in both RTL_ROW modes */}

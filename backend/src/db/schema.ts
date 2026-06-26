@@ -356,7 +356,11 @@ export const familyEvents = pgTable(
     location: text("location"),
     color: text("color"),
     isRecurring: boolean("is_recurring").default(true).notNull(),
-    date: text("date"), // "YYYY-MM-DD" for one-time events
+    date: text("date"), // "YYYY-MM-DD" start date for one-time events
+    // Inclusive end date for multi-day one-time events (NULL = single day).
+    endDate: text("end_date"),
+    // All-day event: start/end minutes are ignored; UI shows "כל היום".
+    allDay: boolean("all_day").default(false).notNull(),
     reminders: text("reminders"), // JSON array of integers e.g. "[1440,60,5]"
     ...timestamps,
   },

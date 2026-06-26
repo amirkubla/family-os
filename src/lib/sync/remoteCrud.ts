@@ -614,6 +614,8 @@ export function addFamilyEventRemote(input: {
   color?: string;
   isRecurring?: boolean;
   date?: string;
+  endDate?: string;
+  allDay?: boolean;
   reminders?: number[];
 }) {
   const item = useFamilyStore.getState().addFamilyEvent(input);
@@ -630,7 +632,7 @@ export function updateFamilyEventRemote(
   patch: Partial<
     Pick<
       FamilyEvent,
-      "title" | "assigneeType" | "assigneeId" | "daysOfWeek" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "reminders"
+      "title" | "assigneeType" | "assigneeId" | "daysOfWeek" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "endDate" | "allDay" | "reminders"
     >
   >,
 ) {
@@ -648,6 +650,8 @@ export function updateFamilyEventRemote(
   if (patch.color !== undefined) apiPatch.color = patch.color ?? null;
   if (patch.isRecurring !== undefined) apiPatch.isRecurring = patch.isRecurring;
   if (patch.date !== undefined) apiPatch.date = patch.date ?? null;
+  if (patch.endDate !== undefined) apiPatch.endDate = patch.endDate ?? null;
+  if (patch.allDay !== undefined) apiPatch.allDay = patch.allDay;
   if (patch.reminders !== undefined)
     apiPatch.reminders =
       patch.reminders && patch.reminders.length > 0

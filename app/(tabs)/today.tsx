@@ -255,8 +255,9 @@ export default function TodayScreen() {
                         <View style={styles.itemInfo}>
                           <Text style={styles.itemTitle}>{event.title}</Text>
                           <Text style={styles.itemTime}>
-                            {minutesToHHMM(event.startMinutes)} –{" "}
-                            {minutesToHHMM(event.endMinutes)}
+                            {event.allDay
+                              ? t("eventModal.allDay")
+                              : `${minutesToHHMM(event.startMinutes)} – ${minutesToHHMM(event.endMinutes)}`}
                             {event.location ? `  ·  ${event.location}` : ""}
                           </Text>
                         </View>

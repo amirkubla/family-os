@@ -282,6 +282,8 @@ export function apiToLocalFamilyEvent(a: ApiFamilyEvent): FamilyEvent {
     color: a.color ?? undefined,
     isRecurring: a.isRecurring,
     date: a.date ?? undefined,
+    endDate: a.endDate ?? undefined,
+    allDay: a.allDay ?? false,
     reminders: a.reminders ? JSON.parse(a.reminders) : undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
@@ -367,6 +369,8 @@ export function localToApiFamilyEvent(item: FamilyEvent) {
     color: item.color ?? null,
     isRecurring: item.isRecurring,
     date: item.date ?? null,
+    endDate: item.endDate ?? null,
+    allDay: item.allDay ?? false,
     reminders:
       item.reminders && item.reminders.length > 0
         ? JSON.stringify(item.reminders)
