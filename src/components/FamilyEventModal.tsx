@@ -224,9 +224,10 @@ export default function FamilyEventModal({
       assigneeType: data.assigneeType as AssigneeType,
       assigneeId: data.assigneeType === "family" ? undefined : data.assigneeId,
       daysOfWeek,
-      // All-day events span the whole day (0–1440) and ignore the pickers.
+      // All-day events span the whole day (0–1439, the max minute-of-day) and
+      // ignore the pickers; the UI shows "כל היום" off the allDay flag.
       startMinutes: data.allDay ? 0 : hhmmToMinutes(data.startTime),
-      endMinutes: data.allDay ? 1440 : hhmmToMinutes(data.endTime),
+      endMinutes: data.allDay ? 1439 : hhmmToMinutes(data.endTime),
       location: data.location?.trim() || undefined,
       isRecurring: data.isRecurring,
       date: data.isRecurring ? undefined : data.date,

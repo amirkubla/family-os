@@ -59,11 +59,17 @@ const baseFamilyEvent = z
     color: z.string().max(20).nullable().optional(),
     isRecurring: z.boolean(),
     date: ymdDate.nullable().optional(),
+    endDate: ymdDate.nullable().optional(),
+    allDay: z.boolean().optional(),
     reminders: remindersJson,
   })
   .refine((d) => d.endMinutes > d.startMinutes, {
     path: ["endMinutes"],
     message: "endMinutes must be greater than startMinutes",
+  })
+  .refine((d) => !d.endDate || !d.date || d.endDate >= d.date, {
+    path: ["endDate"],
+    message: "endDate must be on or after date",
   })
   .refine((d) => !d.isRecurring || d.daysOfWeek.length > 0, {
     path: ["daysOfWeek"],
@@ -103,5 +109,7 @@ export const patchFamilyEventSchema = z.object({
   color: z.string().max(20).nullable().optional(),
   isRecurring: z.boolean().optional(),
   date: ymdDate.nullable().optional(),
+  endDate: ymdDate.nullable().optional(),
+  allDay: z.boolean().optional(),
   reminders: remindersJson,
 });
