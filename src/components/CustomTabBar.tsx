@@ -49,13 +49,20 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 // "ילדים" entry + its nested kid layer.
 const KIDS_PAL = { active: "#E0699B", bg: "#FBE9F1" };
 
-// "ניהול" (ops) entry + its nested chores/notes/projects layer.
+// "ניהול" (ops) entry + its nested layer. Grocery + budget live here too
+// (demoted from the main row) alongside chores/notes/projects.
 const OPS_PAL = { active: "#5B6CCF", bg: "#ECEEFB" };
 const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; color: string; labelKey: string }[] = [
-  { route: "chores",   icon: "checkbox-outline",      color: "#2D9F6F", labelKey: "home.chores" },
+  { route: "grocery",  icon: "cart-outline",          color: "#2D9F6F", labelKey: "tabs.grocery" },
+  { route: "budget",   icon: "wallet-outline",        color: "#9B59B6", labelKey: "tabs.budget" },
+  { route: "chores",   icon: "checkbox-outline",      color: "#1FA67A", labelKey: "home.chores" },
   { route: "notes",    icon: "document-text-outline", color: "#C49A2A", labelKey: "home.notes" },
-  { route: "projects", icon: "rocket-outline",        color: "#9B59B6", labelKey: "home.projects" },
+  { route: "projects", icon: "rocket-outline",        color: "#6C63FF", labelKey: "home.projects" },
 ];
+
+// Routes shown directly in the main speed-dial row (everything else — grocery,
+// budget — lives under the "ניהול" ops layer).
+const MAIN_ROUTES = ["today", "calendar", "home"];
 
 const C_TEXT_MUTED = "#A8A3B8";
 
@@ -151,8 +158,9 @@ export default function CustomTabBar({
     [navigation, collapse],
   );
 
-  // Only the real tabs (skip href:null screens like kid/customization)
-  const navRoutes = state.routes.filter((r) => r.name in TAB_COLORS);
+  // Main-row tabs only (today/calendar/home). Grocery + budget live under the
+  // ops layer; href:null screens (kid/customization) are excluded.
+  const navRoutes = state.routes.filter((r) => MAIN_ROUTES.includes(r.name));
 
   const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const menuOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.4, 1] });
