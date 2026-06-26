@@ -31,6 +31,7 @@ import {
   nextWeeklyDate,
   KID_PAYMENT_CATEGORY,
 } from "../services/paymentsService.js";
+import { buildSnapshot } from "../services/snapshotService.js";
 
 export const internalRoutes = new Hono();
 
@@ -678,6 +679,18 @@ internalRoutes.post("/family/:familyId/expenses", async (c) => {
     isRecurring: false,
   });
   return c.json(row, 201);
+});
+
+// ── family snapshot (the "family brain" context) ───────────────────────────
+//
+// One name-resolved, token-bounded digest of the whole family, for the bot's
+// general_query fallback (free-form questions answered by an LLM over the full
+// family data). See services/snapshotService.ts.
+
+internalRoutes.get("/family/:familyId/snapshot", async (c) => {
+  const familyId = c.req.param("familyId")!;
+  const snapshot = await buildSnapshot(familyId);
+  return c.json(snapshot, 200);
 });
 
 // List paid expenses for a month (default current Jerusalem month), for the
