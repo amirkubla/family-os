@@ -169,14 +169,18 @@ function KidBlockRow({
             {minutesToHHMM(block.startMinutes)} – {minutesToHHMM(block.endMinutes)}
             {block.location ? `  ·  ${block.location}` : ""}
           </Text>
-          <Text
-            style={[
-              styles.assigneeBadge,
-              { color: typeColor, backgroundColor: typeColor + "22" },
-            ]}
-          >
-            {blockTypeLabel(block.type)}
-          </Text>
+          {/* Block "type" is a vestigial category (defaults to "other", no
+              picker) — only show the badge for a real, non-"other" type. */}
+          {block.type && block.type !== "other" && (
+            <Text
+              style={[
+                styles.assigneeBadge,
+                { color: typeColor, backgroundColor: typeColor + "22" },
+              ]}
+            >
+              {blockTypeLabel(block.type)}
+            </Text>
+          )}
         </View>
       </View>
       <IconButton icon="trash-can-outline" size={18} onPress={onDelete} />

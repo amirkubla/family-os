@@ -132,16 +132,17 @@ function BlockRow({
           {block.location ? `  ·  ${block.location}` : ""}
         </Text>
       </View>
-      <Chip
-        compact
-        textStyle={{ fontSize: 10, color: typeColor }}
-        style={[
-          styles.typeChip,
-          { backgroundColor: typeColor + "22" },
-        ]}
-      >
-        {blockTypeLabel(block.type)}
-      </Chip>
+      {/* Block "type" is a vestigial category (no picker; defaults to "other").
+          Only show the chip for a real, non-"other" type. */}
+      {block.type && block.type !== "other" && (
+        <Chip
+          compact
+          textStyle={{ fontSize: 10, color: typeColor }}
+          style={[styles.typeChip, { backgroundColor: typeColor + "22" }]}
+        >
+          {blockTypeLabel(block.type)}
+        </Chip>
+      )}
       <IconButton icon="trash-can-outline" size={18} onPress={onDelete} />
     </Pressable>
   );
@@ -209,31 +210,9 @@ export default function KidScheduleScreen() {
   const kid = storeKids.find((k) => k.id === kidId);
   const kidColor = kid?.color ?? C.purple;
 
-  // Cyclic prev/next over the family's ACTIVE kids, in the store's natural
-  // order. Wraps at the ends. If only one (or zero) active kid exists, both
-  // ids are null and the arrows hide.
-  const activeKids = useMemo(
-    () => storeKids.filter((k) => k.isActive),
-    [storeKids],
-  );
-  const { prevKidId, nextKidId } = useMemo(() => {
-    if (activeKids.length <= 1) return { prevKidId: null, nextKidId: null };
-    const idx = activeKids.findIndex((k) => k.id === kidId);
-    if (idx === -1) return { prevKidId: null, nextKidId: null };
-    const len = activeKids.length;
-    return {
-      prevKidId: activeKids[(idx - 1 + len) % len]!.id,
-      nextKidId: activeKids[(idx + 1) % len]!.id,
-    };
-  }, [activeKids, kidId]);
-
-  // replace (not push) so repeated kid swaps don't grow the back stack —
-  // back from /kid/A → /kid/B → /kid/C should still pop to wherever the
-  // user came from (today/calendar), not walk back through each kid.
-  const goToKid = useCallback(
-    (id: string) => router.replace(`/kid/${id}` as any),
-    [router],
-  );
+  // Back to the home/menu launcher. replace (not push) so the kid screen
+  // leaves the stack rather than stacking up under repeated visits.
+  const goHome = useCallback(() => router.replace("/(tabs)/home"), [router]);
 
   // Set header options \u2014 title + prev/next kid arrows in the nav bar.
   // headerRight — single arrow cycles to the next kid (wraps around).
@@ -242,19 +221,21 @@ export default function KidScheduleScreen() {
     navigation.setOptions({
       title: kid ? `${kid.emoji}  ${kid.name}` : t("kid.schedule"),
       headerTintColor: kidColor,
-      headerBackTitle: t("tabs.today"),
-      headerRight: () =>
-        nextKidId ? (
-          <IconButton
-            icon="chevron-left"
-            size={32}
-            iconColor={kidColor}
-            onPress={() => goToKid(nextKidId)}
-            accessibilityLabel={t("kid.nextKid")}
-          />
-        ) : null,
+      // Back to the home/menu (no kid-cycling). In RTL the header back sits on
+      // the right; chevron-forward (→) reads as "back". Overriding headerLeft
+      // makes it always go home rather than popping the stack.
+      headerLeft: () => (
+        <IconButton
+          icon="chevron-forward"
+          size={28}
+          iconColor={kidColor}
+          onPress={goHome}
+          accessibilityLabel={t("nav.back")}
+          testID="kid-back"
+        />
+      ),
     });
-  }, [navigation, kid?.name, kid?.emoji, kidColor, nextKidId, goToKid]);
+  }, [navigation, kid?.name, kid?.emoji, kidColor, goHome]);
 
   // Tab + calendar sub-view (month/week/day, mirroring the main /calendar)
   const [tab, setTab] = useState("calendar");
