@@ -542,6 +542,9 @@ const he = {
     byPayer: "לפי משלם",
     unassigned: "לא מוגדר",
     kidPayments: "תשלומי ילדים",
+    paymentStatus: "סטטוס תשלום",
+    pendingHint: "ייווסף לרשימת התשלומים הממתינים",
+    pendingPayments: "ממתינים לתשלום",
   },
   payment: {
     add: "תשלום חדש",

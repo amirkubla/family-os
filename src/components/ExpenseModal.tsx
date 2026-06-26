@@ -4,6 +4,7 @@ import { Text, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import WheelPicker from "./WheelPicker";
 import SegmentedPills from "./SegmentedPills";
+import PillToggle from "./PillToggle";
 import { MS } from "@src/ui/modalStyles";
 import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -42,6 +43,7 @@ interface Props {
     kidId?: string;
     date: string;
     note?: string;
+    paid?: boolean;
     isRecurring: boolean;
     recurrenceType?: RecurrenceType;
     recurrenceDay?: number;
@@ -85,6 +87,10 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
   const [single, setSingle] = useState<FormState>(EMPTY_FORM);
   const [recurring, setRecurring] = useState<FormState>(EMPTY_FORM);
   const [date, setDate] = useState(today);
+  // One-time payments only: true = already paid (counts as spending now);
+  // false = pending (shows under "ממתינים לתשלום", excluded from spending
+  // until settled). Defaults to paid — the common "log what I spent" case.
+  const [paidNow, setPaidNow] = useState(true);
   const [titleError, setTitleError] = useState("");
   const [amountError, setAmountError] = useState("");
   const [categoryError, setCategoryError] = useState("");
@@ -115,11 +121,13 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         setRecurring(base);
       }
       setDate(editExpense.date);
+      setPaidNow(editExpense.paid !== false);
     } else {
       setPaymentType("single");
       setSingle(base);
       setRecurring(base);
       setDate(today);
+      setPaidNow(true);
     }
     setTitleError("");
     setAmountError("");
@@ -148,6 +156,9 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       payerMemberId: isRecurring ? undefined : form.payerMemberId,
       date,
       note: title,
+      // Pending applies to one-time payments only; recurring templates keep
+      // their existing (paid) semantics.
+      paid: isRecurring ? undefined : paidNow,
       isRecurring,
       recurrenceType: isRecurring ? form.recurrenceType : undefined,
       recurrenceDay: isRecurring ? form.recurrenceDay : undefined,
@@ -245,6 +256,21 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         </>
       )}
 
+      {/* Payment status — one-time payments only */}
+      {paymentType === "single" && (
+        <>
+          <Text style={MS.label}>{t("budget.paymentStatus")}</Text>
+          <PillToggle
+            value={paidNow}
+            onChange={setPaidNow}
+            onLabel={t("payment.paid")}
+            offLabel={t("payment.toPay")}
+            testID="expense-paid-toggle"
+          />
+          {!paidNow ? <Text style={styles.paidHint}>{t("budget.pendingHint")}</Text> : null}
+        </>
+      )}
+
       {/* Recurrence config — only in recurring mode */}
       {paymentType === "recurring" && (
         <View style={styles.recurringPanel}>
@@ -317,6 +343,14 @@ const styles = StyleSheet.create({
     writingDirection: "ltr",
   },
   inputError: { borderBottomColor: C.red },
+  paidHint: {
+    fontSize: 12,
+    color: C.textSecondary,
+    writingDirection: "rtl",
+    textAlign: TEXT_RIGHT,
+    marginTop: -S.xs,
+    marginBottom: S.sm,
+  },
   chipRow: {
     flexDirection: RTL_ROW,
     flexWrap: "wrap",

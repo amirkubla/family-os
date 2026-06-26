@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
   addExpenseRemote,
+  updateExpenseRemote,
   deleteExpenseRemote,
   markKidPaymentPaidRemote,
   markKidPaymentUnpaidRemote,
@@ -98,6 +99,17 @@ export default function BudgetScreen() {
     () =>
       allExpenses
         .filter((e) => e.kidId && e.paid === false)
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    [allExpenses],
+  );
+
+  // Non-kid one-time payments still pending (paid===false). Marked paid from
+  // the row's ✓; excluded from spending totals until then (monthExpenses
+  // filters paid !== false).
+  const outstandingPayments = useMemo(
+    () =>
+      allExpenses
+        .filter((e) => !e.isRecurring && !e.kidId && e.paid === false)
         .sort((a, b) => a.date.localeCompare(b.date)),
     [allExpenses],
   );
@@ -310,6 +322,54 @@ export default function BudgetScreen() {
                 </View>
               </View>
             )}
+          </>
+        )}
+
+        {/* Pending (unpaid) one-time payments — non-kid */}
+        {outstandingPayments.length > 0 && (
+          <>
+            <SectionHeader label={t("budget.pendingPayments")} />
+            {outstandingPayments.map((exp) => {
+              const cat = budgetCategories.find((c) => c.name === exp.categoryName);
+              const overdue = exp.date < todayStr;
+              const dateLabel = `${exp.date.slice(8, 10)}/${exp.date.slice(5, 7)}`;
+              const metaText = [overdue ? t("payment.overdue") : "", dateLabel]
+                .filter(Boolean)
+                .join(" • ");
+              return (
+                <Pressable
+                  key={exp.id}
+                  style={styles.kidPayRow}
+                  onPress={() => openEditExpense(exp)}
+                >
+                  <View style={[styles.kidPayAvatar, { backgroundColor: (cat?.color ?? C.purple) + "22" }]}>
+                    <Text style={styles.kidPayEmoji}>{cat?.icon ?? "📦"}</Text>
+                  </View>
+                  <View style={styles.kidPayInfo}>
+                    <Text style={[styles.kidPayTitle, { textAlign: TEXT_RIGHT }]} numberOfLines={1}>
+                      {exp.note || exp.categoryName}
+                    </Text>
+                    <Text style={[styles.kidPayMeta, { textAlign: TEXT_RIGHT }, overdue && styles.kidPayMetaOverdue]}>
+                      {metaText}
+                    </Text>
+                  </View>
+                  <Text style={styles.kidPayAmount}>{formatILS(exp.amount)}</Text>
+                  <IconButton
+                    icon="check-circle-outline"
+                    size={20}
+                    iconColor={C.teal}
+                    accessibilityLabel={t("payment.markPaid")}
+                    onPress={() => updateExpenseRemote(exp.id, { paid: true })}
+                  />
+                  <IconButton
+                    icon="trash-can-outline"
+                    size={16}
+                    iconColor={C.textSecondary}
+                    onPress={() => handleDeleteExpense(exp)}
+                  />
+                </Pressable>
+              );
+            })}
           </>
         )}
 

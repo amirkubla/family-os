@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Switch } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
 import DatePicker from "./DatePicker";
 import WheelPicker from "./WheelPicker";
+import PillToggle from "./PillToggle";
 import { MS } from "@src/ui/modalStyles";
 import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -175,21 +176,22 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
         keyboardType="numeric"
         mode="outlined"
         style={MS.input}
-        contentStyle={MS.inputContent}
+        contentStyle={MS.inputContentNumeric}
         error={!!amountError}
       />
       {amountError ? <Text style={MS.error}>{amountError}</Text> : null}
 
       {/* Recurring toggle */}
-      <View style={styles.recurringRow}>
-        <Text style={styles.recurringLabel}>{t("payment.recurringToggle")}</Text>
-        <Switch
-          value={isRecurring}
-          onValueChange={setIsRecurring}
-          thumbColor={isRecurring ? C.purple : C.textSecondary}
-          trackColor={{ false: C.border, true: C.purple + "55" }}
-        />
-      </View>
+      <Text style={[styles.recurringLabel, styles.recurringLabelBlock]}>
+        {t("payment.recurringToggle")}
+      </Text>
+      <PillToggle
+        value={isRecurring}
+        onChange={setIsRecurring}
+        onLabel={t("budget.typeRecurring")}
+        offLabel={t("budget.typeSingle")}
+        testID="payment-recurring-toggle"
+      />
 
       {isRecurring ? (
         <>
@@ -249,20 +251,16 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
 }
 
 const styles = StyleSheet.create({
-  recurringRow: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: S.sm,
-    marginTop: S.xs,
-  },
   recurringLabel: {
     fontSize: 14,
     color: C.textPrimary,
     fontWeight: "600",
-    flex: 1,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
+  },
+  recurringLabelBlock: {
+    marginTop: S.sm,
+    marginBottom: S.xs,
   },
   typeRow: {
     flexDirection: RTL_ROW,
