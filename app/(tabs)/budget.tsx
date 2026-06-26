@@ -564,6 +564,7 @@ export default function BudgetScreen() {
         ) : (
           monthExpenses.map((exp) => {
             const member = familyMembers.find((m) => m.id === exp.payerMemberId);
+            const kid = exp.kidId ? kids.find((k) => k.id === exp.kidId) : undefined;
             const cat = budgetCategories.find((c) => c.name === exp.categoryName);
             return (
               <View key={exp.id} style={styles.expRow}>
@@ -576,10 +577,12 @@ export default function BudgetScreen() {
                   <View
                     style={[
                       styles.expAvatar,
-                      { backgroundColor: (member?.color ?? "#9B59B6") + "33" },
+                      { backgroundColor: ((kid?.color ?? member?.color) ?? "#9B59B6") + "33" },
                     ]}
                   >
-                    <Text style={styles.expAvatarEmoji}>{member?.avatarEmoji ?? "🧑"}</Text>
+                    <Text style={styles.expAvatarEmoji}>
+                      {kid?.emoji ?? member?.avatarEmoji ?? "🧑"}
+                    </Text>
                   </View>
                   <View style={styles.expInfo}>
                     <Text style={[styles.expTitle, { textAlign: TEXT_RIGHT }]}>
@@ -588,7 +591,7 @@ export default function BudgetScreen() {
                     </Text>
                     <Text style={[styles.expMeta, { textAlign: TEXT_RIGHT }]}>
                       {exp.date}
-                      {member ? `  •  ${member.name}` : ""}
+                      {kid ? `  •  ${kid.name}` : member ? `  •  ${member.name}` : ""}
                     </Text>
                   </View>
                 </Pressable>
