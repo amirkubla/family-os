@@ -77,14 +77,8 @@ export default function BudgetCategoryModal({ visible, onDismiss, editCategory, 
         testIDPrefix="cat-icon"
       />
 
-      <Text style={MS.label}>{t("budget.categoryColor")}</Text>
-      <PaginatedPicker
-        kind="color"
-        options={COLOR_SWATCHES}
-        value={color}
-        onChange={setColor}
-        testIDPrefix="cat-color"
-      />
+      {/* Emoji-only — no colour selection. A default colour is still stored
+          (preserved on edit) so the budget spend visualisation stays valid. */}
 
       <Text style={MS.label}>{t("budget.monthlyCap")}</Text>
       <TextInput

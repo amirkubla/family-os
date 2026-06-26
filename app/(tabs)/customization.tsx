@@ -98,7 +98,7 @@ function GrocerySubcategoriesSection({
             const isOther = sub.name === OTHER_SUBCATEGORY;
             return (
               <View key={sub.name} style={styles.catRow}>
-                <View style={[styles.catDot, { backgroundColor: sub.color }]}>
+                <View style={styles.catDot}>
                   <Text style={styles.catEmoji}>{sub.icon}</Text>
                 </View>
                 <Text style={styles.catName}>{sub.name}</Text>
@@ -175,7 +175,7 @@ function BudgetCategoriesSection() {
         <Card.Content>
           {budgetCategories.map((cat) => (
             <View key={cat.id} style={styles.catRow}>
-              <View style={[styles.catDot, { backgroundColor: cat.color }]}>
+              <View style={styles.catDot}>
                 <Text style={styles.catEmoji}>{cat.icon}</Text>
               </View>
               <Text style={styles.catName}>{cat.name}</Text>

@@ -14,6 +14,14 @@ const he = {
   delete: "מחק",
   edit: "ערוך",
 
+  // ── Emoji picker ──
+  emoji: {
+    title: "בחירת אימוג'י",
+    search: "חיפוש (עברית או אנגלית)…",
+    noResults: "לא נמצאו אימוג'י",
+    choose: "בחר/י אימוג'י",
+  },
+
   // ── Tab labels ──
   tabs: {
     today: "היום",

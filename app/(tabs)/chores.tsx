@@ -26,6 +26,7 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { FAB_LEFT } from "@src/ui/fabAnchor";
 
 const CHORE_COLORS = {
   accent: "#0D9488",
@@ -327,5 +328,5 @@ const styles = StyleSheet.create({
   choreAssignee: { fontSize: 12, color: C.textSecondary, textAlign: TEXT_RIGHT, marginTop: 1 },
   choreActions: { flexDirection: RTL_ROW, alignItems: "center" },
   choreActionBtn: { margin: 0, width: 28, height: 28 },
-  fab: { position: "absolute", left: S.lg, bottom: S.lg },
+  fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
 });

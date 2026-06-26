@@ -20,6 +20,7 @@ import {
 import { t, LOCALE } from "@src/i18n";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget";
 import { toYMD } from "@src/utils/date";
 
@@ -438,7 +439,7 @@ export default function BudgetScreen() {
             : cat.color;
           return (
             <View key={cat.id} style={styles.catRow}>
-              <View style={[styles.catIcon, { backgroundColor: cat.color + "22" }]}>
+              <View style={styles.catIcon}>
                 <Text style={styles.catEmoji}>{cat.icon}</Text>
               </View>
               <View style={styles.catInfo}>
@@ -855,7 +856,7 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     bottom: S.lg,  // overridden inline with insets.bottom + S.lg
-    left: S.lg,
+    ...FAB_LEFT,
     backgroundColor: ACCENT,
   },
 

@@ -1,17 +1,14 @@
 /**
- * PaginatedPicker — a paged ("carousel") grid for choosing one option from a
- * large pool, without a long vertical scroll. Shows `perPage` items at a time
- * in a fixed `columns`-wide grid (so every row is full); ‹ › arrows page
- * forward/back and a "page/total" label shows position. The page holding the
- * current value is shown first.
+ * PaginatedPicker — option chooser used across the onboarding + customization
+ * pickers. Dispatches by `kind`:
+ *   - "emoji" → the full searchable <EmojiField> (Hebrew + English search over
+ *               the entire Unicode emoji set). `options` is ignored.
+ *   - "color" → a paged ("carousel") swatch grid: `perPage` swatches at a time
+ *               in a fixed `columns`-wide grid; ‹ › arrows page; the page
+ *               holding the current value is shown first.
  *
- * Two kinds:
- *   - "emoji"  → renders each option as an emoji glyph in a square cell
- *   - "color"  → renders each option (a hex string) as a colour swatch
- *
- * Cells are sized as a percentage of their column slot (not fixed px), so the
- * grid stays even across phone and web widths. RTL-aware: in the pager the
- * previous arrow sits on the right (→) and the next arrow on the left (←).
+ * RTL-aware: in the color pager the previous arrow sits on the right (→) and
+ * the next on the left (←).
  */
 
 import React, { useEffect, useState } from "react";
@@ -19,6 +16,7 @@ import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 
+import EmojiField from "./EmojiField";
 import { C, R, S } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
 
@@ -38,8 +36,21 @@ interface Props {
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
 
-export default function PaginatedPicker({
-  kind,
+export default function PaginatedPicker(props: Props) {
+  if (props.kind === "emoji") {
+    return (
+      <EmojiField
+        value={props.value}
+        onChange={props.onChange}
+        testID={props.testIDPrefix ? `${props.testIDPrefix}-field` : undefined}
+      />
+    );
+  }
+  return <ColorPager {...props} />;
+}
+
+// Paged colour-swatch grid (the original PaginatedPicker behaviour).
+function ColorPager({
   options,
   value,
   onChange,
@@ -54,8 +65,7 @@ export default function PaginatedPicker({
   const [page, setPage] = useState(valueIndex >= 0 ? Math.floor(valueIndex / perPage) : 0);
 
   // Re-sync to the value's page when the value changes (e.g. reopening this
-  // shared, still-mounted picker for a different item). Selecting an option on
-  // the current page is a no-op since it resolves to the same page.
+  // shared, still-mounted picker for a different item).
   useEffect(() => {
     if (valueIndex >= 0) setPage(Math.floor(valueIndex / perPage));
   }, [valueIndex, perPage]);
@@ -67,18 +77,16 @@ export default function PaginatedPicker({
   const atStart = clampedPage === 0;
   const atEnd = clampedPage >= pageCount - 1;
 
-  // Measure the grid and use integer cell widths so exactly `columns` fit per
-  // row on every platform. Percentage widths round-wrap to 7/row on iOS, which
-  // left a ragged last line even on full pages.
+  // Integer cell widths so exactly `columns` fit per row on every platform.
   const [gridW, setGridW] = useState(0);
   const cellW = gridW > 0 ? Math.floor(gridW / columns) : 0;
 
   return (
     <View>
       <View style={styles.grid} onLayout={(e) => setGridW(e.nativeEvent.layout.width)}>
-        {cellW > 0 && pageItems.map((opt) => (
-          <View key={opt} style={[styles.slot, { width: cellW }]}>
-            {kind === "color" ? (
+        {cellW > 0 &&
+          pageItems.map((opt) => (
+            <View key={opt} style={[styles.slot, { width: cellW }]}>
               <Pressable
                 onPress={() => onChange(opt)}
                 accessibilityRole="button"
@@ -87,20 +95,8 @@ export default function PaginatedPicker({
                 testID={testIDPrefix ? `${testIDPrefix}-${opt}` : undefined}
                 style={[styles.colorCell, { backgroundColor: opt }, opt === value && styles.colorSelected, webCursor]}
               />
-            ) : (
-              <Pressable
-                onPress={() => onChange(opt)}
-                accessibilityRole="button"
-                accessibilityLabel={opt}
-                accessibilityState={{ selected: opt === value }}
-                testID={testIDPrefix ? `${testIDPrefix}-${opt}` : undefined}
-                style={[styles.emojiCell, opt === value && styles.emojiSelected, webCursor]}
-              >
-                <Text style={styles.emojiText}>{opt}</Text>
-              </Pressable>
-            )}
-          </View>
-        ))}
+            </View>
+          ))}
       </View>
 
       {pageCount > 1 && (
@@ -141,25 +137,11 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     marginBottom: S.xs,
   },
-  // One column slot — fixed fraction of the row so every row is full.
   slot: {
     paddingVertical: 5,
     alignItems: "center",
     justifyContent: "center",
   },
-  emojiCell: {
-    width: "84%",
-    aspectRatio: 1,
-    borderRadius: R.md,
-    backgroundColor: C.surfaceSubtle,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emojiSelected: {
-    borderWidth: 2,
-    borderColor: C.purple,
-  },
-  emojiText: { fontSize: 20 },
   colorCell: {
     width: "70%",
     aspectRatio: 1,

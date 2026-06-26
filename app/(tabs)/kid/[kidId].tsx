@@ -53,6 +53,7 @@ import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, blockTypeLabel, statusLabel } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { TYPE_COLORS, STATUS_COLORS } from "@src/ui/semanticColors";
 
@@ -1470,7 +1471,7 @@ const styles = StyleSheet.create({
 
   fab: {
     position: "absolute",
-    left: S.lg,
+    ...FAB_LEFT,
     bottom: S.lg,
     borderRadius: R.lg,
   },

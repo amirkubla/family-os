@@ -73,14 +73,8 @@ export default function GrocerySubcategoryModal({ visible, onDismiss, editSubcat
         testIDPrefix="subcat-icon"
       />
 
-      <Text style={MS.label}>{t("customization.subcategoryColor")}</Text>
-      <PaginatedPicker
-        kind="color"
-        options={COLOR_SWATCHES}
-        value={color}
-        onChange={setColor}
-        testIDPrefix="subcat-color"
-      />
+      {/* Subcategories are emoji-only — no colour selection. A default colour
+          is still stored (preserved on edit) so existing display stays valid. */}
 
       <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>

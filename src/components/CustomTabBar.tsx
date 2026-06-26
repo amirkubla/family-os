@@ -24,6 +24,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useRouter } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { FAB_RIGHT } from "@src/ui/fabAnchor";
 import { t } from "@src/i18n";
 
 // ── Per-tab accent colours ──────────────────────────────────────────────────
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
   },
   anchor: {
     position: "absolute",
-    right: 16,
+    ...FAB_RIGHT, // always bottom-right (web reference); native would mirror a bare `right`
     alignItems: "flex-end",
     // bottom set inline from safe-area inset
   },

@@ -29,6 +29,7 @@ import {
   type GrocerySubcategory,
 } from "@src/models/customization";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { C, R, S } from "@src/ui/tokens";
 
 /** Fallback emoji map for items with legacy English subcategory keys not found
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
   // web and bottom-right on iOS — consistent with the other tabs).
   fab: {
     position: "absolute",
-    left: S.lg,
+    ...FAB_LEFT,
     bottom: S.lg,
     borderRadius: R.lg,
     backgroundColor: C.purple,

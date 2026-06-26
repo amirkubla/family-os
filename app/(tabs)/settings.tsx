@@ -534,7 +534,10 @@ export default function SettingsScreen() {
             {session && (
               <View style={styles.accountInfo}>
                 <Text variant="bodyMedium" style={styles.accountText}>
-                  {t("auth.loggedInAs")} {session.user.username}
+                  {t("auth.loggedInAs")}{" "}
+                  {session.user.username ??
+                    familyMembers.find((m) => m.userId === session.user.id)?.name ??
+                    ""}
                 </Text>
               </View>
             )}

@@ -22,6 +22,7 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { FAB_LEFT } from "@src/ui/fabAnchor";
 
 const NOTE_COLORS = {
   accent: "#D97706",
@@ -263,5 +264,5 @@ const styles = StyleSheet.create({
     backgroundColor: NOTE_COLORS.barDefault,
     marginTop: S.md,
   },
-  fab: { position: "absolute", left: S.lg, bottom: S.lg },
+  fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
 });
