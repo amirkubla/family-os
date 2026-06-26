@@ -48,7 +48,7 @@ import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { Note } from "@src/models/note";
 import type { Project } from "@src/models/project";
 import type { Expense } from "@src/models/budget";
-import { formatILS, paymentDueDate } from "@src/models/budget";
+import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { t, dayName, blockTypeLabel, statusLabel } from "@src/i18n";
@@ -379,19 +379,33 @@ export default function KidScheduleScreen() {
   // This kid's payments (expenses tagged to the kid). Unpaid ("to pay") first,
   // ordered by due date; settled payments below, most recent first.
   const allExpenses = useFamilyStore((s) => s.expenses);
-  const kidPayments = useMemo(
+  const todayYMD = toYMD(new Date());
+  // Outstanding ("to pay"): one entry per unpaid period — a recurring template
+  // expands into each missed (late) period + the upcoming one; one-time unpaid
+  // is a single entry. Oldest period first so the most-overdue is on top.
+  const outstandingEntries = useMemo(
     () =>
       allExpenses
-        .filter((e) => e.kidId === kidId)
-        .sort((a, b) => {
-          const aUnpaid = a.paid === false;
-          const bUnpaid = b.paid === false;
-          if (aUnpaid !== bUnpaid) return aUnpaid ? -1 : 1;
-          return aUnpaid ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date);
-        }),
+        .filter((e) => e.kidId === kidId && e.paid === false)
+        .flatMap((p) =>
+          outstandingPeriods(p, allExpenses, todayYMD).map((periodDate) => ({
+            payment: p,
+            periodDate,
+            late: isPeriodLate(periodDate, todayYMD),
+          })),
+        )
+        .sort((a, b) => a.periodDate.localeCompare(b.periodDate)),
+    [allExpenses, kidId, todayYMD],
+  );
+  // Settled history: paid one-time payments + paid recurring occurrences,
+  // most recent first.
+  const settledPayments = useMemo(
+    () =>
+      allExpenses
+        .filter((e) => e.kidId === kidId && e.paid === true)
+        .sort((a, b) => b.date.localeCompare(a.date)),
     [allExpenses, kidId],
   );
-  const todayYMD = toYMD(new Date());
 
   // Up/down reorder for the kid's notes/projects. (Drag isn't used here —
   // these lists are nested in the calendar scroll, where nested drag is
@@ -417,7 +431,10 @@ export default function KidScheduleScreen() {
     [kidProjects],
   );
 
-  const handleMarkPaid = useCallback((pay: Expense) => markKidPaymentPaidRemote(pay), []);
+  const handleMarkPaid = useCallback(
+    (pay: Expense, periodDate?: string) => markKidPaymentPaidRemote(pay, periodDate),
+    [],
+  );
   const handleMarkUnpaid = useCallback((pay: Expense) => markKidPaymentUnpaidRemote(pay), []);
 
   const openAdd = (dayOfWeek?: number) => {
@@ -875,27 +892,74 @@ export default function KidScheduleScreen() {
                 />
               </View>
               {paymentsExpanded && (
-                kidPayments.length === 0 ? (
+                outstandingEntries.length === 0 && settledPayments.length === 0 ? (
                   <Text style={styles.emptyText}>{t("kid.noPayments")}</Text>
                 ) : (
                   <View style={styles.paymentsContainer}>
-                    {kidPayments.map((pay) => {
-                      const unpaid = pay.paid === false;
-                      // Recurring templates display their computed next-due, not
-                      // the fixed anchor date.
-                      const due = paymentDueDate(pay, allExpenses);
-                      const overdue = unpaid && due < todayYMD;
-                      const dateLabel = `${due.slice(8, 10)}/${due.slice(5, 7)}`;
-                      const recurLabel = !pay.isRecurring
+                    {/* Outstanding — one row per unpaid period (late + upcoming) */}
+                    {outstandingEntries.map(({ payment, periodDate, late }) => {
+                      const dateLabel = `${periodDate.slice(8, 10)}/${periodDate.slice(5, 7)}`;
+                      const recurLabel = !payment.isRecurring
                         ? ""
-                        : pay.recurrenceType === "weekly"
-                          ? `${t("payment.everyWeek")}, ${dayName(pay.recurrenceDay ?? 0)}`
-                          : pay.recurrenceDay != null
-                            ? `${t("payment.everyMonth")}, ${pay.recurrenceDay} ${t("payment.inMonth")}`
+                        : payment.recurrenceType === "weekly"
+                          ? `${t("payment.everyWeek")}, ${dayName(payment.recurrenceDay ?? 0)}`
+                          : payment.recurrenceDay != null
+                            ? `${t("payment.everyMonth")}, ${payment.recurrenceDay} ${t("payment.inMonth")}`
                             : t("payment.everyMonth");
-                      const metaText = [overdue ? t("payment.overdue") : "", recurLabel, dateLabel]
+                      const metaText = [late ? t("payment.overdue") : "", recurLabel, dateLabel]
                         .filter(Boolean)
                         .join(" • ");
+                      return (
+                        <Pressable
+                          key={payment.id + periodDate}
+                          style={({ hovered }: any) => [
+                            styles.paymentCard,
+                            hovered && styles.paymentCardHover,
+                          ]}
+                          onPress={() => {
+                            setEditingPayment(payment);
+                            setPaymentModalOpen(true);
+                          }}
+                          testID={`kid-payment-${payment.id}-${periodDate}`}
+                        >
+                          <View style={[styles.statusPill, styles.statusPillUnpaid]}>
+                            <Text style={[styles.statusPillText, styles.statusPillTextUnpaid]}>
+                              {t("payment.toPay")}
+                            </Text>
+                          </View>
+
+                          <View style={styles.paymentInfo}>
+                            <Text style={styles.paymentName} numberOfLines={1}>
+                              {payment.note || t("payment.add")}
+                            </Text>
+                            <Text style={[styles.paymentMeta, late && styles.paymentMetaOverdue]}>
+                              {metaText}
+                            </Text>
+                          </View>
+
+                          <Text style={styles.paymentAmount}>{formatILS(payment.amount)}</Text>
+
+                          <IconButton
+                            icon="check-circle-outline"
+                            size={20}
+                            iconColor={C.teal}
+                            accessibilityLabel={t("payment.markPaid")}
+                            testID={`kid-payment-markpaid-${payment.id}-${periodDate}`}
+                            onPress={() => handleMarkPaid(payment, periodDate)}
+                          />
+                          <IconButton
+                            icon="trash-can-outline"
+                            size={16}
+                            iconColor={C.textMuted}
+                            onPress={() => requestDelete(() => deleteExpenseRemote(payment.id))}
+                          />
+                        </Pressable>
+                      );
+                    })}
+
+                    {/* Settled history — paid one-time + recurring occurrences */}
+                    {settledPayments.map((pay) => {
+                      const dateLabel = `${pay.date.slice(8, 10)}/${pay.date.slice(5, 7)}`;
                       return (
                         <Pressable
                           key={pay.id}
@@ -909,58 +973,29 @@ export default function KidScheduleScreen() {
                           }}
                           testID={`kid-payment-${pay.id}`}
                         >
-                          {/* Status label (non-interactive — use the actions below) */}
-                          <View
-                            style={[
-                              styles.statusPill,
-                              unpaid ? styles.statusPillUnpaid : styles.statusPillPaid,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.statusPillText,
-                                unpaid ? styles.statusPillTextUnpaid : styles.statusPillTextPaid,
-                              ]}
-                            >
-                              {unpaid ? t("payment.toPay") : t("payment.paid")}
+                          <View style={[styles.statusPill, styles.statusPillPaid]}>
+                            <Text style={[styles.statusPillText, styles.statusPillTextPaid]}>
+                              {t("payment.paid")}
                             </Text>
                           </View>
 
                           <View style={styles.paymentInfo}>
-                            <Text
-                              style={[styles.paymentName, !unpaid && styles.paymentNamePaid]}
-                              numberOfLines={1}
-                            >
+                            <Text style={[styles.paymentName, styles.paymentNamePaid]} numberOfLines={1}>
                               {pay.note || t("payment.add")}
                             </Text>
-                            <Text style={[styles.paymentMeta, overdue && styles.paymentMetaOverdue]}>
-                              {metaText}
-                            </Text>
+                            <Text style={styles.paymentMeta}>{dateLabel}</Text>
                           </View>
 
                           <Text style={styles.paymentAmount}>{formatILS(pay.amount)}</Text>
 
-                          {/* Mark paid / undo — explicit action beside delete */}
-                          {unpaid ? (
-                            <IconButton
-                              icon="check-circle-outline"
-                              size={20}
-                              iconColor={C.teal}
-                              accessibilityLabel={t("payment.markPaid")}
-                              testID={`kid-payment-markpaid-${pay.id}`}
-                              onPress={() => handleMarkPaid(pay)}
-                            />
-                          ) : (
-                            <IconButton
-                              icon="undo-variant"
-                              size={18}
-                              iconColor={C.textMuted}
-                              accessibilityLabel={t("payment.markUnpaid")}
-                              testID={`kid-payment-undo-${pay.id}`}
-                              onPress={() => handleMarkUnpaid(pay)}
-                            />
-                          )}
-
+                          <IconButton
+                            icon="undo-variant"
+                            size={18}
+                            iconColor={C.textMuted}
+                            accessibilityLabel={t("payment.markUnpaid")}
+                            testID={`kid-payment-undo-${pay.id}`}
+                            onPress={() => handleMarkUnpaid(pay)}
+                          />
                           <IconButton
                             icon="trash-can-outline"
                             size={16}

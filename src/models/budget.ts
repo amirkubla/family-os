@@ -84,6 +84,46 @@ export function paymentDueDate(e: Expense, expenses: Expense[]): string {
   return e.isRecurring ? nextDueForSeries(e, expenses) : e.date;
 }
 
+/**
+ * Every currently-outstanding (unpaid) period of a payment, oldest first.
+ *
+ * One-time: [its date] if unpaid, else [].
+ * Recurring: each scheduled date from the anchor with no settled occurrence,
+ * up to and including the first period that is today-or-later (the upcoming
+ * "to pay"). Past dates in the result are LATE — this is how "one entry per
+ * missed period" is represented: each missed period is derived from the
+ * template + the absence of its occurrence, and paying one materializes its
+ * occurrence so it drops off this list.
+ */
+export function outstandingPeriods(
+  payment: Expense,
+  expenses: Expense[],
+  todayYMD: string,
+): string[] {
+  if (!payment.isRecurring) {
+    return payment.paid === false ? [payment.date] : [];
+  }
+  const key = seriesKey(payment);
+  const paid = new Set(
+    expenses
+      .filter((e) => isRecurringOccurrence(e) && seriesKey(e) === key)
+      .map((e) => e.date),
+  );
+  const out: string[] = [];
+  let d = payment.date;
+  for (let i = 0; i < 600; i++) {
+    if (!paid.has(d)) out.push(d);
+    if (d >= todayYMD) break; // stop at the first today-or-later (upcoming) period
+    d = nextDueDate(d, payment.recurrenceType);
+  }
+  return out;
+}
+
+/** A scheduled period is "late" once its due date is strictly before today. */
+export function isPeriodLate(periodYMD: string, todayYMD: string): boolean {
+  return periodYMD < todayYMD;
+}
+
 /** Default budget categories — mirrors the server-side auto-seed. */
 export const DEFAULT_BUDGET_CATEGORIES: { name: string; icon: string; color: string; sortOrder: number }[] = [
   { name: "מזון וקניות",   icon: "🛒", color: "#2D9F6F", sortOrder: 0 },

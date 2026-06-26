@@ -20,7 +20,7 @@ import {
 import { t, LOCALE } from "@src/i18n";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { formatILS, paymentDueDate } from "@src/models/budget";
+import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget";
 import { toYMD } from "@src/utils/date";
 
 const DAYS_OF_WEEK_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
@@ -95,13 +95,22 @@ export default function BudgetScreen() {
   // Outstanding kid payments (תשלומים still "to pay") across ALL kids, so the
   // budget screen is the single place to see everything owed. Overdue first,
   // then by due date. Settled ones drop off (they become normal expenses).
-  const outstandingKidPayments = useMemo(
-    () =>
-      allExpenses
-        .filter((e) => e.kidId && e.paid === false)
-        .sort((a, b) => a.date.localeCompare(b.date)),
-    [allExpenses],
-  );
+  // One entry per outstanding period: a recurring template expands into a row
+  // for each missed (late) period + the upcoming one; a one-time payment is a
+  // single entry. Oldest period first so the most-overdue surfaces at the top.
+  const outstandingKidPayments = useMemo(() => {
+    const todayYMD = toYMD(new Date());
+    return allExpenses
+      .filter((e) => e.kidId && e.paid === false)
+      .flatMap((p) =>
+        outstandingPeriods(p, allExpenses, todayYMD).map((periodDate) => ({
+          payment: p,
+          periodDate,
+          late: isPeriodLate(periodDate, todayYMD),
+        })),
+      )
+      .sort((a, b) => a.periodDate.localeCompare(b.periodDate));
+  }, [allExpenses]);
 
   // Non-kid one-time payments still pending (paid===false). Marked paid from
   // the row's ✓; excluded from spending totals until then (monthExpenses
@@ -377,18 +386,16 @@ export default function BudgetScreen() {
         {outstandingKidPayments.length > 0 && (
           <>
             <SectionHeader label={t("budget.kidPayments")} />
-            {outstandingKidPayments.map((pay) => {
-              const kid = kids.find((k) => k.id === pay.kidId);
-              const due = paymentDueDate(pay, allExpenses);
-              const overdue = due < todayStr;
-              const dateLabel = `${due.slice(8, 10)}/${due.slice(5, 7)}`;
-              const recur = pay.isRecurring
-                ? pay.recurrenceType === "weekly" ? t("payment.everyWeek") : t("payment.everyMonth")
+            {outstandingKidPayments.map(({ payment, periodDate, late }) => {
+              const kid = kids.find((k) => k.id === payment.kidId);
+              const dateLabel = `${periodDate.slice(8, 10)}/${periodDate.slice(5, 7)}`;
+              const recur = payment.isRecurring
+                ? payment.recurrenceType === "weekly" ? t("payment.everyWeek") : t("payment.everyMonth")
                 : "";
-              const metaText = [overdue ? t("payment.overdue") : "", recur, dateLabel].filter(Boolean).join(" • ");
+              const metaText = [late ? t("payment.overdue") : "", recur, dateLabel].filter(Boolean).join(" • ");
               return (
                 <Pressable
-                  key={pay.id}
+                  key={payment.id + periodDate}
                   style={styles.kidPayRow}
                   onPress={() => kid && router.push(`/kid/${kid.id}`)}
                 >
@@ -397,20 +404,20 @@ export default function BudgetScreen() {
                   </View>
                   <View style={styles.kidPayInfo}>
                     <Text style={[styles.kidPayTitle, { textAlign: TEXT_RIGHT }]} numberOfLines={1}>
-                      {pay.note || t("payment.add")}
+                      {payment.note || t("payment.add")}
                       {kid ? `  •  ${kid.name}` : ""}
                     </Text>
-                    <Text style={[styles.kidPayMeta, { textAlign: TEXT_RIGHT }, overdue && styles.kidPayMetaOverdue]}>
+                    <Text style={[styles.kidPayMeta, { textAlign: TEXT_RIGHT }, late && styles.kidPayMetaOverdue]}>
                       {metaText}
                     </Text>
                   </View>
-                  <Text style={styles.kidPayAmount}>{formatILS(pay.amount)}</Text>
+                  <Text style={styles.kidPayAmount}>{formatILS(payment.amount)}</Text>
                   <IconButton
                     icon="check-circle-outline"
                     size={20}
                     iconColor={C.teal}
                     accessibilityLabel={t("payment.markPaid")}
-                    onPress={() => markKidPaymentPaidRemote(pay)}
+                    onPress={() => markKidPaymentPaidRemote(payment, periodDate)}
                   />
                 </Pressable>
               );

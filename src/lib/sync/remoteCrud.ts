@@ -770,9 +770,11 @@ export function deleteExpenseRemote(id: string) {
  * chain, which produced duplicate "to pay" rows and gaps under repeated
  * mark/undo clicks.
  */
-export function markKidPaymentPaidRemote(payment: Expense) {
+export function markKidPaymentPaidRemote(payment: Expense, periodDate?: string) {
   if (payment.isRecurring) {
-    const due = nextDueForSeries(payment, useFamilyStore.getState().expenses);
+    // Settle a specific period when given (one-entry-per-missed-period UI);
+    // otherwise default to the earliest unpaid period.
+    const due = periodDate ?? nextDueForSeries(payment, useFamilyStore.getState().expenses);
     addExpenseRemote({
       amount: payment.amount,
       categoryName: payment.categoryName,
