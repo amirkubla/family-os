@@ -6,15 +6,10 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Platform, ScrollView } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import ReorderableList, {
-  useReorderableDrag,
-  reorderItems,
-  type ReorderableListReorderEvent,
-} from "react-native-reorderable-list";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Chore } from "@src/models/chore";
@@ -46,7 +41,21 @@ const CHORE_COLORS = {
   todayBadgeText: "#B45309",
 } as const;
 
-function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => void; onDelete: () => void }) {
+function ChoreRow({
+  chore,
+  index,
+  count,
+  onEdit,
+  onDelete,
+  onMove,
+}: {
+  chore: Chore;
+  index: number;
+  count: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onMove: (dir: -1 | 1) => void;
+}) {
   const assignedMember = useFamilyStore((s) =>
     chore.assignedToMemberId
       ? s.familyMembers.find((m) => m.id === chore.assignedToMemberId)
@@ -55,8 +64,6 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
   const assigneeDisplay = assignedMember
     ? `${assignedMember.avatarEmoji ?? ""} ${assignedMember.name}`
     : chore.assignedTo;
-
-  const drag = useReorderableDrag();
 
   return (
     <Pressable
@@ -68,8 +75,6 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
         pressed && { transform: [{ scale: 0.98 }] },
       ]}
       onPress={onEdit}
-      onLongPress={drag}
-      delayLongPress={250}
     >
       <Pressable
         testID={"chore-check-" + chore.title}
@@ -94,6 +99,22 @@ function ChoreRow({ chore, onEdit, onDelete }: { chore: Chore; onEdit: () => voi
       </View>
 
       <View style={styles.choreActions}>
+        <IconButton
+          icon="chevron-up"
+          size={16}
+          disabled={index === 0}
+          iconColor={C.textMuted}
+          style={styles.choreActionBtn}
+          onPress={() => onMove(-1)}
+        />
+        <IconButton
+          icon="chevron-down"
+          size={16}
+          disabled={index === count - 1}
+          iconColor={C.textMuted}
+          style={styles.choreActionBtn}
+          onPress={() => onMove(1)}
+        />
         <IconButton
           icon="white-balance-sunny"
           size={16}
@@ -142,36 +163,28 @@ export default function ChoresScreen() {
     setModalOpen(true);
   };
 
-  const handleReorder = useCallback(
-    ({ from, to }: ReorderableListReorderEvent) => {
-      reorderChoresRemote(reorderItems(chores, from, to).map((c) => c.id));
+  const moveChore = useCallback(
+    (index: number, dir: -1 | 1) => {
+      const j = index + dir;
+      if (j < 0 || j >= chores.length) return;
+      const next = [...chores];
+      [next[index], next[j]] = [next[j], next[index]];
+      reorderChoresRemote(next.map((c) => c.id));
     },
     [chores],
-  );
-
-  const renderChore = useCallback(
-    ({ item }: { item: Chore }) => (
-      <ChoreRow
-        chore={item}
-        onEdit={() => openEdit(item)}
-        onDelete={() => requestDelete(() => deleteChoreRemote(item.id))}
-      />
-    ),
-    [requestDelete],
   );
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("home.chores")} />
-      <ReorderableList
-        data={chores}
-        keyExtractor={(item) => item.id}
-        renderItem={renderChore}
-        onReorder={handleReorder}
-        style={styles.list}
-        contentContainerStyle={styles.container}
-        ListHeaderComponent={
-          chores.length > 0 ? (
+      <ScrollView style={styles.list} contentContainerStyle={styles.container}>
+        {chores.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={{ fontSize: 32 }}>🎉</Text>
+            <Text style={styles.emptyText}>{t("home.allClear")}</Text>
+          </View>
+        ) : (
+          <>
             <View style={styles.statsRow}>
               <View style={styles.statsPill}>
                 <Text style={styles.statsText}>
@@ -179,15 +192,20 @@ export default function ChoresScreen() {
                 </Text>
               </View>
             </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={{ fontSize: 32 }}>🎉</Text>
-            <Text style={styles.emptyText}>{t("home.allClear")}</Text>
-          </View>
-        }
-      />
+            {chores.map((item, index) => (
+              <ChoreRow
+                key={item.id}
+                chore={item}
+                index={index}
+                count={chores.length}
+                onEdit={() => openEdit(item)}
+                onDelete={() => requestDelete(() => deleteChoreRemote(item.id))}
+                onMove={(dir) => moveChore(index, dir)}
+              />
+            ))}
+          </>
+        )}
+      </ScrollView>
 
       <FAB
         icon="plus"

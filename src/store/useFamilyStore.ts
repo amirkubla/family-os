@@ -133,8 +133,8 @@ interface FamilyState {
   clearAllCategory: (shoppingCategory: ShoppingCategory) => string[];
 
   // Notes actions
-  addNote: (input: { title?: string; body: string; kidId?: string }) => Note;
-  updateNote: (id: string, patch: Partial<Pick<Note, "title" | "body" | "kidId">>) => void;
+  addNote: (input: { title?: string; body: string; kidId?: string; ownerMemberId?: string }) => Note;
+  updateNote: (id: string, patch: Partial<Pick<Note, "title" | "body" | "kidId" | "ownerMemberId">>) => void;
   /** Reassign note sortOrder from the given top-to-bottom id order. */
   reorderNotes: (ids: string[]) => void;
   toggleNotePinned: (id: string) => void;
@@ -171,10 +171,10 @@ interface FamilyState {
   setFamilyMemberActive: (id: string, isActive: boolean) => void;
 
   // Projects actions
-  addProject: (input: { title: string; description?: string; kidId?: string }) => Project;
+  addProject: (input: { title: string; description?: string; kidId?: string; ownerMemberId?: string }) => Project;
   updateProject: (
     id: string,
-    patch: Partial<Pick<Project, "title" | "description" | "status" | "progress" | "kidId">>
+    patch: Partial<Pick<Project, "title" | "description" | "status" | "progress" | "kidId" | "ownerMemberId">>
   ) => void;
   deleteProject: (id: string) => void;
   /** Reassign project sortOrder from the given top-to-bottom id order. */
@@ -371,7 +371,7 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Notes ── */
 
-      addNote: ({ title, body, kidId }) => {
+      addNote: ({ title, body, kidId, ownerMemberId }) => {
         const now = Date.now();
         const minOrder = get().notes.reduce((m, n) => Math.min(m, n.sortOrder ?? 0), 0);
         const item: Note = {
@@ -381,6 +381,7 @@ export const useFamilyStore = create<FamilyState>()(
           pinned: false,
           sortOrder: minOrder - 1, // prepend → sorts first
           kidId,
+          ownerMemberId,
           updatedAt: now,
           createdAt: now,
         };
@@ -469,7 +470,7 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Projects ── */
 
-      addProject: ({ title, description, kidId }) => {
+      addProject: ({ title, description, kidId, ownerMemberId }) => {
         const now = Date.now();
         const minOrder = get().projects.reduce((m, p) => Math.min(m, p.sortOrder ?? 0), 0);
         const item: Project = {
@@ -480,6 +481,7 @@ export const useFamilyStore = create<FamilyState>()(
           progress: 0,
           sortOrder: minOrder - 1, // prepend → sorts first
           kidId,
+          ownerMemberId,
           updatedAt: now,
           createdAt: now,
         };

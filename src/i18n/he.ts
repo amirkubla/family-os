@@ -153,6 +153,9 @@ const he = {
     titleLabel: "כותרת (אופציונלי)",
     bodyLabel: "תוכן הפתק",
     assignToKid: "שייך לילד/ה (אופציונלי)",
+    assignTo: "שייך אל (אופציונלי)",
+    ownerParents: "הורים",
+    ownerKids: "ילדים",
   },
 
   // ── Chore Add Modal ──

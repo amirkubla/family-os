@@ -36,7 +36,7 @@ import { C, S, R, SHADOW } from "@src/ui/tokens";
 import { STATUS_COLORS } from "@src/ui/semanticColors";
 import { formatDateHe } from "@src/components/DatePicker";
 import SectionHeader from "@src/components/SectionHeader";
-import KidOwnerBadge from "@src/components/KidOwnerBadge";
+import OwnerBadge from "@src/components/OwnerBadge";
 import NoteModal from "@src/components/NoteModal";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
@@ -456,7 +456,7 @@ export default function TodayScreen() {
                         {note.body}
                       </Text>
                     ) : null}
-                    <KidOwnerBadge kidId={note.kidId} style={{ marginTop: S.xs }} />
+                    <OwnerBadge kidId={note.kidId} ownerMemberId={note.ownerMemberId} style={{ marginTop: S.xs }} />
                     <View style={styles.noteAccentBar} />
                   </Pressable>
                 ))}
@@ -518,7 +518,7 @@ export default function TodayScreen() {
                             {proj.description}
                           </Text>
                         ) : null}
-                        <KidOwnerBadge kidId={proj.kidId} style={{ marginTop: S.xs, marginBottom: S.xs }} />
+                        <OwnerBadge kidId={proj.kidId} ownerMemberId={proj.ownerMemberId} style={{ marginTop: S.xs, marginBottom: S.xs }} />
                         <View style={styles.projectProgressRow}>
                           <View style={styles.projectProgressTrack}>
                             <View

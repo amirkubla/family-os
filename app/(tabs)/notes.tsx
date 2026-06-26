@@ -6,21 +6,16 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Platform, ScrollView } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import ReorderableList, {
-  useReorderableDrag,
-  reorderItems,
-  type ReorderableListReorderEvent,
-} from "react-native-reorderable-list";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Note } from "@src/models/note";
 import { toggleNotePinnedRemote, deleteNoteRemote, reorderNotesRemote } from "@src/lib/sync/remoteCrud";
 import NoteModal from "@src/components/NoteModal";
-import KidOwnerBadge from "@src/components/KidOwnerBadge";
+import OwnerBadge from "@src/components/OwnerBadge";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -38,23 +33,26 @@ const NOTE_COLORS = {
   barDefault: "#E8D5B0",
 } as const;
 
-// Single note card. Long-press anywhere starts a drag-to-reorder.
+// Single note card. Reorder via the up/down arrows in the top row.
 function NoteCard({
   note,
+  index,
+  count,
   onEdit,
   onDelete,
+  onMove,
 }: {
   note: Note;
+  index: number;
+  count: number;
   onEdit: () => void;
   onDelete: () => void;
+  onMove: (dir: -1 | 1) => void;
 }) {
-  const drag = useReorderableDrag();
   return (
     <Pressable
       testID={"note-card-" + (note.title || "")}
       onPress={onEdit}
-      onLongPress={drag}
-      delayLongPress={250}
       style={({ pressed, hovered }: any) => [
         styles.noteCard,
         note.pinned && styles.noteCardPinned,
@@ -67,6 +65,22 @@ function NoteCard({
           <Text style={{ fontSize: 18 }}>{note.pinned ? "📌" : "📝"}</Text>
         </View>
         <View style={{ flex: 1 }} />
+        <IconButton
+          icon="chevron-up"
+          size={16}
+          disabled={index === 0}
+          iconColor={C.textMuted}
+          style={styles.noteActionBtn}
+          onPress={() => onMove(-1)}
+        />
+        <IconButton
+          icon="chevron-down"
+          size={16}
+          disabled={index === count - 1}
+          iconColor={C.textMuted}
+          style={styles.noteActionBtn}
+          onPress={() => onMove(1)}
+        />
         <IconButton
           icon={note.pinned ? "pin-off" : "pin"}
           size={16}
@@ -95,7 +109,7 @@ function NoteCard({
         </Text>
       ) : null}
 
-      <KidOwnerBadge kidId={note.kidId} style={{ marginTop: S.xs }} />
+      <OwnerBadge kidId={note.kidId} ownerMemberId={note.ownerMemberId} style={{ marginTop: S.xs }} />
 
       <View style={[styles.noteAccentBar, note.pinned && { backgroundColor: NOTE_COLORS.accent }]} />
     </Pressable>
@@ -127,9 +141,15 @@ export default function NotesScreen() {
     }
   }, [modal]);
 
-  const handleReorder = useCallback(
-    ({ from, to }: ReorderableListReorderEvent) => {
-      reorderNotesRemote(reorderItems(notes, from, to).map((n) => n.id));
+  // Reorder via per-card arrows: swap with the adjacent item, then persist the
+  // new top-to-bottom id order. (Replaces drag-to-reorder, same as kid view.)
+  const moveNote = useCallback(
+    (index: number, dir: -1 | 1) => {
+      const j = index + dir;
+      if (j < 0 || j >= notes.length) return;
+      const next = [...notes];
+      [next[index], next[j]] = [next[j], next[index]];
+      reorderNotesRemote(next.map((n) => n.id));
     },
     [notes],
   );
@@ -137,29 +157,29 @@ export default function NotesScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("home.notes")} />
-      <ReorderableList
-        data={notes}
-        keyExtractor={(item) => item.id}
-        onReorder={handleReorder}
-        style={styles.list}
-        contentContainerStyle={styles.container}
-        ListEmptyComponent={
+      <ScrollView style={styles.list} contentContainerStyle={styles.container}>
+        {notes.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 32 }}>📝</Text>
             <Text style={styles.emptyText}>{t("home.noNotes")}</Text>
           </View>
-        }
-        renderItem={({ item }) => (
-          <NoteCard
-            note={item}
-            onEdit={() => {
-              setEditingNote(item);
-              setModalOpen(true);
-            }}
-            onDelete={() => requestDelete(() => deleteNoteRemote(item.id))}
-          />
+        ) : (
+          notes.map((item, index) => (
+            <NoteCard
+              key={item.id}
+              note={item}
+              index={index}
+              count={notes.length}
+              onEdit={() => {
+                setEditingNote(item);
+                setModalOpen(true);
+              }}
+              onDelete={() => requestDelete(() => deleteNoteRemote(item.id))}
+              onMove={(dir) => moveNote(index, dir)}
+            />
+          ))
         )}
-      />
+      </ScrollView>
 
       <FAB
         icon="plus"

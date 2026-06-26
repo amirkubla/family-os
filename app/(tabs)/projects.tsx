@@ -6,21 +6,16 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Platform, ScrollView } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import ReorderableList, {
-  useReorderableDrag,
-  reorderItems,
-  type ReorderableListReorderEvent,
-} from "react-native-reorderable-list";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Project } from "@src/models/project";
 import { deleteProjectRemote, reorderProjectsRemote } from "@src/lib/sync/remoteCrud";
 import ProjectModal from "@src/components/ProjectModal";
-import KidOwnerBadge from "@src/components/KidOwnerBadge";
+import OwnerBadge from "@src/components/OwnerBadge";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -36,25 +31,28 @@ const PROJECT_COLORS = {
   hover: "#EEEAFF",
 } as const;
 
-// Single project card. Long-press anywhere on it starts a drag-to-reorder.
+// Single project card. Reorder via the up/down arrows in the top row.
 function ProjectCard({
   proj,
+  index,
+  count,
   onEdit,
   onDelete,
+  onMove,
 }: {
   proj: Project;
+  index: number;
+  count: number;
   onEdit: () => void;
   onDelete: () => void;
+  onMove: (dir: -1 | 1) => void;
 }) {
-  const drag = useReorderableDrag();
   const statusColor = STATUS_COLORS[proj.status];
   const statusEmoji = proj.status === "done" ? "✅" : proj.status === "in_progress" ? "🔨" : "💡";
   return (
     <Pressable
       testID={"project-card-" + proj.title}
       onPress={onEdit}
-      onLongPress={drag}
-      delayLongPress={250}
       style={({ pressed, hovered }: any) => [
         styles.projectCard,
         hovered && styles.projectCardHover,
@@ -71,6 +69,22 @@ function ProjectCard({
             </Text>
           </View>
           <View style={{ flex: 1 }} />
+          <IconButton
+            icon="chevron-up"
+            size={16}
+            disabled={index === 0}
+            iconColor={C.textMuted}
+            style={styles.projectActionBtn}
+            onPress={() => onMove(-1)}
+          />
+          <IconButton
+            icon="chevron-down"
+            size={16}
+            disabled={index === count - 1}
+            iconColor={C.textMuted}
+            style={styles.projectActionBtn}
+            onPress={() => onMove(1)}
+          />
           <IconButton
             testID={"project-delete-" + proj.title}
             icon="trash-can-outline"
@@ -91,7 +105,7 @@ function ProjectCard({
           </Text>
         ) : null}
 
-        <KidOwnerBadge kidId={proj.kidId} style={{ marginTop: S.xs }} />
+        <OwnerBadge kidId={proj.kidId} ownerMemberId={proj.ownerMemberId} style={{ marginTop: S.xs }} />
 
         <View style={styles.projectProgressRow}>
           <View style={styles.projectProgressTrack}>
@@ -125,9 +139,12 @@ export default function ProjectsScreen() {
     [allProjects],
   );
 
-  const handleReorder = useCallback(
-    ({ from, to }: ReorderableListReorderEvent) => {
-      const next = reorderItems(projects, from, to);
+  const moveProject = useCallback(
+    (index: number, dir: -1 | 1) => {
+      const j = index + dir;
+      if (j < 0 || j >= projects.length) return;
+      const next = [...projects];
+      [next[index], next[j]] = [next[j], next[index]];
       reorderProjectsRemote(next.map((p) => p.id));
     },
     [projects],
@@ -146,14 +163,14 @@ export default function ProjectsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("home.projects")} />
-      <ReorderableList
-        data={projects}
-        keyExtractor={(item) => item.id}
-        onReorder={handleReorder}
-        style={styles.list}
-        contentContainerStyle={styles.container}
-        ListHeaderComponent={
-          projects.length > 0 ? (
+      <ScrollView style={styles.list} contentContainerStyle={styles.container}>
+        {projects.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={{ fontSize: 32 }}>🚀</Text>
+            <Text style={styles.emptyText}>{t("home.noProjects")}</Text>
+          </View>
+        ) : (
+          <>
             <View style={styles.statsRow}>
               <View style={styles.statsPill}>
                 <Text style={styles.statsText}>
@@ -161,25 +178,23 @@ export default function ProjectsScreen() {
                 </Text>
               </View>
             </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={{ fontSize: 32 }}>🚀</Text>
-            <Text style={styles.emptyText}>{t("home.noProjects")}</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <ProjectCard
-            proj={item}
-            onEdit={() => {
-              setEditingProject(item);
-              setModalOpen(true);
-            }}
-            onDelete={() => requestDelete(() => deleteProjectRemote(item.id))}
-          />
+            {projects.map((item, index) => (
+              <ProjectCard
+                key={item.id}
+                proj={item}
+                index={index}
+                count={projects.length}
+                onEdit={() => {
+                  setEditingProject(item);
+                  setModalOpen(true);
+                }}
+                onDelete={() => requestDelete(() => deleteProjectRemote(item.id))}
+                onMove={(dir) => moveProject(index, dir)}
+              />
+            ))}
+          </>
         )}
-      />
+      </ScrollView>
 
       <FAB
         icon="plus"

@@ -175,6 +175,11 @@ export const notes = pgTable(
     // ON DELETE SET NULL so deleting a kid demotes their notes to
     // family-wide rather than nuking them.
     kidId: uuid("kid_id").references(() => kids.id, { onDelete: "set null" }),
+    // Optional parent/member ownership (mutually exclusive with kidId).
+    // ON DELETE SET NULL demotes to family-wide if the member is removed.
+    ownerMemberId: uuid("owner_member_id").references(() => familyMembers.id, {
+      onDelete: "set null",
+    }),
     title: text("title"),
     body: text("body").notNull(),
     pinned: boolean("pinned").default(false).notNull(),
@@ -244,6 +249,10 @@ export const projects = pgTable(
     // Optional kid ownership — same semantics as notes.kid_id. NULL =
     // family-wide project on /home; non-null = kid project on /kid/[kidId].
     kidId: uuid("kid_id").references(() => kids.id, { onDelete: "set null" }),
+    // Optional parent/member ownership (mutually exclusive with kidId).
+    ownerMemberId: uuid("owner_member_id").references(() => familyMembers.id, {
+      onDelete: "set null",
+    }),
     title: text("title").notNull(),
     description: text("description"),
     status: text("status", { enum: ["idea", "in_progress", "done"] })

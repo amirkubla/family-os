@@ -8,7 +8,7 @@ import { MS } from "@src/ui/modalStyles";
 import { C } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
-import KidOwnerPicker from "./KidOwnerPicker";
+import OwnerPicker from "./OwnerPicker";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "idea", label: statusLabel("idea") },
@@ -177,6 +177,7 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
   const [status, setStatus] = useState<ProjectStatus>(initialStatus ?? "idea");
   const [progress, setProgress] = useState(0);
   const [kidId, setKidId] = useState<string | undefined>(undefined);
+  const [ownerMemberId, setOwnerMemberId] = useState<string | undefined>(undefined);
   // In-flight guard against rapid double-clicks (QA Pass 1 BUG #2).
   // Ref for synchronous re-entrancy check; state for visual disabled/loading.
   const submittingRef = useRef(false);
@@ -191,15 +192,17 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       setStatus(editProject.status);
       setProgress(editProject.progress);
       setKidId(editProject.kidId);
+      setOwnerMemberId(editProject.ownerMemberId);
     } else {
       setTitle(""); setDescription(""); setStatus(initialStatus ?? "idea"); setProgress(0);
       setKidId(defaultKidId);
+      setOwnerMemberId(undefined);
     }
   }, [editProject, visible, defaultKidId, initialStatus]);
 
   const reset = () => {
     setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);
-    setKidId(undefined);
+    setKidId(undefined); setOwnerMemberId(undefined);
   };
 
   const handleSubmit = () => {
@@ -214,12 +217,14 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
         status,
         progress: Math.round(progress),
         kidId,
+        ownerMemberId,
       });
     } else {
       addProjectRemote({
         title: title.trim(),
         description: description.trim() || undefined,
         kidId,
+        ownerMemberId,
       });
     }
     reset();
@@ -292,9 +297,13 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
 
       {/* Hidden in kid-page context — the project is locked to that kid. */}
       {!lockedKidName && (
-        <KidOwnerPicker
-          value={kidId}
-          onChange={setKidId}
+        <OwnerPicker
+          kidId={kidId}
+          ownerMemberId={ownerMemberId}
+          onChange={(next) => {
+            setKidId(next.kidId);
+            setOwnerMemberId(next.ownerMemberId);
+          }}
           label={t("projectModal.assignToKid")}
         />
       )}

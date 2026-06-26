@@ -9,10 +9,13 @@ export interface Project {
   /** Manual drag-to-reorder position; lower sorts first. */
   sortOrder: number;
   /**
-   * Optional kid ownership. undefined = family-wide project (shown on /home).
-   * Non-null = project belongs to that kid (shown on /kid/[kidId]).
+   * Ownership — at most one of these is set:
+   *   kidId          → belongs to that kid (shown on /kid/[kidId]).
+   *   ownerMemberId  → belongs to that family member (parent).
+   *   both undefined → family-wide / general (no owner).
    */
   kidId?: string;
+  ownerMemberId?: string;
   updatedAt: number;
   createdAt: number;
 }

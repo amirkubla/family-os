@@ -190,6 +190,13 @@
       "when": 1781900000000,
       "tag": "0026_users_apple_sub",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1782000000000,
+      "tag": "0027_notes_projects_owner_member",
+      "breakpoints": true
     }
   ]
 }

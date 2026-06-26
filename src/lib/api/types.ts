@@ -39,6 +39,7 @@ export interface ApiNote {
   id: string;
   familyId: string;
   kidId: string | null;
+  ownerMemberId: string | null;
   title: string | null;
   body: string;
   pinned: boolean;
@@ -77,6 +78,7 @@ export interface ApiProject {
   id: string;
   familyId: string;
   kidId: string | null;
+  ownerMemberId: string | null;
   title: string;
   description: string | null;
   status: "idea" | "in_progress" | "done";

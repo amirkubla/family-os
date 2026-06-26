@@ -193,6 +193,7 @@ export function addNoteRemote(input: {
   title?: string;
   body: string;
   kidId?: string;
+  ownerMemberId?: string;
 }) {
   const item = useFamilyStore.getState().addNote(input);
   fireAndForget(
@@ -205,7 +206,7 @@ export function addNoteRemote(input: {
 
 export function updateNoteRemote(
   id: string,
-  patch: Partial<Pick<Note, "title" | "body" | "kidId">>,
+  patch: Partial<Pick<Note, "title" | "body" | "kidId" | "ownerMemberId">>,
 ) {
   useFamilyStore.getState().updateNote(id, patch);
   // PATCH with only changed fields — see BUG-N1 note in module header.
@@ -213,12 +214,14 @@ export function updateNoteRemote(
     title: string | null;
     body: string;
     kidId: string | null;
+    ownerMemberId: string | null;
   }> = {};
   if (patch.title !== undefined) apiPatch.title = patch.title ?? null;
   if (patch.body !== undefined) apiPatch.body = patch.body;
-  // Treat "kidId" key being present (even with value undefined) as an
-  // explicit unassign — frontend sends null so backend updates the column.
+  // Treat the key being present (even with value undefined) as an explicit
+  // (un)assign — frontend sends null so the backend updates the column.
   if ("kidId" in patch) apiPatch.kidId = patch.kidId ?? null;
+  if ("ownerMemberId" in patch) apiPatch.ownerMemberId = patch.ownerMemberId ?? null;
   fireAndForget(
     getFamilyId().then((fid) => notesApi.update(fid, id, apiPatch)),
     "Update note",
@@ -353,6 +356,7 @@ export function addProjectRemote(input: {
   title: string;
   description?: string;
   kidId?: string;
+  ownerMemberId?: string;
 }) {
   const item = useFamilyStore.getState().addProject(input);
   fireAndForget(
@@ -365,7 +369,7 @@ export function addProjectRemote(input: {
 
 export function updateProjectRemote(
   id: string,
-  patch: Partial<Pick<Project, "title" | "description" | "status" | "progress" | "kidId">>,
+  patch: Partial<Pick<Project, "title" | "description" | "status" | "progress" | "kidId" | "ownerMemberId">>,
 ) {
   useFamilyStore.getState().updateProject(id, patch);
   // PATCH with only changed fields — see BUG-N1 note in module header.
@@ -375,14 +379,16 @@ export function updateProjectRemote(
     status: import("@src/models/project").ProjectStatus;
     progress: number;
     kidId: string | null;
+    ownerMemberId: string | null;
   }> = {};
   if (patch.title !== undefined) apiPatch.title = patch.title;
   if (patch.description !== undefined) apiPatch.description = patch.description ?? null;
   if (patch.status !== undefined) apiPatch.status = patch.status;
   if (patch.progress !== undefined) apiPatch.progress = patch.progress;
-  // "kidId" in patch (rather than `!== undefined`) so unassign (null/undefined
+  // Key present (rather than `!== undefined`) so unassign (null/undefined
   // value) is honored — the backend needs to see the key in the PATCH body.
   if ("kidId" in patch) apiPatch.kidId = patch.kidId ?? null;
+  if ("ownerMemberId" in patch) apiPatch.ownerMemberId = patch.ownerMemberId ?? null;
   fireAndForget(
     getFamilyId().then((fid) => projectsApi.update(fid, id, apiPatch)),
     "Update project",

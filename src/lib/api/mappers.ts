@@ -69,6 +69,7 @@ export function apiToLocalNote(a: ApiNote): Note {
     pinned: a.pinned,
     sortOrder: a.sortOrder ?? 0,
     kidId: a.kidId ?? undefined,
+    ownerMemberId: a.ownerMemberId ?? undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -85,6 +86,7 @@ export function localToApiNote(item: Note) {
     // unassign on the conflict-update branch. JSON.stringify drops
     // undefined values; null is preserved.
     kidId: item.kidId ?? null,
+    ownerMemberId: item.ownerMemberId ?? null,
   };
 }
 
@@ -131,6 +133,7 @@ export function apiToLocalProject(a: ApiProject): Project {
     progress: a.progress,
     sortOrder: a.sortOrder ?? 0,
     kidId: a.kidId ?? undefined,
+    ownerMemberId: a.ownerMemberId ?? undefined,
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -145,6 +148,7 @@ export function localToApiProject(item: Project) {
     progress: item.progress,
     sortOrder: item.sortOrder ?? 0,
     kidId: item.kidId ?? null,
+    ownerMemberId: item.ownerMemberId ?? null,
   };
 }
 

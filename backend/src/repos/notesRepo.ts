@@ -48,6 +48,7 @@ export const notesRepo = {
           // change the kid assignment (or unassign by sending kidId=null)
           // would silently no-op the change on the conflict branch.
           kidId: sql`excluded.kid_id`,
+          ownerMemberId: sql`excluded.owner_member_id`,
           sortOrder: sql`excluded.sort_order`,
           updatedAt: new Date(),
         },
