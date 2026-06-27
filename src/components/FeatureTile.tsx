@@ -68,19 +68,19 @@ export default function FeatureTile({
       ]}
       {...webHover}
     >
-      {/* Icon — top, leading corner */}
-      {icon ? (
-        <Ionicons name={icon} size={24} color={accent} />
-      ) : (
-        <Text style={styles.emoji}>{emoji}</Text>
-      )}
+      {/* Large icon + title, centred in the card */}
+      <View style={styles.center}>
+        {icon ? (
+          <Ionicons name={icon} size={40} color={accent} />
+        ) : (
+          <Text style={styles.emoji}>{emoji}</Text>
+        )}
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+      </View>
 
-      <View style={styles.spacer} />
-
-      {/* Title + big count (or subtitle) — bottom, leading */}
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
+      {/* Count (or subtitle) — small, pinned to the bottom leading corner */}
       {count != null ? (
         <Text style={styles.count}>{count}</Text>
       ) : subtitle ? (
@@ -97,8 +97,7 @@ const styles = StyleSheet.create({
     flexBasis: "47%",
     flexGrow: 1,
     minWidth: 150,
-    minHeight: 118,
-    alignItems: "flex-start", // leading = right under RTL
+    minHeight: 124,
     borderRadius: R.xl,
     borderWidth: 1,
     paddingVertical: S.md,
@@ -115,32 +114,37 @@ const styles = StyleSheet.create({
   tilePressed: {
     transform: [{ scale: 0.98 }],
   },
-  spacer: { flex: 1, minHeight: S.md },
-  emoji: { fontSize: 24 },
+  // Icon + title: centred, fills the space above the corner count.
+  center: {
+    flex: 1,
+    alignSelf: "stretch",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: S.xs,
+  },
+  emoji: { fontSize: 40 },
   title: {
     fontSize: 14,
     fontWeight: "700",
     color: C.textPrimary,
-    textAlign: TEXT_RIGHT,
+    textAlign: "center",
     writingDirection: "rtl",
-    alignSelf: "stretch",
   },
+  // Count: smaller, pinned to the leading (right in RTL) bottom corner.
   count: {
-    fontSize: 30,
+    fontSize: 20,
     fontWeight: "800",
     color: C.textPrimary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
-    alignSelf: "stretch",
-    marginTop: 2,
+    alignSelf: "flex-start",
   },
   subtitle: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: "500",
     color: C.textSecondary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
-    alignSelf: "stretch",
-    marginTop: 2,
+    alignSelf: "flex-start",
   },
 });

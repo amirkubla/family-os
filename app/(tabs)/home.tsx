@@ -87,7 +87,15 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {/* ── Header: family name · settings (spacer balances the cog) ── */}
         <View style={styles.headerRow}>
-          <View style={styles.headerSpacer} />
+          {/* Settings cog on the RIGHT (leading in RTL); spacer balances it. */}
+          <IconButton
+            icon="cog-outline"
+            size={24}
+            iconColor={C.textSecondary}
+            onPress={() => router.push("/settings")}
+            accessibilityLabel={t("tabs.settings")}
+            testID="home-settings"
+          />
           <View style={[{ flexDirection: RTL_ROW }, styles.headerCenter]}>
             <View style={styles.familyBadge}>
               <Text style={styles.familyBadgeEmoji}>{familyEmoji}</Text>
@@ -98,14 +106,7 @@ export default function HomeScreen() {
               </Text>
             )}
           </View>
-          <IconButton
-            icon="cog-outline"
-            size={24}
-            iconColor={C.textSecondary}
-            onPress={() => router.push("/settings")}
-            accessibilityLabel={t("tabs.settings")}
-            testID="home-settings"
-          />
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* ── Launcher tile grid ── */}

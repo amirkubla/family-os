@@ -17,7 +17,7 @@ import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, assigneeTypeLabel } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
-import { C, S, R } from "@src/ui/tokens";
+import { C, S } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper from "./ModalWrapper";
 import WheelTimePicker from "./WheelTimePicker";
@@ -257,8 +257,8 @@ export default function FamilyEventModal({
       {/* ── Title & Assignee section ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>✏️</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.titleLabel")}</Text>
+          <Text style={MS.sectionIcon}>✏️</Text>
         </View>
         <Controller
           control={control}
@@ -278,8 +278,8 @@ export default function FamilyEventModal({
         {errors.title && <Text style={MS.error}>{errors.title.message}</Text>}
 
         <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>👥</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.assignee")}</Text>
+          <Text style={MS.sectionIcon}>👥</Text>
         </View>
         <View style={MS.segmented}>
           <SegmentedPills
@@ -345,8 +345,8 @@ export default function FamilyEventModal({
       {/* ── Schedule section ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>{isRecurring ? "🔄" : "1️⃣"}</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.schedule")}</Text>
+          <Text style={MS.sectionIcon}>{isRecurring ? "🔄" : "1️⃣"}</Text>
         </View>
         <View style={MS.segmented}>
           <SegmentedPills
@@ -362,8 +362,8 @@ export default function FamilyEventModal({
         {isRecurring && (
           <>
             <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionIcon}>📆</Text>
               <Text style={MS.sectionLabel}>{t("eventModal.day")}</Text>
+              <Text style={MS.sectionIcon}>📆</Text>
             </View>
             <View style={MS.chipRow}>
               {Array.from({ length: 7 }, (_, idx) => {
@@ -408,8 +408,8 @@ export default function FamilyEventModal({
         {!isRecurring && (
           <>
             <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionIcon}>📆</Text>
               <Text style={MS.sectionLabel}>{t("eventModal.date")}</Text>
+              <Text style={MS.sectionIcon}>📆</Text>
             </View>
             <Controller
               control={control}
@@ -423,8 +423,8 @@ export default function FamilyEventModal({
             {/* Optional multi-day end date — leave equal to the start for a
                 single-day event; pick a later date to span a range. */}
             <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionIcon}>📆</Text>
               <Text style={MS.sectionLabel}>{t("eventModal.endDate")}</Text>
+              <Text style={MS.sectionIcon}>📆</Text>
             </View>
             <Controller
               control={control}
@@ -444,8 +444,8 @@ export default function FamilyEventModal({
       {/* ── Time section ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>⏰</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.time")}</Text>
+          <Text style={MS.sectionIcon}>⏰</Text>
         </View>
         <View style={MS.segmented}>
           <SegmentedPills
@@ -489,8 +489,8 @@ export default function FamilyEventModal({
       {/* ── Location section ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>📍</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.location")}</Text>
+          <Text style={MS.sectionIcon}>📍</Text>
         </View>
         <Controller
           control={control}
@@ -511,8 +511,8 @@ export default function FamilyEventModal({
       {/* ── Reminders section ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>🔔</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.reminders")}</Text>
+          <Text style={MS.sectionIcon}>🔔</Text>
         </View>
         <View style={MS.chipRow}>
           {REMINDER_PRESETS.map(({ minutes, label }) => {
