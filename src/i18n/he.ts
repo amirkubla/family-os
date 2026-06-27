@@ -274,14 +274,6 @@ const he = {
     done: "בוצע",
   },
 
-  // ── Schedule block types ──
-  blockType: {
-    school: "בית ספר",
-    hobby: "חוג",
-    activity: "חוג",
-    other: "אחר",
-  },
-
   // ── Subcategories (keys match English data model values) ──
   groceryCategory: {
     // Grocery (מכולת)

@@ -21,7 +21,6 @@ export function seedScheduleIfEmpty() {
         kidId: kid.id,
         daysOfWeek: [dow],
         title: "בית ספר",
-        type: "school",
         startMinutes: 480, // 08:00
         endMinutes: 810, // 13:30
       });

@@ -196,7 +196,6 @@ export async function buildSnapshot(familyId: string): Promise<Record<string, un
   const blocksOut = cap(blocks, CAPS.blocks, "scheduleBlocks").map((b) => ({
     kid: kidName.get(b.kidId) ?? "?",
     title: b.title,
-    type: b.type,
     days: heDays(b.daysOfWeek),
     time: `${hhmm(b.startMinutes)}-${hhmm(b.endMinutes)}`,
     ...(b.location ? { location: b.location } : {}),

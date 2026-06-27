@@ -1,11 +1,8 @@
-export type BlockType = "school" | "hobby" | "other";
-
 export interface ScheduleBlock {
   id: string;
   kidId: string;
   daysOfWeek: number[]; // [0, 2, 4] = Sun, Tue, Thu
   title: string;
-  type: BlockType;
   startMinutes: number; // 480 = 08:00
   endMinutes: number;
   location?: string;
@@ -36,9 +33,3 @@ export const DAY_NAMES_SHORT = [
   "Fri",
   "Sat",
 ] as const;
-
-export const BLOCK_TYPES: { value: BlockType; label: string }[] = [
-  { value: "school", label: "School" },
-  { value: "hobby", label: "Hobby" },
-  { value: "other", label: "Other" },
-];

@@ -50,7 +50,7 @@ import {
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
-import type { ScheduleBlock, BlockType } from "@src/models/schedule";
+import type { ScheduleBlock } from "@src/models/schedule";
 import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
@@ -428,7 +428,6 @@ export function addScheduleBlockRemote(input: {
   kidId: string;
   daysOfWeek: number[];
   title: string;
-  type: BlockType;
   startMinutes: number;
   endMinutes: number;
   location?: string;
@@ -451,7 +450,7 @@ export function updateScheduleBlockRemote(
   patch: Partial<
     Pick<
       ScheduleBlock,
-      "daysOfWeek" | "title" | "type" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "reminders"
+      "daysOfWeek" | "title" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "reminders"
     >
   >,
 ) {
@@ -461,7 +460,6 @@ export function updateScheduleBlockRemote(
   const apiPatch: Record<string, unknown> = {};
   if (patch.daysOfWeek !== undefined) apiPatch.daysOfWeek = patch.daysOfWeek;
   if (patch.title !== undefined) apiPatch.title = patch.title;
-  if (patch.type !== undefined) apiPatch.type = patch.type;
   if (patch.startMinutes !== undefined) apiPatch.startMinutes = patch.startMinutes;
   if (patch.endMinutes !== undefined) apiPatch.endMinutes = patch.endMinutes;
   if (patch.location !== undefined) apiPatch.location = patch.location ?? null;

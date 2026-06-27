@@ -294,9 +294,6 @@ export const scheduleBlocks = pgTable(
       .references(() => kids.id, { onDelete: "cascade" }),
     daysOfWeek: jsonb("days_of_week").$type<number[]>().notNull(), // [0,2,4] = Sun,Tue,Thu
     title: text("title").notNull(),
-    type: text("type", { enum: ["school", "hobby", "other"] })
-      .default("other")
-      .notNull(),
     startMinutes: integer("start_minutes").notNull(), // 0–1439
     endMinutes: integer("end_minutes").notNull(),
     location: text("location"),

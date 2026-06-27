@@ -5,7 +5,7 @@ import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
 import type { Project, ProjectStatus } from "@src/models/project";
-import type { ScheduleBlock, BlockType } from "@src/models/schedule";
+import type { ScheduleBlock } from "@src/models/schedule";
 import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
@@ -212,7 +212,6 @@ interface FamilyState {
     kidId: string;
     daysOfWeek: number[];
     title: string;
-    type: BlockType;
     startMinutes: number;
     endMinutes: number;
     location?: string;
@@ -226,7 +225,7 @@ interface FamilyState {
     patch: Partial<
       Pick<
         ScheduleBlock,
-        "daysOfWeek" | "title" | "type" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "reminders"
+        "daysOfWeek" | "title" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "reminders"
       >
     >
   ) => void;

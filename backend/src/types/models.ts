@@ -92,4 +92,3 @@ export type UpdateExpense = Partial<Omit<NewExpense, "id">>;
 // ---------------------------------------------------------------------------
 
 export type ProjectStatus = "idea" | "in_progress" | "done";
-export type BlockType = "school" | "hobby" | "other";

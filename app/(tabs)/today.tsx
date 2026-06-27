@@ -29,7 +29,7 @@ import {
   updateFamilyEventRemote,
   updateScheduleBlockRemote,
 } from "@src/lib/sync/remoteCrud";
-import { t, LOCALE, blockTypeLabel, assigneeTypeLabel, statusLabel } from "@src/i18n";
+import { t, LOCALE, assigneeTypeLabel, statusLabel } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, S, R, SHADOW } from "@src/ui/tokens";

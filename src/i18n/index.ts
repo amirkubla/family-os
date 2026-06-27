@@ -53,11 +53,6 @@ export function shoppingCategoryLabel(key: string): string {
   return (he.shoppingCategory as Record<string, string>)[key] ?? key;
 }
 
-/** Hebrew block type label from English type key. */
-export function blockTypeLabel(typeKey: string): string {
-  return (he.blockType as Record<string, string>)[typeKey] ?? typeKey;
-}
-
 /** Hebrew project status label from English status key. */
 export function statusLabel(statusKey: string): string {
   return (he.status as Record<string, string>)[statusKey] ?? statusKey;

@@ -72,7 +72,6 @@ export const scheduleBlocksRepo = {
           kidId: sql`excluded.kid_id`,
           daysOfWeek: sql`excluded.days_of_week`,
           title: sql`excluded.title`,
-          type: sql`excluded.type`,
           startMinutes: sql`excluded.start_minutes`,
           endMinutes: sql`excluded.end_minutes`,
           location: sql`excluded.location`,

@@ -11,7 +11,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-import type { ScheduleBlock, BlockType } from "@src/models/schedule";
+import type { ScheduleBlock } from "@src/models/schedule";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
@@ -41,7 +41,6 @@ const REMINDER_PRESETS = [
 const schema = z
   .object({
     title: z.string().min(1, t("blockModal.titleRequired")),
-    type: z.enum(["school", "hobby", "other"]),
     isRecurring: z.boolean(),
     daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1),
     date: z.string().optional(),
@@ -94,7 +93,6 @@ interface Props {
   defaultEndTime?: string;   // HH:MM — pre-fill from a time-slot tap
   onSubmit: (data: {
     title: string;
-    type: BlockType;
     daysOfWeek: number[];
     startMinutes: number;
     endMinutes: number;
@@ -139,7 +137,6 @@ export default function ScheduleBlockModal({
     resolver: zodResolver(schema),
     defaultValues: {
       title: "",
-      type: "other",
       // A time-slot tap implies a one-time block at that date+time.
       isRecurring: !defaultStartTime,
       daysOfWeek: defaultDaysOfWeek,
@@ -154,7 +151,6 @@ export default function ScheduleBlockModal({
     if (visible && editBlock) {
       reset({
         title: editBlock.title,
-        type: editBlock.type,
         isRecurring: editBlock.isRecurring,
         daysOfWeek: editBlock.daysOfWeek,
         date: editBlock.date ?? toYMD(new Date()),
@@ -167,7 +163,6 @@ export default function ScheduleBlockModal({
       const hasSlotTime = !!defaultStartTime;
       reset({
         title: "",
-        type: "other",
         isRecurring: !hasSlotTime,
         daysOfWeek: defaultDaysOfWeek,
         date: defaultDate ?? toYMD(new Date()),
@@ -189,7 +184,6 @@ export default function ScheduleBlockModal({
 
     onSubmit({
       title: data.title.trim(),
-      type: data.type,
       daysOfWeek,
       startMinutes: hhmmToMinutes(data.startTime),
       endMinutes: hhmmToMinutes(data.endTime),

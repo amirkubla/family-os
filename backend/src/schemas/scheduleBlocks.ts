@@ -2,7 +2,7 @@
  * Zod schemas for schedule_blocks route validation.
  *
  * Same shape as family_events (title, daysOfWeek, time range, reminders) plus
- * a kidId reference and a type enum. Mirrors family_events validation.
+ * a kidId reference. Mirrors family_events validation.
  */
 
 import { z } from "zod";
@@ -37,7 +37,6 @@ const baseScheduleBlock = z
   .object({
     title: z.string().trim().min(1, "title is required").max(200),
     kidId: z.string().uuid("kidId must be a UUID"),
-    type: z.enum(["school", "hobby", "other"]).default("other"),
     daysOfWeek: z.array(z.number().int().min(0).max(6)),
     startMinutes: minuteOfDay,
     endMinutes: minuteOfDay,
@@ -69,7 +68,6 @@ export const upsertScheduleBlockSchema = baseScheduleBlock.and(
 export const patchScheduleBlockSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   kidId: z.string().uuid().optional(),
-  type: z.enum(["school", "hobby", "other"]).optional(),
   daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
   startMinutes: minuteOfDay.optional(),
   endMinutes: minuteOfDay.optional(),

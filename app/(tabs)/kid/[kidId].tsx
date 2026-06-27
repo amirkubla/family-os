@@ -43,7 +43,7 @@ import {
   markKidPaymentPaidRemote,
   markKidPaymentUnpaidRemote,
 } from "@src/lib/sync/remoteCrud";
-import type { ScheduleBlock, BlockType } from "@src/models/schedule";
+import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { Note } from "@src/models/note";
 import type { Project } from "@src/models/project";
@@ -51,11 +51,11 @@ import type { Expense } from "@src/models/budget";
 import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
-import { t, dayName, blockTypeLabel, statusLabel } from "@src/i18n";
+import { t, dayName, statusLabel } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
-import { TYPE_COLORS, STATUS_COLORS } from "@src/ui/semanticColors";
+import { STATUS_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import WeekCalendar from "@src/components/Calendar/WeekCalendar";
@@ -108,7 +108,6 @@ function BlockRow({
   onDelete: () => void;
 }) {
   const color = block.color ?? kidColor;
-  const typeColor = TYPE_COLORS[block.type] ?? C.purple;
   return (
     <Pressable
       style={({ hovered }: any) => [
@@ -132,17 +131,6 @@ function BlockRow({
           {block.location ? `  ·  ${block.location}` : ""}
         </Text>
       </View>
-      {/* Block "type" is a vestigial category (no picker; defaults to "other").
-          Only show the chip for a real, non-"other" type. */}
-      {block.type && block.type !== "other" && (
-        <Chip
-          compact
-          textStyle={{ fontSize: 10, color: typeColor }}
-          style={[styles.typeChip, { backgroundColor: typeColor + "22" }]}
-        >
-          {blockTypeLabel(block.type)}
-        </Chip>
-      )}
       <IconButton icon="trash-can-outline" size={18} onPress={onDelete} />
     </Pressable>
   );
@@ -491,7 +479,6 @@ export default function KidScheduleScreen() {
 
   const handleSubmit = (data: {
     title: string;
-    type: BlockType;
     daysOfWeek: number[];
     startMinutes: number;
     endMinutes: number;

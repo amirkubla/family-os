@@ -94,7 +94,6 @@ export interface ApiScheduleBlock {
   kidId: string;
   daysOfWeek: number[];
   title: string;
-  type: "school" | "hobby" | "other";
   startMinutes: number;
   endMinutes: number;
   location: string | null;

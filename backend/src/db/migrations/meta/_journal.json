@@ -204,6 +204,13 @@
       "when": 1782100000000,
       "tag": "0028_family_events_allday_enddate",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1782200000000,
+      "tag": "0029_drop_schedule_block_type",
+      "breakpoints": true
     }
   ]
 }

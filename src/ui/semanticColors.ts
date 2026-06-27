@@ -4,15 +4,8 @@
  */
 
 import { C } from "./tokens";
-import type { BlockType } from "@src/models/schedule";
 import type { AssigneeType } from "@src/models/familyEvent";
 import type { ProjectStatus } from "@src/models/project";
-
-export const TYPE_COLORS: Record<BlockType, string> = {
-  school: C.purple,
-  hobby: C.red,
-  other: C.teal,
-};
 
 export const ASSIGNEE_COLORS: Record<AssigneeType, string> = {
   family: C.teal,

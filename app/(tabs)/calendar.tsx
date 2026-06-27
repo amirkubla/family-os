@@ -36,14 +36,14 @@ import {
   deleteScheduleBlockRemote,
 } from "@src/lib/sync/remoteCrud";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
-import type { ScheduleBlock, BlockType } from "@src/models/schedule";
+import type { ScheduleBlock } from "@src/models/schedule";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
-import { t, dayName, assigneeTypeLabel, blockTypeLabel } from "@src/i18n";
+import { t, dayName, assigneeTypeLabel } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { C, R, S } from "@src/ui/tokens";
-import { TYPE_COLORS, ASSIGNEE_COLORS } from "@src/ui/semanticColors";
+import { ASSIGNEE_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import WeekCalendar from "@src/components/Calendar/WeekCalendar";
@@ -143,7 +143,6 @@ function KidBlockRow({
   const kids = useFamilyStore((s) => s.kids);
   const kid = kids.find((k) => k.id === block.kidId);
   const color = block.color ?? kid?.color ?? C.red;
-  const typeColor = TYPE_COLORS[block.type] ?? C.red;
 
   return (
     <Pressable style={styles.eventRow} onPress={onEdit}>
@@ -169,18 +168,6 @@ function KidBlockRow({
             {minutesToHHMM(block.startMinutes)} – {minutesToHHMM(block.endMinutes)}
             {block.location ? `  ·  ${block.location}` : ""}
           </Text>
-          {/* Block "type" is a vestigial category (defaults to "other", no
-              picker) — only show the badge for a real, non-"other" type. */}
-          {block.type && block.type !== "other" && (
-            <Text
-              style={[
-                styles.assigneeBadge,
-                { color: typeColor, backgroundColor: typeColor + "22" },
-              ]}
-            >
-              {blockTypeLabel(block.type)}
-            </Text>
-          )}
         </View>
       </View>
       <IconButton icon="trash-can-outline" size={18} onPress={onDelete} />
