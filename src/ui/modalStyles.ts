@@ -5,7 +5,7 @@
 
 import { StyleSheet } from "react-native";
 import { C, S, R } from "./tokens";
-import { RTL_ROW, TEXT_RIGHT } from "./rtl";
+import { RTL_ROW, RTL_ALIGN_RIGHT, TEXT_RIGHT } from "./rtl";
 
 /** Blue theme for SegmentedButtons — pass as `theme` prop */
 export const SEGMENT_THEME = {
@@ -111,9 +111,13 @@ export const MS = StyleSheet.create({
     marginBottom: S.lg,
   },
   kidBadge: {
-    flexDirection: "row-reverse",
+    flexDirection: RTL_ROW,
     alignItems: "center",
-    alignSelf: "flex-end",
+    // alignSelf controls the badge's position on the cross axis (horizontal in
+    // a column). A hardcoded "flex-end" resolves to the LEFT edge in an RTL
+    // container — which pushed the owner badge to the top-left. RTL_ALIGN_RIGHT
+    // maps to the right edge across all RTL states (web, native pre/post-restart).
+    alignSelf: RTL_ALIGN_RIGHT,
     backgroundColor: MODAL_ACCENT_LIGHT,
     borderRadius: R.xl,
     paddingHorizontal: S.md,
