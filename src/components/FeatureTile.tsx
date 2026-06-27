@@ -68,19 +68,18 @@ export default function FeatureTile({
       ]}
       {...webHover}
     >
-      {/* Large icon + title, centred in the card */}
-      <View style={styles.center}>
-        {icon ? (
-          <Ionicons name={icon} size={40} color={accent} />
-        ) : (
-          <Text style={styles.emoji}>{emoji}</Text>
-        )}
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-      </View>
+      {/* Large icon centred in the card, title directly below it. */}
+      {icon ? (
+        <Ionicons name={icon} size={40} color={accent} />
+      ) : (
+        <Text style={styles.emoji}>{emoji}</Text>
+      )}
+      <Text style={styles.title} numberOfLines={1}>
+        {title}
+      </Text>
 
-      {/* Count (or subtitle) — small, pinned to the bottom leading corner */}
+      {/* Count (or subtitle) — out of flow so the icon stays centred; pinned to
+          the bottom leading (right in RTL) corner. */}
       {count != null ? (
         <Text style={styles.count}>{count}</Text>
       ) : subtitle ? (
@@ -98,6 +97,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minWidth: 150,
     minHeight: 124,
+    // Centre the icon + title in the whole rectangle (count is absolute).
+    alignItems: "center",
+    justifyContent: "center",
+    gap: S.xs,
     borderRadius: R.xl,
     borderWidth: 1,
     paddingVertical: S.md,
@@ -114,14 +117,6 @@ const styles = StyleSheet.create({
   tilePressed: {
     transform: [{ scale: 0.98 }],
   },
-  // Icon + title: centred, fills the space above the corner count.
-  center: {
-    flex: 1,
-    alignSelf: "stretch",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: S.xs,
-  },
   emoji: { fontSize: 40 },
   title: {
     fontSize: 14,
@@ -130,21 +125,29 @@ const styles = StyleSheet.create({
     textAlign: "center",
     writingDirection: "rtl",
   },
-  // Count: smaller, pinned to the leading (right in RTL) bottom corner.
+  // Count: smaller, absolute → bottom leading (right in RTL) corner. Both left
+  // and right are set (symmetric) so native's RTL left/right swap is a no-op;
+  // textAlign handles the leading edge.
   count: {
-    fontSize: 20,
+    position: "absolute",
+    bottom: S.md,
+    left: S.md,
+    right: S.md,
+    fontSize: 17,
     fontWeight: "800",
     color: C.textPrimary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
-    alignSelf: "flex-start",
   },
   subtitle: {
+    position: "absolute",
+    bottom: S.md,
+    left: S.md,
+    right: S.md,
     fontSize: 12,
     fontWeight: "500",
     color: C.textSecondary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
-    alignSelf: "flex-start",
   },
 });
