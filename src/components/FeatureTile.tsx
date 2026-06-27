@@ -1,39 +1,48 @@
 /**
- * FeatureTile — FamilyWall-style launcher tile.
+ * FeatureTile — launcher tile, "Reminders"-style.
  *
- * A white rounded card with a bold title, a small live-count subtitle, and a
- * large tinted emoji icon on the leading edge. Used in the home dashboard
- * grid as a 2-up tile (flex: 1 inside an RTL_ROW that wraps).
+ * A rounded card tinted with its accent colour: a line icon in the top
+ * (leading) corner, then the title and a large live-count number at the
+ * bottom. Used in the home dashboard grid as a 2-up tile.
  *
- * Layout is RTL_ROW: text column sits on the RIGHT (natural Hebrew reading),
- * the icon badge on the LEFT — robust across web + native RTL without
- * physical left/right positioning.
+ * RTL: content aligns to the leading (right) edge via alignItems "flex-start"
+ * (= right under RTL) — no physical left/right, so it's robust on web + native.
+ * Kid tiles pass an `emoji` + `subtitle` instead of `icon` + `count`.
  */
 
 import React, { useState } from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { Text } from "react-native-paper";
+import { Ionicons } from "@expo/vector-icons";
 
 import { C, R, S, SHADOW } from "@src/ui/tokens";
-import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 
 interface Props {
   title: string;
-  subtitle?: string;
-  emoji: string;
-  /** Accent colour — tints the icon badge + active border. */
+  /** Accent colour — tints the card + icon + number. */
   accent: string;
   onPress: () => void;
   testID?: string;
+  /** Line icon (main tiles). */
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Emoji fallback (kid tiles). */
+  emoji?: string;
+  /** Big live-count number. */
+  count?: number;
+  /** Shown instead of the count when no count is given (kid tiles). */
+  subtitle?: string;
 }
 
 export default function FeatureTile({
   title,
-  subtitle,
-  emoji,
   accent,
   onPress,
   testID,
+  icon,
+  emoji,
+  count,
+  subtitle,
 }: Props) {
   const [hovered, setHovered] = useState(false);
 
@@ -53,27 +62,32 @@ export default function FeatureTile({
       testID={testID}
       style={({ pressed }: any) => [
         styles.tile,
+        { backgroundColor: accent + "14", borderColor: accent + "29" },
         hovered && styles.tileHover,
         pressed && styles.tilePressed,
       ]}
       {...webHover}
     >
-      {/* Text column (right in RTL) */}
-      <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={2}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-
-      {/* Icon badge (left in RTL) */}
-      <View style={[styles.iconBadge, { backgroundColor: accent + "1A" }]}>
+      {/* Icon — top, leading corner */}
+      {icon ? (
+        <Ionicons name={icon} size={24} color={accent} />
+      ) : (
         <Text style={styles.emoji}>{emoji}</Text>
-      </View>
+      )}
+
+      <View style={styles.spacer} />
+
+      {/* Title + big count (or subtitle) — bottom, leading */}
+      <Text style={styles.title} numberOfLines={1}>
+        {title}
+      </Text>
+      {count != null ? (
+        <Text style={styles.count}>{count}</Text>
+      ) : subtitle ? (
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -83,16 +97,12 @@ const styles = StyleSheet.create({
     flexBasis: "47%",
     flexGrow: 1,
     minWidth: 150,
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    gap: S.sm,
-    backgroundColor: C.surface,
-    borderRadius: R.lg,
+    minHeight: 118,
+    alignItems: "flex-start", // leading = right under RTL
+    borderRadius: R.xl,
     borderWidth: 1,
-    borderColor: "rgba(226, 232, 240, 0.7)",
     paddingVertical: S.md,
     paddingHorizontal: S.md,
-    minHeight: 84,
     ...SHADOW.sm,
     ...(Platform.OS === "web"
       ? ({ cursor: "pointer", transition: "all 0.18s ease" } as any)
@@ -105,16 +115,24 @@ const styles = StyleSheet.create({
   tilePressed: {
     transform: [{ scale: 0.98 }],
   },
-  textCol: {
-    flex: 1,
-    minWidth: 0,
-  },
+  spacer: { flex: 1, minHeight: S.md },
+  emoji: { fontSize: 24 },
   title: {
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: "700",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    alignSelf: "stretch",
+  },
+  count: {
+    fontSize: 30,
     fontWeight: "800",
     color: C.textPrimary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
+    alignSelf: "stretch",
+    marginTop: 2,
   },
   subtitle: {
     fontSize: 12.5,
@@ -122,16 +140,7 @@ const styles = StyleSheet.create({
     color: C.textSecondary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
+    alignSelf: "stretch",
     marginTop: 2,
-  },
-  iconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emoji: {
-    fontSize: 26,
   },
 });

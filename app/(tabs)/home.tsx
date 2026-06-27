@@ -82,10 +82,6 @@ export default function HomeScreen() {
     };
   }, [allNotes, allProjects, chores, grocery, familyEvents, allExpenses]);
 
-  // Tile subtitle helper: "{n} …" or a friendly zero-state string.
-  const sub = (n: number, key: string, zeroKey: string) =>
-    n > 0 ? t(key, { count: n }) : t(zeroKey);
-
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -116,38 +112,38 @@ export default function HomeScreen() {
         <Text style={styles.gridLabel}>{t("home.quickAccess")}</Text>
         <View style={styles.grid}>
           <FeatureTile
-            title={t("tabs.calendar")} emoji="📅" accent={TILE.calendar}
-            subtitle={sub(counts.eventsWeek, "home.tileEventsWeek", "home.tileEventsWeekZero")}
+            title={t("tabs.calendar")} icon="calendar-outline" accent={TILE.calendar}
+            count={counts.eventsWeek}
             onPress={() => router.push("/calendar")} testID="tile-calendar"
           />
           <FeatureTile
-            title={t("tabs.grocery")} emoji="🛒" accent={TILE.grocery}
-            subtitle={sub(counts.grocery, "home.tileGrocery", "home.tileGroceryZero")}
+            title={t("tabs.grocery")} icon="cart-outline" accent={TILE.grocery}
+            count={counts.grocery}
             onPress={() => router.push("/grocery")} testID="tile-grocery"
           />
           <FeatureTile
-            title={t("tabs.today")} emoji="☀️" accent={TILE.today}
-            subtitle={sub(counts.todayTasks, "home.tileToday", "home.tileTodayZero")}
+            title={t("tabs.today")} icon="sunny-outline" accent={TILE.today}
+            count={counts.todayTasks}
             onPress={() => router.push("/today")} testID="tile-today"
           />
           <FeatureTile
-            title={t("home.notes")} emoji="📝" accent={TILE.notes}
-            subtitle={sub(counts.notes, "home.tileNotes", "home.tileNotesZero")}
+            title={t("home.notes")} icon="document-text-outline" accent={TILE.notes}
+            count={counts.notes}
             onPress={() => router.push("/notes")} testID="tile-notes"
           />
           <FeatureTile
-            title={t("home.chores")} emoji="✅" accent={TILE.chores}
-            subtitle={sub(counts.chores, "home.tileChores", "home.tileChoresZero")}
+            title={t("home.chores")} icon="checkbox-outline" accent={TILE.chores}
+            count={counts.chores}
             onPress={() => router.push("/chores")} testID="tile-chores"
           />
           <FeatureTile
-            title={t("home.projects")} emoji="🚀" accent={TILE.projects}
-            subtitle={sub(counts.projects, "home.tileProjects", "home.tileProjectsZero")}
+            title={t("home.projects")} icon="rocket-outline" accent={TILE.projects}
+            count={counts.projects}
             onPress={() => router.push("/projects")} testID="tile-projects"
           />
           <FeatureTile
-            title={t("tabs.budget")} emoji="💰" accent={TILE.budget}
-            subtitle={sub(counts.budgetExpenses, "home.tileBudget", "home.tileBudgetZero")}
+            title={t("tabs.budget")} icon="wallet-outline" accent={TILE.budget}
+            count={counts.budgetExpenses}
             onPress={() => router.push("/budget" as any)} testID="tile-budget"
           />
         </View>
