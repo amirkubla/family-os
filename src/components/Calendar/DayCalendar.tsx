@@ -192,6 +192,17 @@ export default function DayCalendar({
   const dayItems = useMemo<LayoutedEvent[]>(() => {
     const items: EventItem[] = [];
 
+    // Colour an event by its assignee — the specific person's colour (so all of
+    // a given kid/member's events match their own colour), falling back to the
+    // generic role colour only when the person has none / is unknown.
+    const eventColor = (e: { color?: string; assigneeType: string; assigneeId?: string }) => {
+      if (e.color) return e.color;
+      if (e.assigneeType === "family") return FAMILY_COLOR;
+      if (e.assigneeType === "member")
+        return familyMembers.find((m) => m.id === e.assigneeId)?.color ?? MEMBER_COLOR;
+      return kids.find((k) => k.id === e.assigneeId)?.color ?? KID_COLOR;
+    };
+
     for (const e of familyEvents) {
       const icon =
         e.assigneeType === "kid" && e.assigneeId
@@ -202,13 +213,7 @@ export default function DayCalendar({
       items.push({
         id: e.id,
         title: e.title,
-        color:
-          e.color ??
-          (e.assigneeType === "family"
-            ? FAMILY_COLOR
-            : e.assigneeType === "member"
-              ? MEMBER_COLOR
-              : KID_COLOR),
+        color: eventColor(e),
         startMinutes: e.startMinutes,
         endMinutes: e.endMinutes,
         source: "event",

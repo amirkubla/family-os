@@ -70,20 +70,25 @@ function EventRow({
   const familyMembers = useFamilyStore((s) => s.familyMembers);
   const kids = useFamilyStore((s) => s.kids);
 
-  const color = event.color ?? ASSIGNEE_COLORS[event.assigneeType];
-
+  // Resolve the assignee's own colour (so each person's events match their
+  // colour); fall back to the generic per-type colour when unknown.
+  let assigneeColor: string = ASSIGNEE_COLORS[event.assigneeType];
   let assigneeDisplay = assigneeTypeLabel("family");
   if (event.assigneeType === "member" && event.assigneeId) {
     const member = familyMembers.find((m) => m.id === event.assigneeId);
     assigneeDisplay = member
       ? `${member.avatarEmoji ?? ""} ${member.name}`
       : assigneeTypeLabel("member");
+    assigneeColor = member?.color ?? assigneeColor;
   } else if (event.assigneeType === "kid" && event.assigneeId) {
     const kid = kids.find((k) => k.id === event.assigneeId);
     assigneeDisplay = kid
       ? `${kid.emoji}  ${kid.name}`
       : assigneeTypeLabel("kid");
+    assigneeColor = kid?.color ?? assigneeColor;
   }
+
+  const color = event.color ?? assigneeColor;
 
   return (
     <Pressable
@@ -114,7 +119,7 @@ function EventRow({
           <Text
             style={[
               styles.assigneeBadge,
-              { color: ASSIGNEE_COLORS[event.assigneeType], backgroundColor: ASSIGNEE_COLORS[event.assigneeType] + "22" },
+              { color, backgroundColor: color + "22" },
             ]}
           >
             {assigneeDisplay}
@@ -156,7 +161,7 @@ function KidBlockRow({
             <Text
               style={[
                 styles.assigneeBadge,
-                { color: C.red, backgroundColor: C.red + "22" },
+                { color, backgroundColor: color + "22" },
               ]}
             >
               {kid.emoji}{"  "}{kid.name}
