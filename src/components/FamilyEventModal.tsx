@@ -310,7 +310,7 @@ export default function FamilyEventModal({
                   style={[MS.chip, sel && { borderColor: mc }]}
                   labelStyle={MS.chipLabel}
                   buttonColor={sel ? mc + "20" : undefined}
-                  textColor={sel ? mc : C.textSecondary}
+                  textColor={sel ? C.textPrimary : C.textSecondary}
                 >
                   {member.avatarEmoji ?? ""} {member.name}
                 </Button>
@@ -332,7 +332,7 @@ export default function FamilyEventModal({
                   style={[MS.chip, sel && { borderColor: kid.color }]}
                   labelStyle={MS.chipLabel}
                   buttonColor={sel ? kid.color + "20" : undefined}
-                  textColor={sel ? kid.color : C.textSecondary}
+                  textColor={sel ? C.textPrimary : C.textSecondary}
                 >
                   {kid.emoji}{"  "}{kid.name}
                 </Button>

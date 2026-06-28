@@ -273,7 +273,7 @@ export default function CustomTabBar({
                   accessibilityLabel={t("nav.back")}
                   testID="nav-kids-back"
                 >
-                  <Ionicons name="chevron-back" size={24} color={C_TEXT_MUTED} />
+                  <Ionicons name="chevron-forward" size={24} color={C_TEXT_MUTED} />
                 </Pressable>
               </>
             ) : (
@@ -299,7 +299,7 @@ export default function CustomTabBar({
                   accessibilityLabel={t("nav.back")}
                   testID="nav-ops-back"
                 >
-                  <Ionicons name="chevron-back" size={24} color={C_TEXT_MUTED} />
+                  <Ionicons name="chevron-forward" size={24} color={C_TEXT_MUTED} />
                 </Pressable>
               </>
             )}

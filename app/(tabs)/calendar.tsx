@@ -88,7 +88,9 @@ function EventRow({
     assigneeColor = kid?.color ?? assigneeColor;
   }
 
-  const color = event.color ?? assigneeColor;
+  // For member/kid, the live assignee colour (assigneeColor) wins so events
+  // follow the person's CURRENT colour; a stored colour can be a stale snapshot.
+  const color = event.assigneeType === "family" ? (event.color ?? assigneeColor) : assigneeColor;
 
   return (
     <Pressable
@@ -530,7 +532,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     ...FAB_LEFT,
     bottom: S.lg,
-    borderRadius: R.lg,
     backgroundColor: C.purple,
   },
 });

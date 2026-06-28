@@ -247,11 +247,13 @@ export default function WeekCalendar({
     // a given kid/member's events match their own colour), falling back to the
     // generic role colour only when the person has none / is unknown.
     const eventColor = (e: { color?: string; assigneeType: string; assigneeId?: string }) => {
-      if (e.color) return e.color;
-      if (e.assigneeType === "family") return FAMILY_COLOR;
+      // Live assignee colour wins so events follow the person's CURRENT colour;
+      // a stored colour is only a stale snapshot, used as a fallback.
       if (e.assigneeType === "member")
-        return familyMembers.find((m) => m.id === e.assigneeId)?.color ?? MEMBER_COLOR;
-      return kids.find((k) => k.id === e.assigneeId)?.color ?? KID_COLOR;
+        return familyMembers.find((m) => m.id === e.assigneeId)?.color ?? e.color ?? MEMBER_COLOR;
+      if (e.assigneeType === "kid")
+        return kids.find((k) => k.id === e.assigneeId)?.color ?? e.color ?? KID_COLOR;
+      return e.color ?? FAMILY_COLOR;
     };
 
     const result: Record<string, LayoutedEvent[]> = {};

@@ -1443,6 +1443,5 @@ const styles = StyleSheet.create({
     position: "absolute",
     ...FAB_LEFT,
     bottom: S.lg,
-    borderRadius: R.lg,
   },
 });
