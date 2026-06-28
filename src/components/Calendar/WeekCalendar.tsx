@@ -80,7 +80,7 @@ const GRID_START_HOUR = 6;
 const GRID_END_HOUR = 29;   // 29 = 24 + 5 → 5 am next day
 const HOUR_HEIGHT = 60;
 const TIME_LABEL_WIDTH = 36;
-const DAY_NUM_SIZE = 28;
+const DAY_NUM_SIZE = 24;
 // +1 so the last hour label has full HOUR_HEIGHT of space and isn't clipped.
 const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR + 1) * HOUR_HEIGHT;
 
@@ -490,7 +490,6 @@ export default function WeekCalendar({
                 </View>
               );
             })}
-            <View style={styles.timeLabelSpacer} />
           </View>
         </View>
       </ScrollView>
@@ -530,6 +529,7 @@ const styles = StyleSheet.create({
   },
   dayHeaderCell: {
     flex: 1,
+    minWidth: 0, // shrink to the equal column share — never let the circle push neighbors
     alignItems: "center",
     paddingVertical: 2,
   },
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dayNum: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
     color: C.textPrimary,
     textAlign: "center",
