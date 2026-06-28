@@ -25,8 +25,8 @@ import {
   useAllKidOneTimeBlocks,
 } from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
-import { C, S, R } from "@src/ui/tokens";
-import { TEXT_RIGHT, RTL_ROW, isRTLActive } from "@src/ui/rtl";
+import { C } from "@src/ui/tokens";
+import { TEXT_RIGHT, RTL_ROW } from "@src/ui/rtl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -243,6 +243,17 @@ export default function WeekCalendar({
       !kidId || (e.assigneeType === "kid" && e.assigneeId === kidId);
     const keepBlock = (b: { kidId: string }) => !kidId || b.kidId === kidId;
 
+    // Colour an event by its assignee — the specific person's colour (so all of
+    // a given kid/member's events match their own colour), falling back to the
+    // generic role colour only when the person has none / is unknown.
+    const eventColor = (e: { color?: string; assigneeType: string; assigneeId?: string }) => {
+      if (e.color) return e.color;
+      if (e.assigneeType === "family") return FAMILY_COLOR;
+      if (e.assigneeType === "member")
+        return familyMembers.find((m) => m.id === e.assigneeId)?.color ?? MEMBER_COLOR;
+      return kids.find((k) => k.id === e.assigneeId)?.color ?? KID_COLOR;
+    };
+
     const result: Record<string, LayoutedEvent[]> = {};
     for (const day of days) {
       const dow = day.getDay();
@@ -259,13 +270,7 @@ export default function WeekCalendar({
         items.push({
           id: e.id,
           title: e.title,
-          color:
-            e.color ??
-            (e.assigneeType === "family"
-              ? FAMILY_COLOR
-              : e.assigneeType === "member"
-                ? MEMBER_COLOR
-                : KID_COLOR),
+          color: eventColor(e),
           startMinutes: e.startMinutes,
           endMinutes: e.endMinutes,
           source: "event",
@@ -283,13 +288,7 @@ export default function WeekCalendar({
           items.push({
             id: e.id,
             title: e.title,
-            color:
-              e.color ??
-              (e.assigneeType === "family"
-                ? FAMILY_COLOR
-                : e.assigneeType === "member"
-                  ? MEMBER_COLOR
-                  : KID_COLOR),
+            color: eventColor(e),
             startMinutes: e.startMinutes,
             endMinutes: e.endMinutes,
             source: "event",
@@ -350,8 +349,10 @@ export default function WeekCalendar({
         <IconButton icon="chevron-left" size={22} onPress={goForward} />
       </View>
 
-      {/* Day headers — spacer at end so it sits on the LEFT in both RTL_ROW modes */}
+      {/* Day headers — time-axis spacer FIRST so it sits on the RIGHT (matching
+          the hour labels) in RTL_ROW; the 7 day cells fill the remaining width. */}
       <View style={styles.dayHeaderRow}>
+        <View style={styles.timeLabelSpacer} />
         {days.map((day, i) => {
           const dateStr = ymd(day);
           const isSelected = dateStr === selectedDate;
@@ -386,7 +387,6 @@ export default function WeekCalendar({
             </Pressable>
           );
         })}
-        <View style={styles.timeLabelSpacer} />
       </View>
 
       {/* Time grid (scrollable) */}
@@ -405,8 +405,10 @@ export default function WeekCalendar({
             );
           })}
 
-          {/* Day columns with events — spacer at end for LEFT placement in RTL_ROW */}
+          {/* Day columns with events — time-axis spacer FIRST (RIGHT in RTL_ROW)
+              so the 7 columns align with the day headers + the hour-line area. */}
           <View style={styles.dayColumnsContainer}>
+            <View style={styles.timeLabelSpacer} />
             {days.map((day, i) => {
               const dateStr = ymd(day);
               const isSelected = dateStr === selectedDate;
@@ -418,7 +420,7 @@ export default function WeekCalendar({
                   style={[
                     styles.dayColumn,
                     isSelected && { backgroundColor: accentColor + "0A" },
-                    i < 6 && styles.dayColumnBorder,
+                    i > 0 && styles.dayColumnBorder,
                   ]}
                 >
                   {/* Clickable half-hour slot overlays */}
@@ -597,13 +599,14 @@ const styles = StyleSheet.create({
     flex: 1,
     position: "relative",
   },
-  // Column separator: when engine is active (isRTL=true) borderRight is
-  // mirrored to physical-left; when manual RTL (isRTL=false, row-reverse)
-  // we explicitly need borderLeft. Both use i<6 condition since Sunday (i=0)
-  // is always the rightmost column after reversal.
-  dayColumnBorder: isRTLActive
-    ? { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border }
-    : { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: C.border },
+  // Column separator on the leading (right in RTL) edge. A logical border is
+  // consistent on web + native, so no platform/RTL branch is needed. Applied to
+  // every column except the first (i=0, the rightmost) so each adjacent pair —
+  // including Saturday|Friday — gets one divider and the outer edge stays clean.
+  dayColumnBorder: {
+    borderStartWidth: StyleSheet.hairlineWidth,
+    borderStartColor: C.border,
+  },
 
   // Time slots (clickable half-hour areas)
   timeSlot: {
