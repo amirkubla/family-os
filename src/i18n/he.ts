@@ -251,6 +251,7 @@ const he = {
   confirmDelete: {
     title: "מחיקה",
     message: "האם אתה בטוח? פעולה זו לא ניתנת לביטול.",
+    irreversible: "פעולה זו אינה הפיכה — לא ניתן לשחזר את הנתונים.",
     confirm: "מחק",
     cancel: "ביטול",
   },
@@ -416,6 +417,11 @@ const he = {
     memberColor: "צבע",
     archive: "ארכיון",
     restore: "שחזור",
+    deletePermanently: "מחיקה לצמיתות",
+    deleteMemberConfirm:
+      "פעולה זו תמחק לצמיתות את {{name}} ואת כל התוכן המשויך — פתקים, פרויקטים, אירועים, מטלות והוצאות.",
+    deleteKidConfirm:
+      "פעולה זו תמחק לצמיתות את {{name}} ואת כל התוכן המשויך — מערכת השעות, פתקים, פרויקטים, אירועים ותשלומים.",
     nameRequired: "שם הוא שדה חובה",
     nameMinLength: "שם חייב להכיל לפחות 2 תווים",
     kids: "ילדים",

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { kidsRepo } from "../repos/kidsRepo.js";
+import { cancelForSource } from "../services/reminderService.js";
 
 export const kidsRoutes = new Hono();
 
@@ -37,9 +38,22 @@ kidsRoutes.patch("/:id", async (c) => {
 });
 
 // DELETE /v1/family/:familyId/kids/:id
+// Hard-delete the kid AND all their content (schedule blocks, notes, projects,
+// payments, assigned events). Reminders are cancelled fire-and-forget.
 kidsRoutes.delete("/:id", async (c) => {
+  const familyId = c.req.param("familyId")!;
   const id = c.req.param("id");
-  const ok = await kidsRepo.delete(id);
-  if (!ok) return c.json({ error: "Not found" }, 404);
+  const purged = await kidsRepo.purge(familyId, id);
+  if (!purged) return c.json({ error: "Not found" }, 404);
+  for (const sid of purged.scheduleBlockIds) {
+    cancelForSource("schedule_block", sid).catch((err) =>
+      console.error("[kids] cancelForSource(schedule_block) failed:", err),
+    );
+  }
+  for (const eid of purged.eventIds) {
+    cancelForSource("family_event", eid).catch((err) =>
+      console.error("[kids] cancelForSource(family_event) failed:", err),
+    );
+  }
   return c.json({ deleted: true });
 });

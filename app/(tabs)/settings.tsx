@@ -10,12 +10,15 @@ import { useAuthStore } from "@src/auth/useAuthStore";
 import {
   setFamilyMemberActiveRemote,
   setKidActiveRemote,
+  deleteFamilyMemberRemote,
+  deleteKidRemote,
   updateFamilyNameRemote,
 } from "@src/lib/sync/remoteCrud";
 import { telegramApi, invitesApi } from "@src/lib/api/endpoints";
 import { getFamilyId } from "@src/lib/familyContext";
 import FamilyMemberModal from "@src/components/FamilyMemberModal";
 import KidModal from "@src/components/KidModal";
+import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import type { FamilyMember } from "@src/models/familyMember";
 import type { Kid } from "@src/models/kid";
 import { t, memberRoleLabel } from "@src/i18n";
@@ -86,12 +89,14 @@ function MemberRow({
   onEdit,
   onArchive,
   onRestore,
+  onDelete,
 }: {
   member: FamilyMember;
   archived?: boolean;
   onEdit: () => void;
   onArchive?: () => void;
   onRestore?: () => void;
+  onDelete?: () => void;
 }) {
   return (
     <View
@@ -120,7 +125,16 @@ function MemberRow({
       <View style={styles.rowActions}>
         <IconButton icon="pencil-outline" size={18} onPress={onEdit} />
         {archived ? (
-          <IconButton icon="restore" size={18} onPress={onRestore} />
+          <>
+            <IconButton icon="restore" size={18} onPress={onRestore} />
+            <IconButton
+              icon="trash-can-outline"
+              size={18}
+              iconColor={C.red}
+              onPress={onDelete}
+              accessibilityLabel={t("settings.deletePermanently")}
+            />
+          </>
         ) : (
           <IconButton icon="archive-arrow-down-outline" size={18} onPress={onArchive} />
         )}
@@ -137,12 +151,14 @@ function KidRow({
   onEdit,
   onArchive,
   onRestore,
+  onDelete,
 }: {
   kid: Kid;
   archived?: boolean;
   onEdit: () => void;
   onArchive?: () => void;
   onRestore?: () => void;
+  onDelete?: () => void;
 }) {
   return (
     <View style={[styles.memberRow, archived && styles.archivedRow]}>
@@ -165,7 +181,16 @@ function KidRow({
       <View style={styles.rowActions}>
         <IconButton icon="pencil-outline" size={18} onPress={onEdit} />
         {archived ? (
-          <IconButton icon="restore" size={18} onPress={onRestore} />
+          <>
+            <IconButton icon="restore" size={18} onPress={onRestore} />
+            <IconButton
+              icon="trash-can-outline"
+              size={18}
+              iconColor={C.red}
+              onPress={onDelete}
+              accessibilityLabel={t("settings.deletePermanently")}
+            />
+          </>
         ) : (
           <IconButton icon="archive-arrow-down-outline" size={18} onPress={onArchive} />
         )}
@@ -203,6 +228,13 @@ export default function SettingsScreen() {
   const [kidModalOpen, setKidModalOpen] = useState(false);
   const [editingKid, setEditingKid] = useState<Kid | null>(null);
   const [showArchivedKids, setShowArchivedKids] = useState(false);
+
+  // Permanent-delete confirmation (archived members/kids). Holds the purge
+  // action + a person-specific warning message; null = dialog hidden.
+  const [pendingDelete, setPendingDelete] = useState<{
+    action: () => void;
+    message: string;
+  } | null>(null);
 
   // Invite state
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -380,6 +412,14 @@ export default function SettingsScreen() {
                       onRestore={() =>
                         setFamilyMemberActiveRemote(member.id, true)
                       }
+                      onDelete={() =>
+                        setPendingDelete({
+                          message: t("settings.deleteMemberConfirm", {
+                            name: member.name,
+                          }),
+                          action: () => deleteFamilyMemberRemote(member.id),
+                        })
+                      }
                     />
                   ))}
               </>
@@ -434,6 +474,14 @@ export default function SettingsScreen() {
                       archived
                       onEdit={() => openEditKid(kid)}
                       onRestore={() => setKidActiveRemote(kid.id, true)}
+                      onDelete={() =>
+                        setPendingDelete({
+                          message: t("settings.deleteKidConfirm", {
+                            name: kid.name,
+                          }),
+                          action: () => deleteKidRemote(kid.id),
+                        })
+                      }
                     />
                   ))}
               </>
@@ -570,6 +618,18 @@ export default function SettingsScreen() {
           setEditingKid(null);
         }}
         editKid={editingKid}
+      />
+
+      <ConfirmDeleteModal
+        visible={pendingDelete !== null}
+        danger
+        title={t("settings.deletePermanently")}
+        message={pendingDelete?.message}
+        onConfirm={() => {
+          pendingDelete?.action();
+          setPendingDelete(null);
+        }}
+        onDismiss={() => setPendingDelete(null)}
       />
     </SafeAreaView>
   );

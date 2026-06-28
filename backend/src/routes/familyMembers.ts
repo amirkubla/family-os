@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { familyMembersRepo } from "../repos/familyMembersRepo.js";
+import { cancelForSource } from "../services/reminderService.js";
 
 export const familyMembersRoutes = new Hono();
 
@@ -55,9 +56,18 @@ familyMembersRoutes.post("/:id/claim", async (c) => {
 });
 
 // DELETE /v1/family/:familyId/members/:id
+// Hard-delete the member AND all their content (owned notes/projects, assigned
+// chores, expenses they paid, assigned events). The linked user account (if
+// any) is left intact. Reminders are cancelled fire-and-forget.
 familyMembersRoutes.delete("/:id", async (c) => {
+  const familyId = c.req.param("familyId")!;
   const id = c.req.param("id");
-  const ok = await familyMembersRepo.delete(id);
-  if (!ok) return c.json({ error: "Not found" }, 404);
+  const purged = await familyMembersRepo.purge(familyId, id);
+  if (!purged) return c.json({ error: "Not found" }, 404);
+  for (const eid of purged.eventIds) {
+    cancelForSource("family_event", eid).catch((err) =>
+      console.error("[members] cancelForSource(family_event) failed:", err),
+    );
+  }
   return c.json({ deleted: true });
 });

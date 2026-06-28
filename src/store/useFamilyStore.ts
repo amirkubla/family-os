@@ -156,6 +156,8 @@ interface FamilyState {
   addKid: (input: { name: string; emoji: string; color: string }) => Kid;
   updateKid: (id: string, patch: Partial<Pick<Kid, "name" | "emoji" | "color">>) => void;
   setKidActive: (id: string, isActive: boolean) => void;
+  /** Hard-delete a kid and cascade-remove all their local content. */
+  removeKid: (id: string) => void;
 
   // Family Members actions
   addFamilyMember: (input: {
@@ -169,6 +171,8 @@ interface FamilyState {
     patch: Partial<Pick<FamilyMember, "name" | "role" | "color" | "avatarEmoji">>
   ) => void;
   setFamilyMemberActive: (id: string, isActive: boolean) => void;
+  /** Hard-delete a member and cascade-remove all their local content. */
+  removeFamilyMember: (id: string) => void;
 
   // Projects actions
   addProject: (input: { title: string; description?: string; kidId?: string; ownerMemberId?: string }) => Project;
@@ -615,6 +619,18 @@ export const useFamilyStore = create<FamilyState>()(
           ),
         })),
 
+      removeKid: (id) =>
+        set((s) => ({
+          kids: s.kids.filter((k) => k.id !== id),
+          scheduleBlocks: s.scheduleBlocks.filter((b) => b.kidId !== id),
+          notes: s.notes.filter((n) => n.kidId !== id),
+          projects: s.projects.filter((p) => p.kidId !== id),
+          expenses: s.expenses.filter((e) => e.kidId !== id),
+          familyEvents: s.familyEvents.filter(
+            (e) => !(e.assigneeType === "kid" && e.assigneeId === id),
+          ),
+        })),
+
       /* ── Family Members ── */
 
       addFamilyMember: ({ name, role, color, avatarEmoji }) => {
@@ -644,6 +660,18 @@ export const useFamilyStore = create<FamilyState>()(
         set((s) => ({
           familyMembers: s.familyMembers.map((m) =>
             m.id === id ? { ...m, isActive, updatedAt: Date.now() } : m
+          ),
+        })),
+
+      removeFamilyMember: (id) =>
+        set((s) => ({
+          familyMembers: s.familyMembers.filter((m) => m.id !== id),
+          notes: s.notes.filter((n) => n.ownerMemberId !== id),
+          projects: s.projects.filter((p) => p.ownerMemberId !== id),
+          chores: s.chores.filter((c) => c.assignedToMemberId !== id),
+          expenses: s.expenses.filter((e) => e.payerMemberId !== id),
+          familyEvents: s.familyEvents.filter(
+            (e) => !(e.assigneeType === "member" && e.assigneeId === id),
           ),
         })),
 

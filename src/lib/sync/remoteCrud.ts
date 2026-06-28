@@ -531,6 +531,19 @@ export function setKidActiveRemote(id: string, isActive: boolean) {
   );
 }
 
+/**
+ * Hard-delete a kid AND all their content. The store removes the kid and
+ * cascades locally; the backend DELETE purges schedule blocks, notes,
+ * projects, payments, and assigned events (+ cancels their reminders).
+ */
+export function deleteKidRemote(id: string) {
+  useFamilyStore.getState().removeKid(id);
+  fireAndForget(
+    getFamilyId().then((fid) => kidsApi.delete(fid, id)),
+    "Delete kid",
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Family Members
 // ---------------------------------------------------------------------------
@@ -583,6 +596,20 @@ export function setFamilyMemberActiveRemote(id: string, isActive: boolean) {
       familyMembersApi.update(fid, id, { isActive }),
     ),
     "Toggle family member active",
+  );
+}
+
+/**
+ * Hard-delete a member AND all their content. The store removes the member and
+ * cascades locally; the backend DELETE purges owned notes/projects, assigned
+ * chores, expenses they paid, and assigned events (+ cancels their reminders).
+ * The linked user account (if any) is left intact.
+ */
+export function deleteFamilyMemberRemote(id: string) {
+  useFamilyStore.getState().removeFamilyMember(id);
+  fireAndForget(
+    getFamilyId().then((fid) => familyMembersApi.delete(fid, id)),
+    "Delete family member",
   );
 }
 
