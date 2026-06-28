@@ -210,11 +210,13 @@ export default function KidScheduleScreen() {
       title: kid ? `${kid.emoji}  ${kid.name}` : t("kid.schedule"),
       headerTintColor: kidColor,
       // Back to the home/menu (no kid-cycling). In RTL the header back sits on
-      // the right; chevron-forward (→) reads as "back". Overriding headerLeft
-      // makes it always go home rather than popping the stack.
+      // the right; chevron-right (>) reads as "back". Paper's IconButton uses
+      // MaterialCommunityIcons, so the name must be "chevron-right" (the
+      // Ionicons "chevron-forward" renders as a "?" glyph). Overriding
+      // headerLeft makes it always go home rather than popping the stack.
       headerLeft: () => (
         <IconButton
-          icon="chevron-forward"
+          icon="chevron-right"
           size={28}
           iconColor={kidColor}
           onPress={goHome}
