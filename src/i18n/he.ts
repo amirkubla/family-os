@@ -553,6 +553,11 @@ const he = {
     paymentStatus: "סטטוס תשלום",
     pendingHint: "ייווסף לרשימת התשלומים הממתינים",
     pendingPayments: "ממתינים לתשלום",
+    spendCharts: "פילוח הוצאות לפי קטגוריה",
+    chartByCategory: "סכום לפי קטגוריה",
+    chartShare: "התפלגות באחוזים",
+    noSpendThisMonth: "אין הוצאות החודש להצגה",
+    categoryNoExpenses: "אין הוצאות בקטגוריה זו החודש",
   },
   payment: {
     add: "תשלום חדש",

@@ -23,6 +23,18 @@ import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget";
 import { toYMD } from "@src/utils/date";
+import type { Expense } from "@src/models/budget";
+import ExpenseModal from "@src/components/ExpenseModal";
+import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
+import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
+import SectionHeader from "@src/components/SectionHeader";
+import SpendByCategoryCharts, { type SpendSlice } from "@src/components/budget/SpendByCategoryCharts";
+import SummaryHeroCard from "@src/components/budget/SummaryHeroCard";
+import { Ionicons } from "@expo/vector-icons";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 const DAYS_OF_WEEK_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
@@ -32,15 +44,6 @@ function recurrenceLabel(exp: Expense): string {
   if (type === "weekly") return `כל שבוע, ביום ${DAYS_OF_WEEK_HE[exp.recurrenceDay ?? 0]}`;
   return `כל חודש, יום ${exp.recurrenceDay ?? 1}`;
 }
-import type { Expense } from "@src/models/budget";
-import ExpenseModal from "@src/components/ExpenseModal";
-import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
-import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
-import SectionHeader from "@src/components/SectionHeader";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -256,6 +259,150 @@ export default function BudgetScreen() {
     setExpenseModalVisible(true);
   };
 
+  // ── Expandable categories + chart data ──
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(() => new Set());
+  const toggleCat = (name: string) =>
+    setExpandedCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+
+  // Selected-month settled expenses grouped by category (each group is already
+  // date-desc since monthExpenses is sorted that way).
+  const expensesByCategory = useMemo(() => {
+    const map: Record<string, Expense[]> = {};
+    for (const e of monthExpenses) (map[e.categoryName] ??= []).push(e);
+    return map;
+  }, [monthExpenses]);
+
+  // Categories shown as accordions: every budget category plus any expense-only
+  // (free-typed) category names, kept if they have spend this month or a cap.
+  const categoryRows = useMemo(() => {
+    const known = budgetCategories.map((c) => ({
+      id: c.id, name: c.name, icon: c.icon, color: c.color, monthlyCap: c.monthlyCap,
+    }));
+    const knownNames = new Set(known.map((c) => c.name));
+    const orphans = Object.keys(expensesByCategory)
+      .filter((n) => !knownNames.has(n))
+      .map((name) => ({
+        id: "orphan:" + name, name, icon: "📦", color: C.textSecondary,
+        monthlyCap: undefined as number | undefined,
+      }));
+    return [...known, ...orphans].filter(
+      (c) => (categoryTotals[c.name] ?? 0) > 0 || c.monthlyCap != null,
+    );
+  }, [budgetCategories, expensesByCategory, categoryTotals]);
+
+  // Pie/bar slices — categories with spend > 0, largest first.
+  const chartSlices = useMemo<SpendSlice[]>(
+    () =>
+      Object.entries(categoryTotals)
+        .filter(([, amt]) => amt > 0)
+        .map(([name, amount]) => {
+          const cat = budgetCategories.find((c) => c.name === name);
+          return { name, amount, color: cat?.color ?? C.textSecondary, icon: cat?.icon ?? "📦" };
+        })
+        .sort((a, b) => b.amount - a.amount),
+    [categoryTotals, budgetCategories],
+  );
+
+  // One settled expense row inside a category accordion.
+  const renderExpenseRow = (exp: Expense) => {
+    const member = familyMembers.find((m) => m.id === exp.payerMemberId);
+    const kid = exp.kidId ? kids.find((k) => k.id === exp.kidId) : undefined;
+    const who = kid?.name ?? member?.name ?? "";
+    const dateLabel = `${exp.date.slice(8, 10)}/${exp.date.slice(5, 7)}`;
+    return (
+      <View key={exp.id} style={styles.itemRow}>
+        <Pressable
+          style={[styles.itemTap, Platform.OS === "web" && ({ cursor: "pointer" } as any)]}
+          onPress={() => openEditExpense(exp)}
+          accessibilityRole="button"
+          accessibilityLabel={t("budget.editExpense")}
+        >
+          <View style={[styles.itemAvatar, { backgroundColor: ((kid?.color ?? member?.color) ?? ACCENT) + "33" }]}>
+            <Text style={styles.itemAvatarEmoji}>{kid?.emoji ?? member?.avatarEmoji ?? "🧑"}</Text>
+          </View>
+          <View style={styles.itemInfo}>
+            <Text style={[styles.itemTitle, { textAlign: TEXT_RIGHT }]} numberOfLines={1}>
+              {exp.note || exp.categoryName}
+            </Text>
+            <Text style={[styles.itemMeta, { textAlign: TEXT_RIGHT }]}>
+              {dateLabel}{who ? `  •  ${who}` : ""}
+            </Text>
+          </View>
+        </Pressable>
+        <Text style={styles.itemAmount}>{formatILS(exp.amount)}</Text>
+        {exp.kidId ? (
+          <IconButton
+            icon="undo-variant"
+            size={16}
+            iconColor={C.teal}
+            accessibilityLabel={t("payment.markUnpaid")}
+            onPress={() => markKidPaymentUnpaidRemote(exp)}
+          />
+        ) : null}
+        <IconButton
+          icon="trash-can-outline"
+          size={16}
+          iconColor={C.textSecondary}
+          onPress={() => handleDeleteExpense(exp)}
+        />
+      </View>
+    );
+  };
+
+  // Per-payer breakdown (moved to the bottom of the page). Only when 2+ payers.
+  const renderPayerBreakdown = () => {
+    if (Object.keys(memberTotals).length < 2) return null;
+    return (
+      <>
+        <SectionHeader label={t("budget.byPayer")} />
+        {familyMembers
+          .filter((m) => m.isActive && (memberTotals[m.id] ?? 0) > 0)
+          .sort((a, b) => (memberTotals[b.id] ?? 0) - (memberTotals[a.id] ?? 0))
+          .map((m) => {
+            const spent = memberTotals[m.id] ?? 0;
+            const pct = totalSpent > 0 ? spent / totalSpent : 0;
+            return (
+              <View key={m.id} style={styles.memberRow}>
+                <View style={[styles.memberAvatar, { backgroundColor: (m.color ?? C.purple) + "22" }]}>
+                  <Text style={styles.memberEmoji}>{m.avatarEmoji ?? "👤"}</Text>
+                </View>
+                <View style={styles.memberInfo}>
+                  <View style={[{ flexDirection: RTL_ROW }, styles.memberNameRow]}>
+                    <Text style={styles.memberName}>{m.name}</Text>
+                    <Text style={styles.memberAmount}>{formatILS(spent)}</Text>
+                  </View>
+                  <View style={styles.memberBarTrack}>
+                    <View style={[styles.memberBarFill, { width: `${pct * 100}%` as any, backgroundColor: m.color ?? C.purple }]} />
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        {(memberTotals["__none__"] ?? 0) > 0 && (
+          <View style={styles.memberRow}>
+            <View style={[styles.memberAvatar, { backgroundColor: C.textSecondary + "22" }]}>
+              <Text style={styles.memberEmoji}>❓</Text>
+            </View>
+            <View style={styles.memberInfo}>
+              <View style={[{ flexDirection: RTL_ROW }, styles.memberNameRow]}>
+                <Text style={styles.memberName}>{t("budget.unassigned")}</Text>
+                <Text style={styles.memberAmount}>{formatILS(memberTotals["__none__"])}</Text>
+              </View>
+              <View style={styles.memberBarTrack}>
+                <View style={[styles.memberBarFill, { width: `${(totalSpent > 0 ? memberTotals["__none__"] / totalSpent : 0) * 100}%` as any, backgroundColor: C.textSecondary }]} />
+              </View>
+            </View>
+          </View>
+        )}
+      </>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
@@ -282,58 +429,11 @@ export default function BudgetScreen() {
           />
         </View>
 
-        {/* Summary card — total spent only. Budget progress is shown per
-            category below, not as an overall bar on the main number. */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.summarySubtitle}>{t("budget.totalSpent", { month: "" }).trim()}</Text>
-          <Text style={styles.summaryAmount}>{formatILS(totalSpent)}</Text>
-        </View>
-
-        {/* Per-member breakdown — only when 2+ payers have expenses this month */}
-        {Object.keys(memberTotals).length >= 2 && (
-          <>
-            <SectionHeader label={t("budget.byPayer")} />
-            {familyMembers
-              .filter((m) => m.isActive && (memberTotals[m.id] ?? 0) > 0)
-              .sort((a, b) => (memberTotals[b.id] ?? 0) - (memberTotals[a.id] ?? 0))
-              .map((m) => {
-                const spent = memberTotals[m.id] ?? 0;
-                const pct = totalSpent > 0 ? spent / totalSpent : 0;
-                return (
-                  <View key={m.id} style={styles.memberRow}>
-                    <View style={[styles.memberAvatar, { backgroundColor: (m.color ?? C.purple) + "22" }]}>
-                      <Text style={styles.memberEmoji}>{m.avatarEmoji ?? "👤"}</Text>
-                    </View>
-                    <View style={styles.memberInfo}>
-                      <View style={[{ flexDirection: RTL_ROW }, styles.memberNameRow]}>
-                        <Text style={styles.memberName}>{m.name}</Text>
-                        <Text style={styles.memberAmount}>{formatILS(spent)}</Text>
-                      </View>
-                      <View style={styles.memberBarTrack}>
-                        <View style={[styles.memberBarFill, { width: `${pct * 100}%` as any, backgroundColor: m.color ?? C.purple }]} />
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-            {(memberTotals["__none__"] ?? 0) > 0 && (
-              <View style={styles.memberRow}>
-                <View style={[styles.memberAvatar, { backgroundColor: C.textSecondary + "22" }]}>
-                  <Text style={styles.memberEmoji}>❓</Text>
-                </View>
-                <View style={styles.memberInfo}>
-                  <View style={[{ flexDirection: RTL_ROW }, styles.memberNameRow]}>
-                    <Text style={styles.memberName}>{t("budget.unassigned")}</Text>
-                    <Text style={styles.memberAmount}>{formatILS(memberTotals["__none__"])}</Text>
-                  </View>
-                  <View style={styles.memberBarTrack}>
-                    <View style={[styles.memberBarFill, { width: `${(totalSpent > 0 ? memberTotals["__none__"] / totalSpent : 0) * 100}%` as any, backgroundColor: C.textSecondary }]} />
-                  </View>
-                </View>
-              </View>
-            )}
-          </>
-        )}
+        {/* Summary hero — total spent for the selected month (gradient card). */}
+        <SummaryHeroCard
+          label={t("budget.totalSpent", { month: "" }).trim()}
+          amount={formatILS(totalSpent)}
+        />
 
         {/* Pending (unpaid) one-time payments — non-kid */}
         {outstandingPayments.length > 0 && (
@@ -426,47 +526,73 @@ export default function BudgetScreen() {
           </>
         )}
 
-        {/* Categories — read-only spend breakdown. Management lives in the
-            customization screen (Settings → התאמה אישית). */}
+        {/* Categories — tap a category to expand its payments for the selected
+            month. Management lives in Settings → התאמה אישית. */}
         <SectionHeader label={t("budget.categories")} />
 
-        {budgetCategories.map((cat) => {
-          const spent = categoryTotals[cat.name] ?? 0;
-          const pct = cat.monthlyCap ? Math.min(spent / cat.monthlyCap, 1) : null;
-          const catBarColor =
-            pct != null && pct > 0.9 ? C.red
-            : pct != null && pct > 0.7 ? C.amber
-            : cat.color;
-          return (
-            <View key={cat.id} style={styles.catRow}>
-              <View style={styles.catIcon}>
-                <Text style={styles.catEmoji}>{cat.icon}</Text>
-              </View>
-              <View style={styles.catInfo}>
-                <View style={[{ flexDirection: RTL_ROW }, styles.catNameRow]}>
-                  <Text style={styles.catName}>{cat.name}</Text>
-                  <Text style={styles.catAmount}>{formatILS(spent)}</Text>
-                </View>
-                {cat.monthlyCap ? (
-                  <>
-                    <View style={styles.barTrackSmall}>
-                      <View
-                        style={[
-                          styles.barFillSmall,
-                          {
-                            width: `${(pct ?? 0) * 100}%` as any,
-                            backgroundColor: catBarColor,
-                          },
-                        ]}
-                      />
+        {categoryRows.length === 0 ? (
+          <Text style={styles.empty}>{t("budget.noExpenses")}</Text>
+        ) : (
+          categoryRows.map((cat) => {
+            const spent = categoryTotals[cat.name] ?? 0;
+            const items = expensesByCategory[cat.name] ?? [];
+            const expanded = expandedCats.has(cat.name);
+            const pct = cat.monthlyCap ? Math.min(spent / cat.monthlyCap, 1) : null;
+            const catBarColor =
+              pct != null && pct > 0.9 ? C.red
+              : pct != null && pct > 0.7 ? C.amber
+              : cat.color;
+            return (
+              <View key={cat.id} style={styles.catCard}>
+                <Pressable
+                  style={[styles.catHeader, Platform.OS === "web" && ({ cursor: "pointer" } as any)]}
+                  onPress={() => toggleCat(cat.name)}
+                  accessibilityRole="button"
+                  accessibilityLabel={cat.name}
+                >
+                  <View style={[styles.catIcon, { backgroundColor: cat.color + "22" }]}>
+                    <Text style={styles.catEmoji}>{cat.icon}</Text>
+                  </View>
+                  <View style={styles.catInfo}>
+                    <View style={[{ flexDirection: RTL_ROW }, styles.catNameRow]}>
+                      <Text style={styles.catName}>
+                        {cat.name}{items.length > 0 ? `  (${items.length})` : ""}
+                      </Text>
+                      <Text style={styles.catAmount}>{formatILS(spent)}</Text>
                     </View>
-                    <Text style={styles.catCap}>{formatILS(cat.monthlyCap)} תקציב</Text>
-                  </>
-                ) : null}
+                    {cat.monthlyCap ? (
+                      <>
+                        <View style={styles.barTrackSmall}>
+                          <View
+                            style={[
+                              styles.barFillSmall,
+                              { width: `${(pct ?? 0) * 100}%` as any, backgroundColor: catBarColor },
+                            ]}
+                          />
+                        </View>
+                        <Text style={styles.catCap}>{formatILS(cat.monthlyCap)} תקציב</Text>
+                      </>
+                    ) : null}
+                  </View>
+                  <Ionicons
+                    name={expanded ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color={C.textSecondary}
+                  />
+                </Pressable>
+                {expanded && (
+                  <View style={styles.catItems}>
+                    {items.length === 0 ? (
+                      <Text style={styles.catEmptyHint}>{t("budget.categoryNoExpenses")}</Text>
+                    ) : (
+                      items.map((exp) => renderExpenseRow(exp))
+                    )}
+                  </View>
+                )}
               </View>
-            </View>
-          );
-        })}
+            );
+          })
+        )}
 
         {/* Recurring expenses section */}
         <SectionHeader label={t("budget.recurringSection")} />
@@ -564,71 +690,12 @@ export default function BudgetScreen() {
           })
         )}
 
-        {/* Recent expenses */}
-        <SectionHeader label={t("budget.recentExpenses")} />
+        {/* Spend charts — bar + pie of the selected month's spend by category. */}
+        <SectionHeader label={t("budget.spendCharts")} />
+        <SpendByCategoryCharts slices={chartSlices} total={totalSpent} formatAmount={formatILS} />
 
-        {monthExpenses.length === 0 ? (
-          <Text style={styles.empty}>{t("budget.noExpenses")}</Text>
-        ) : (
-          monthExpenses.map((exp) => {
-            const member = familyMembers.find((m) => m.id === exp.payerMemberId);
-            const kid = exp.kidId ? kids.find((k) => k.id === exp.kidId) : undefined;
-            const cat = budgetCategories.find((c) => c.name === exp.categoryName);
-            return (
-              <View key={exp.id} style={styles.expRow}>
-                <Pressable
-                  style={[styles.expTap, Platform.OS === "web" && ({ cursor: "pointer" } as any)]}
-                  onPress={() => openEditExpense(exp)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("budget.editExpense")}
-                >
-                  <View
-                    style={[
-                      styles.expAvatar,
-                      { backgroundColor: ((kid?.color ?? member?.color) ?? "#9B59B6") + "33" },
-                    ]}
-                  >
-                    <Text style={styles.expAvatarEmoji}>
-                      {kid?.emoji ?? member?.avatarEmoji ?? "🧑"}
-                    </Text>
-                  </View>
-                  <View style={styles.expInfo}>
-                    <Text style={[styles.expTitle, { textAlign: TEXT_RIGHT }]}>
-                      {cat?.icon ?? "📦"} {exp.categoryName}
-                      {exp.note ? `  •  ${exp.note}` : ""}
-                    </Text>
-                    <Text style={[styles.expMeta, { textAlign: TEXT_RIGHT }]}>
-                      {exp.date}
-                      {kid ? `  •  ${kid.name}` : member ? `  •  ${member.name}` : ""}
-                    </Text>
-                  </View>
-                </Pressable>
-                <View style={styles.expRight}>
-                  <Text style={styles.expAmount}>{formatILS(exp.amount)}</Text>
-                  <View style={styles.expActions}>
-                    {/* Undo a settled kid payment — for recurring ones this also
-                        removes the auto-queued next occurrence. */}
-                    {exp.kidId ? (
-                      <IconButton
-                        icon="undo-variant"
-                        size={16}
-                        iconColor={C.teal}
-                        accessibilityLabel={t("payment.markUnpaid")}
-                        onPress={() => markKidPaymentUnpaidRemote(exp)}
-                      />
-                    ) : null}
-                    <IconButton
-                      icon="trash-can-outline"
-                      size={16}
-                      onPress={() => handleDeleteExpense(exp)}
-                      iconColor={C.textSecondary}
-                    />
-                  </View>
-                </View>
-              </View>
-            );
-          })
-        )}
+        {/* Per-payer breakdown — last section on the page. */}
+        {renderPayerBreakdown()}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -691,28 +758,6 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
   },
 
-  summaryCard: {
-    backgroundColor: C.surface,
-    borderRadius: R.lg,
-    padding: S.lg,
-    marginBottom: S.lg,
-    ...SHADOW.md,
-    borderRightWidth: 4,
-    borderRightColor: ACCENT,
-  },
-  summarySubtitle: {
-    fontSize: 13,
-    color: C.textSecondary,
-    textAlign: TEXT_RIGHT,
-    marginBottom: 4,
-    writingDirection: "rtl",
-  },
-  summaryAmount: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: C.textPrimary,
-    textAlign: TEXT_RIGHT,
-  },
   barTrackSmall: {
     height: 5,
     backgroundColor: C.surfaceSubtle,
@@ -771,15 +816,18 @@ const styles = StyleSheet.create({
   kidPayMetaOverdue: { color: C.red, fontWeight: "700" },
   kidPayAmount: { fontSize: 15, fontWeight: "700", color: C.textPrimary },
 
-  catRow: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
+  catCard: {
     backgroundColor: C.surface,
     borderRadius: R.md,
-    padding: S.md,
     marginBottom: S.sm,
-    gap: S.md,
+    overflow: "hidden",
     ...SHADOW.sm,
+  },
+  catHeader: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    padding: S.md,
+    gap: S.md,
   },
   catIcon: {
     width: 40,
@@ -805,6 +853,49 @@ const styles = StyleSheet.create({
     marginTop: 2,
     writingDirection: "rtl",
   },
+
+  // Expanded category items
+  catItems: {
+    paddingHorizontal: S.sm,
+    paddingBottom: S.sm,
+    paddingTop: S.sm,
+    gap: S.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.border,
+  },
+  catEmptyHint: {
+    fontSize: 12,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    paddingVertical: S.xs,
+  },
+  itemRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    backgroundColor: C.surfaceSubtle,
+    borderRadius: R.sm,
+    paddingHorizontal: S.sm,
+  },
+  itemTap: {
+    flex: 1,
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.sm,
+    paddingVertical: S.xs,
+  },
+  itemAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemAvatarEmoji: { fontSize: 15 },
+  itemInfo: { flex: 1 },
+  itemTitle: { fontSize: 13, fontWeight: "600", color: C.textPrimary, writingDirection: "rtl" },
+  itemMeta: { fontSize: 11, color: C.textSecondary, marginTop: 1, writingDirection: "rtl" },
+  itemAmount: { fontSize: 14, fontWeight: "700", color: C.red },
 
   empty: {
     textAlign: TEXT_RIGHT,
