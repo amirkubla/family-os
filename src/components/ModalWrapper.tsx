@@ -51,14 +51,14 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
       setRendered(true);
       Animated.timing(anim, {
         toValue: 0,
-        duration: 280,
+        duration: 380,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: Platform.OS !== "web",
       }).start();
     } else if (rendered) {
       Animated.timing(anim, {
         toValue: 1,
-        duration: 220,
+        duration: 300,
         easing: Easing.in(Easing.cubic),
         useNativeDriver: Platform.OS !== "web",
       }).start(({ finished }) => {
