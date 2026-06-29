@@ -2,6 +2,8 @@
  * endpoints.ts — Typed API functions per resource.
  */
 
+import { Platform } from "react-native";
+
 import { http } from "./http";
 import type {
   ApiFamily,
@@ -249,12 +251,25 @@ export interface VoiceGroceryResult {
 export const voiceApi = {
   grocery: async (audioUri: string): Promise<VoiceGroceryResult> => {
     const form = new FormData();
-    // React Native FormData accepts a {uri,name,type} object for file parts.
-    form.append("audio", {
-      uri: audioUri,
-      name: "voice.m4a",
-      type: "audio/m4a",
-    } as any);
+    if (Platform.OS === "web") {
+      // expo-audio yields a blob: URL on web; fetch it into a real Blob so the
+      // multipart body carries actual bytes (the RN {uri} file trick is
+      // native-only and would send an empty/garbled part on web).
+      const blob = await (await fetch(audioUri)).blob();
+      const ext = blob.type.includes("webm")
+        ? "webm"
+        : blob.type.includes("mp4") || blob.type.includes("mpeg")
+          ? "mp4"
+          : "m4a";
+      form.append("audio", blob, `voice.${ext}`);
+    } else {
+      // React Native FormData accepts a {uri,name,type} object for file parts.
+      form.append("audio", {
+        uri: audioUri,
+        name: "voice.m4a",
+        type: "audio/m4a",
+      } as any);
+    }
     const res = await fetch(`${ASSISTANT_URL}/voice/grocery`, {
       method: "POST",
       body: form,
