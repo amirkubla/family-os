@@ -1,17 +1,23 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
   StyleSheet,
   Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Animated,
+  Easing,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Portal } from "react-native-paper";
-import { R, S, SHADOW } from "@src/ui/tokens";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-/** When provided, ModalWrapper renders prev/next arrows flanking the card. */
+import { C, S } from "@src/ui/tokens";
+import { FAB_LEFT } from "@src/ui/fabAnchor";
+import { t } from "@src/i18n";
+
+/** When provided, ModalWrapper renders prev/next arrows flanking the content. */
 export interface ModalCarousel {
   onPrev: () => void;
   onNext: () => void;
@@ -21,48 +27,92 @@ interface Props {
   visible: boolean;
   onDismiss: () => void;
   children: React.ReactNode;
-  /** Optional carousel arrows shown to the left & right of the modal card. */
+  /** Optional carousel arrows shown at the screen edges (kid "add" modals). */
   carousel?: ModalCarousel;
 }
 
+/**
+ * ModalWrapper — full-screen sheet that wipes up from the bottom.
+ *
+ * Every modal in the app renders through this: it covers the whole page, slides
+ * in from the bottom (and back down on close), and shows a cancel (✕) at the
+ * top-left. Content scrolls; on wide screens it's capped + centred for
+ * readability while the surface still fills the page.
+ */
 export default function ModalWrapper({ visible, onDismiss, children, carousel }: Props) {
-  if (!visible) return null;
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // 1 = closed (translated off the bottom), 0 = fully open.
+  const anim = useRef(new Animated.Value(1)).current;
+  const [rendered, setRendered] = useState(visible);
 
-  const card = (
-    <View style={styles.container}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
-    </View>
-  );
+  useEffect(() => {
+    if (visible) {
+      setRendered(true);
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: Platform.OS !== "web",
+      }).start();
+    } else if (rendered) {
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: Platform.OS !== "web",
+      }).start(({ finished }) => {
+        if (finished) setRendered(false);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  if (!rendered) return null;
+
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, height] });
 
   return (
-    // Portal teleports the overlay to the app root (PaperProvider host), so a
-    // modal opened from inside a ScrollView is positioned relative to the
-    // screen — not the scrolled content — and stays put on native (iOS) instead
-    // of jumping to the top of the page.
+    // Portal hosts the sheet at the app root so it covers the whole screen
+    // regardless of which scroll container opened it.
     <Portal>
-    <View
-      style={[
-        styles.overlay,
-        Platform.OS === "web" && ({ position: "fixed" } as any),
-      ]}
-    >
-      <Pressable style={styles.backdrop} onPress={onDismiss} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.center}
-        pointerEvents="box-none"
+      <Animated.View
+        style={[
+          styles.fullscreen,
+          Platform.OS === "web" && ({ position: "fixed" } as any),
+          { transform: [{ translateY }] },
+        ]}
       >
+        {/* Cancel (✕) — top-left on every platform (web:left / native:right→mirrored). */}
+        <Pressable
+          style={[styles.cancelBtn, { top: insets.top + S.sm }]}
+          onPress={onDismiss}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t("cancel")}
+          testID="modal-cancel"
+        >
+          <Ionicons name="close" size={26} color={C.textPrimary} />
+        </Pressable>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.flex}
+        >
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.content,
+              { paddingTop: insets.top + 52, paddingBottom: insets.bottom + S.xl },
+            ]}
+          >
+            {children}
+          </ScrollView>
+        </KeyboardAvoidingView>
+
         {carousel ? (
-          <View style={styles.carouselRow} pointerEvents="box-none">
-            {card}
-            {/* Arrows overlaid at the screen edges so the card keeps full width.
-                A translucent disc keeps the white chevron visible whether it sits
-                over the dark backdrop (web) or the card edge (phone). */}
+          <>
             <Pressable
               style={[styles.sideArrow, styles.arrowRight]}
               onPress={carousel.onPrev}
@@ -83,48 +133,39 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
             >
               <Ionicons name="chevron-back" size={26} color="#FFFFFF" style={styles.arrowIcon} />
             </Pressable>
-          </View>
-        ) : (
-          card
-        )}
-      </KeyboardAvoidingView>
-    </View>
+          </>
+        ) : null}
+      </Animated.View>
     </Portal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  fullscreen: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     zIndex: 9999,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: C.surface,
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15,15,30,0.45)",
-  },
-  center: {
+  flex: { flex: 1 },
+  content: {
+    paddingHorizontal: S.lg,
     width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: S.xxl,
-    flex: 1,
-    pointerEvents: "box-none",
+    maxWidth: 560,
+    alignSelf: "center",
   },
-  // Carousel: the card keeps full width (same as a regular modal) and the
-  // arrows are overlaid at the screen edges. flex:1 gives the row a definite
-  // height so the card's maxHeight "85%" resolves and the inner ScrollView can
-  // scroll instead of spilling off-screen.
-  carouselRow: {
+  cancelBtn: {
+    position: "absolute",
+    ...FAB_LEFT,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    width: "100%",
-    flex: 1,
   },
   sideArrow: {
     position: "absolute",
@@ -137,27 +178,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(15,15,30,0.45)",
   },
-  // Native (iOS/Android) auto-swaps absolute left/right under RTL
-  // (I18nManager.swapLeftAndRightInRTL); RN-Web does not. Pick the inset that
-  // lands on the intended PHYSICAL edge per platform so the chevrons always
-  // point outward (→ on the right, ← on the left) on every platform.
   arrowRight: Platform.OS === "web" ? { right: S.xs } : { left: S.xs },
   arrowLeft: Platform.OS === "web" ? { left: S.xs } : { right: S.xs },
-  // Soft dark halo so the white chevron stands out on any background.
   arrowIcon: {
     textShadowColor: "rgba(0,0,0,0.45)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
-  },
-  container: {
-    backgroundColor: "#FFFFFF",
-    width: "92%",
-    maxWidth: 460,
-    maxHeight: "85%",
-    padding: S.lg + 4,
-    borderRadius: R.xl,
-    ...SHADOW.lg,
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
   },
 });
