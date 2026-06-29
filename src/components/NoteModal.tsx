@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { TextInput } from "react-native-paper";
 import type { Note } from "@src/models/note";
 import { addNoteRemote, updateNoteRemote } from "@src/lib/sync/remoteCrud";
 import { t } from "@src/i18n";
@@ -82,12 +81,18 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
   const handleDismiss = () => { reset(); onDismiss(); };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={handleDismiss} carousel={carousel}>
-      <Text style={MS.heading}>
-        {(editNote ? t("noteModal.editTitle") : t("noteModal.addTitle")) +
-          (lockedKidName ? ` ל${lockedKidName}` : "")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={handleDismiss}
+      carousel={carousel}
+      icon="document-text-outline"
+      title={(editNote ? t("noteModal.editTitle") : t("noteModal.addTitle")) +
+        (lockedKidName ? ` ל${lockedKidName}` : "")}
+      onSave={handleSubmit}
+      saveDisabled={!body.trim() || submitting}
+      saveLoading={submitting}
+      saveLabel={editNote ? t("save") : t("add")}
+    >
       <TextInput
         testID="input-note-title"
         placeholder={t("noteModal.titleLabel")}
@@ -124,18 +129,6 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
         />
       )}
 
-      <View style={MS.actions}>
-        <Button onPress={handleDismiss}>{t("cancel")}</Button>
-        <Button
-          testID="btn-save"
-          mode="contained"
-          onPress={handleSubmit}
-          disabled={!body.trim() || submitting}
-          loading={submitting}
-        >
-          {editNote ? t("save") : t("add")}
-        </Button>
-      </View>
     </ModalWrapper>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, TextInput } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import PaginatedPicker from "./PaginatedPicker";
 import { MS } from "@src/ui/modalStyles";
@@ -44,11 +43,14 @@ export default function GrocerySubcategoryModal({ visible, onDismiss, editSubcat
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text style={MS.heading}>
-        {editSubcategory ? t("customization.editSubcategory") : t("customization.addSubcategoryTitle")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      icon="pricetags-outline"
+      title={editSubcategory ? t("customization.editSubcategory") : t("customization.addSubcategoryTitle")}
+      onSave={handleSave}
+      saveLabel={t("save")}
+    >
       <Text style={MS.label}>{t("customization.subcategoryName")}</Text>
       <TextInput
         placeholder={t("customization.subcategoryPlaceholder")}
@@ -76,10 +78,6 @@ export default function GrocerySubcategoryModal({ visible, onDismiss, editSubcat
       {/* Subcategories are emoji-only — no colour selection. A default colour
           is still stored (preserved on edit) so existing display stays valid. */}
 
-      <View style={MS.actions}>
-        <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" onPress={handleSave}>{t("save")}</Button>
-      </View>
     </ModalWrapper>
   );
 }

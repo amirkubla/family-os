@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, TextInput } from "react-native-paper";
 import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
 import DatePicker from "./DatePicker";
 import WheelPicker from "./WheelPicker";
@@ -148,12 +148,16 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss} carousel={carousel}>
-      <Text style={MS.heading}>
-        {(editExpense ? t("payment.edit") : t("payment.add")) +
-          (lockedKidName ? ` ל${lockedKidName}` : "")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      carousel={carousel}
+      icon="cash-outline"
+      title={(editExpense ? t("payment.edit") : t("payment.add")) +
+        (lockedKidName ? ` ל${lockedKidName}` : "")}
+      onSave={handleSave}
+      saveLabel={t("save")}
+    >
       {/* Name */}
       <Text style={MS.label}>{t("payment.name")}</Text>
       <TextInput
@@ -242,10 +246,6 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
         </>
       )}
 
-      <View style={MS.actions}>
-        <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" onPress={handleSave}>{t("save")}</Button>
-      </View>
     </ModalWrapper>
   );
 }

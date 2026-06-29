@@ -196,17 +196,15 @@ export default function ScheduleBlockModal({
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss} carousel={carousel}>
-      {/* ── Header ── */}
-      <View style={MS.headerBar}>
-        <View style={MS.headerIconWrap}>
-          <Text style={MS.headerIcon}>📅</Text>
-        </View>
-        <Text style={MS.heading}>
-          {editBlock ? t("blockModal.editTitle") : t("blockModal.addTitle")}
-        </Text>
-      </View>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      carousel={carousel}
+      icon="time-outline"
+      title={editBlock ? t("blockModal.editTitle") : t("blockModal.addTitle")}
+      onSave={handleSubmit(doSubmit)}
+      saveLabel={editBlock ? t("save") : t("add")}
+    >
       {editKid && (
         <View style={MS.kidBadge}>
           <Text style={{ fontSize: 18 }}>{editKid.emoji}</Text>
@@ -436,24 +434,6 @@ export default function ScheduleBlockModal({
       )}
 
       {/* ── Actions ── */}
-      <View style={MS.actions}>
-        <Button
-          mode="outlined"
-          onPress={onDismiss}
-          style={MS.cancelBtn}
-          labelStyle={MS.cancelLabel}
-        >
-          {t("cancel")}
-        </Button>
-        <Button
-          mode="contained"
-          onPress={handleSubmit(doSubmit)}
-          style={MS.saveBtn}
-          labelStyle={MS.saveBtnLabel}
-        >
-          {editBlock ? t("save") : t("add")}
-        </Button>
-      </View>
     </ModalWrapper>
   );
 }

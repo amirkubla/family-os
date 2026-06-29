@@ -11,10 +11,9 @@
 
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, Button } from "react-native-paper";
+import { Text } from "react-native-paper";
 
 import ModalWrapper from "@src/components/ModalWrapper";
-import { MS } from "@src/ui/modalStyles";
 import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { t } from "@src/i18n";
@@ -48,8 +47,15 @@ export default function VoiceDetailReviewModal({
   const canAdd = !!rows && rows.length > 0 && missing.length === 0;
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text style={MS.heading}>{heading}</Text>
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      icon="mic-outline"
+      title={heading}
+      onSave={onConfirm}
+      saveDisabled={!canAdd}
+      saveLabel={confirmLabel}
+    >
       {transcript ? (
         <View style={styles.transcriptBox}>
           <Text style={styles.transcriptText}>🎙️  {transcript}</Text>
@@ -73,12 +79,6 @@ export default function VoiceDetailReviewModal({
         </Text>
       ) : null}
 
-      <View style={MS.actions}>
-        <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" disabled={!canAdd} onPress={onConfirm}>
-          {confirmLabel}
-        </Button>
-      </View>
     </ModalWrapper>
   );
 }

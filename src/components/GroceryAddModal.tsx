@@ -6,7 +6,7 @@ import { addGroceryRemote, updateGroceryRemote } from "@src/lib/sync/remoteCrud"
 import { inferGrocerySubcategory } from "@src/lib/groceryCategoryInfer";
 import { t, groceryCategoryLabel } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
-import { C, S } from "@src/ui/tokens";
+import { C } from "@src/ui/tokens";
 import ModalWrapper from "./ModalWrapper";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { effectiveSubcategories } from "@src/models/customization";
@@ -17,12 +17,6 @@ interface Props {
   defaultShoppingCategory?: ShoppingCategory;
   editItem?: GroceryItem | null;
 }
-
-const CATEGORY_ICON: Record<ShoppingCategory, string> = {
-  grocery: "🛒",
-  health: "💊",
-  home: "🏠",
-};
 
 export default function GroceryAddModal({
   visible,
@@ -122,17 +116,16 @@ export default function GroceryAddModal({
   const handleDismiss = () => { reset(); onDismiss(); };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={handleDismiss}>
-      {/* ── Header ── */}
-      <View style={[MS.headerBar, { marginTop: S.sm, marginBottom: S.md }]}>
-        <View style={MS.headerIconWrap}>
-          <Text style={MS.headerIcon}>{CATEGORY_ICON[shoppingCat]}</Text>
-        </View>
-        <Text style={MS.heading}>
-          {isEditing ? t("groceryModal.editTitle") : t("groceryModal.title")}
-        </Text>
-      </View>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={handleDismiss}
+      icon="cart-outline"
+      title={isEditing ? t("groceryModal.editTitle") : t("groceryModal.title")}
+      onSave={handleSubmit}
+      saveDisabled={!title.trim() || submitting}
+      saveLoading={submitting}
+      saveLabel={isEditing ? t("save") : t("add")}
+    >
       {/* ── Product details ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
@@ -196,28 +189,6 @@ export default function GroceryAddModal({
         </View>
       </View>
 
-      {/* ── Actions ── */}
-      <View style={[MS.actions, { marginTop: S.md }]}>
-        <Button
-          mode="outlined"
-          onPress={handleDismiss}
-          style={MS.cancelBtn}
-          labelStyle={MS.cancelLabel}
-        >
-          {t("cancel")}
-        </Button>
-        <Button
-          testID="btn-save"
-          mode="contained"
-          onPress={handleSubmit}
-          disabled={!title.trim() || submitting}
-          loading={submitting}
-          style={MS.saveBtn}
-          labelStyle={MS.saveBtnLabel}
-        >
-          {isEditing ? t("save") : t("add")}
-        </Button>
-      </View>
     </ModalWrapper>
   );
 }

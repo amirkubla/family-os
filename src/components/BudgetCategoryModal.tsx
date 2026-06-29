@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, TextInput } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import PaginatedPicker from "./PaginatedPicker";
 import { MS } from "@src/ui/modalStyles";
@@ -48,11 +47,14 @@ export default function BudgetCategoryModal({ visible, onDismiss, editCategory, 
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text style={MS.heading}>
-        {editCategory ? t("budget.editCategory") : t("budget.addCategory")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      icon="pricetag-outline"
+      title={editCategory ? t("budget.editCategory") : t("budget.addCategory")}
+      onSave={handleSave}
+      saveLabel={t("save")}
+    >
       <Text style={MS.label}>{t("budget.categoryName")}</Text>
       <TextInput
         placeholder={t("budget.categoryNamePlaceholder")}
@@ -91,10 +93,6 @@ export default function BudgetCategoryModal({ visible, onDismiss, editCategory, 
         contentStyle={MS.inputContentNumeric}
       />
 
-      <View style={MS.actions}>
-        <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" onPress={handleSave}>{t("save")}</Button>
-      </View>
     </ModalWrapper>
   );
 }

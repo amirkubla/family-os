@@ -8,10 +8,9 @@
 
 import React, { useEffect, useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
-import { Text, Button, IconButton } from "react-native-paper";
+import { Text, IconButton } from "react-native-paper";
 
 import ModalWrapper from "@src/components/ModalWrapper";
-import { MS } from "@src/ui/modalStyles";
 import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { t } from "@src/i18n";
@@ -52,8 +51,15 @@ export default function VoiceReviewModal<T extends { title: string }>({
   const remove = (index: number) => setList((l) => l.filter((_, i) => i !== index));
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text style={MS.heading}>{heading ?? t("voice.reviewTitle")}</Text>
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      icon="mic-outline"
+      title={heading ?? t("voice.reviewTitle")}
+      onSave={() => onConfirm(list)}
+      saveDisabled={list.length === 0}
+      saveLabel={(confirmLabel ?? ((n: number) => t("voice.addItems", { count: n })))(list.length)}
+    >
       {transcript ? (
         <View style={styles.transcriptBox}>
           <Text style={styles.transcriptText}>🎙️  {transcript}</Text>
@@ -90,16 +96,6 @@ export default function VoiceReviewModal<T extends { title: string }>({
         </ScrollView>
       )}
 
-      <View style={MS.actions}>
-        <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button
-          mode="contained"
-          disabled={list.length === 0}
-          onPress={() => onConfirm(list)}
-        >
-          {(confirmLabel ?? ((n: number) => t("voice.addItems", { count: n })))(list.length)}
-        </Button>
-      </View>
     </ModalWrapper>
   );
 }

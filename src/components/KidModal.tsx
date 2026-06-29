@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, TextInput } from "react-native-paper";
 import { addKidRemote, updateKidRemote } from "@src/lib/sync/remoteCrud";
 import type { Kid } from "@src/models/kid";
 import { t } from "@src/i18n";
@@ -55,11 +54,14 @@ export default function KidModal({ visible, onDismiss, editKid }: Props) {
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text style={MS.heading}>
-        {isEditing ? t("settings.editKid") : t("settings.addKid")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      icon="happy-outline"
+      title={isEditing ? t("settings.editKid") : t("settings.addKid")}
+      onSave={handleSubmit}
+      saveLabel={t("save")}
+    >
       <TextInput
         placeholder={t("settings.kidName")}
         value={name}
@@ -90,10 +92,6 @@ export default function KidModal({ visible, onDismiss, editKid }: Props) {
         testIDPrefix="kid-color"
       />
 
-      <View style={MS.actions}>
-        <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" onPress={handleSubmit}>{t("save")}</Button>
-      </View>
     </ModalWrapper>
   );
 }

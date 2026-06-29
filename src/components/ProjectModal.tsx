@@ -240,12 +240,18 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
   const handleDismiss = () => { reset(); onDismiss(); };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={handleDismiss} carousel={carousel}>
-      <Text style={MS.heading}>
-        {(editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")) +
-          (lockedKidName ? ` ל${lockedKidName}` : "")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={handleDismiss}
+      carousel={carousel}
+      icon="rocket-outline"
+      title={(editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")) +
+        (lockedKidName ? ` ל${lockedKidName}` : "")}
+      onSave={handleSubmit}
+      saveDisabled={!title.trim() || submitting}
+      saveLoading={submitting}
+      saveLabel={editProject ? t("save") : t("add")}
+    >
       <TextInput
         testID="input-project-title"
         placeholder={t("projectModal.projectTitle")}
@@ -314,18 +320,6 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
         />
       )}
 
-      <View style={MS.actions}>
-        <Button onPress={handleDismiss}>{t("cancel")}</Button>
-        <Button
-          testID="btn-save"
-          mode="contained"
-          onPress={handleSubmit}
-          disabled={!title.trim() || submitting}
-          loading={submitting}
-        >
-          {editProject ? t("save") : t("add")}
-        </Button>
-      </View>
     </ModalWrapper>
   );
 }

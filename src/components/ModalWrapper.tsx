@@ -140,7 +140,7 @@ export default function ModalWrapper({
               labelStyle={styles.saveLabel}
               buttonColor={C.textPrimary}
               textColor="#FFFFFF"
-              testID="modal-save"
+              testID="btn-save"
             >
               {saveLabel ?? t("save")}
             </Button>

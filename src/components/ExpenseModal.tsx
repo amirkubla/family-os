@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, TextInput as RNTextInput } from "react-native";
-import { Text, Button } from "react-native-paper";
+import { Text } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import WheelPicker from "./WheelPicker";
 import SegmentedPills from "./SegmentedPills";
@@ -167,11 +167,14 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text style={MS.heading}>
-        {editExpense ? t("budget.editExpense") : t("budget.addExpense")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      icon="card-outline"
+      title={editExpense ? t("budget.editExpense") : t("budget.addExpense")}
+      onSave={handleSave}
+      saveLabel={t("save")}
+    >
       {/* Payment-type selector — underline tabs (same as grocery/calendar) */}
       <View style={styles.typeSelector}>
         <SegmentedPills
@@ -318,10 +321,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         </View>
       )}
 
-      <View style={MS.actions}>
-        <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" onPress={handleSave}>{t("save")}</Button>
-      </View>
     </ModalWrapper>
   );
 }

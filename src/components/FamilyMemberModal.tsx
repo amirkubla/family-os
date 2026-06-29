@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, TextInput } from "react-native-paper";
 import {
   addFamilyMemberRemote,
   updateFamilyMemberRemote,
@@ -65,11 +65,14 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
   const roleButtons = MEMBER_ROLES.map((r) => ({ value: r, label: memberRoleLabel(r) }));
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text style={MS.heading}>
-        {isEditing ? t("settings.editMember") : t("settings.addMember")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      icon="person-outline"
+      title={isEditing ? t("settings.editMember") : t("settings.addMember")}
+      onSave={handleSubmit}
+      saveLabel={t("save")}
+    >
       <TextInput
         placeholder={t("settings.memberName")}
         value={name}
@@ -112,10 +115,6 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
         testIDPrefix="member-color"
       />
 
-      <View style={MS.actions}>
-        <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" onPress={handleSubmit} testID="btn-save">{t("save")}</Button>
-      </View>
     </ModalWrapper>
   );
 }

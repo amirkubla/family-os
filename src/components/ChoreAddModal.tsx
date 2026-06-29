@@ -61,11 +61,16 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
   const handleDismiss = () => { reset(); onDismiss(); };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={handleDismiss}>
-      <Text style={MS.heading}>
-        {editChore ? t("choreModal.editTitle") : t("choreModal.title")}
-      </Text>
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={handleDismiss}
+      icon="checkbox-outline"
+      title={editChore ? t("choreModal.editTitle") : t("choreModal.title")}
+      onSave={handleSubmit}
+      saveDisabled={!title.trim() || submitting}
+      saveLoading={submitting}
+      saveLabel={editChore ? t("save") : t("add")}
+    >
       <TextInput
         testID="input-chore-title"
         placeholder={t("choreModal.whatNeedsDoing")}
@@ -108,18 +113,6 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
         </>
       )}
 
-      <View style={MS.actions}>
-        <Button onPress={handleDismiss}>{t("cancel")}</Button>
-        <Button
-          testID="btn-save"
-          mode="contained"
-          onPress={handleSubmit}
-          disabled={!title.trim() || submitting}
-          loading={submitting}
-        >
-          {editChore ? t("save") : t("add")}
-        </Button>
-      </View>
     </ModalWrapper>
   );
 }
