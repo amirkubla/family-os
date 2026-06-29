@@ -245,11 +245,19 @@ export const telegramApi = {
 // adds. The audio is sent as multipart/form-data (field name "audio").
 export interface VoiceGroceryResult {
   transcript: string;
-  items: { title: string; qty?: string | null; shopping_category: string }[];
+  items: {
+    title: string;
+    qty?: string | null;
+    shopping_category: string;
+    subcategory?: string | null;
+  }[];
 }
 
 export const voiceApi = {
-  grocery: async (audioUri: string): Promise<VoiceGroceryResult> => {
+  grocery: async (
+    audioUri: string,
+    taxonomy?: Record<string, string[]>,
+  ): Promise<VoiceGroceryResult> => {
     const form = new FormData();
     if (Platform.OS === "web") {
       // expo-audio yields a blob: URL on web; fetch it into a real Blob so the
@@ -270,6 +278,8 @@ export const voiceApi = {
         type: "audio/m4a",
       } as any);
     }
+    // The family's sub-category taxonomy so the Assistant can categorize items.
+    if (taxonomy) form.append("subcategories", JSON.stringify(taxonomy));
     const res = await fetch(`${ASSISTANT_URL}/voice/grocery`, {
       method: "POST",
       body: form,

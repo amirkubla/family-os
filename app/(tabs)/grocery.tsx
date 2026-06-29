@@ -81,7 +81,13 @@ export default function GroceryScreen() {
   const handleMic = async () => {
     try {
       if (voiceStatus === "recording") {
-        const result = await stopAndTranscribe();
+        // Pass the family's sub-category names per category so the Assistant
+        // can label each spoken item.
+        const taxonomy: Record<string, string[]> = {};
+        for (const cat of SHOPPING_CATEGORIES) {
+          taxonomy[cat] = effectiveSubcategories(customizations, cat).map((s) => s.name);
+        }
+        const result = await stopAndTranscribe(taxonomy);
         if (result) setVoiceResult(result);
       } else if (voiceStatus === "idle") {
         const ok = await startVoice();
@@ -102,7 +108,8 @@ export default function GroceryScreen() {
         title: it.title,
         shoppingCategory: cat,
         qty: it.qty ?? undefined,
-        subcategory: inferGrocerySubcategory(it.title, cat),
+        // Prefer the Assistant's category label; fall back to keyword inference.
+        subcategory: it.subcategory ?? inferGrocerySubcategory(it.title, cat),
       });
     }
     setVoiceResult(null);

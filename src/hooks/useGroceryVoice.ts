@@ -37,18 +37,21 @@ export function useGroceryVoice() {
     return true;
   }, [recorder]);
 
-  /** Stop recording, upload the clip, and return the parsed result (or null). */
-  const stopAndTranscribe = useCallback(async (): Promise<VoiceGroceryResult | null> => {
-    setStatus("processing");
-    try {
-      await recorder.stop();
-      const uri = recorder.uri;
-      if (!uri) return null;
-      return await voiceApi.grocery(uri);
-    } finally {
-      setStatus("idle");
-    }
-  }, [recorder]);
+  /** Stop recording, upload the clip (+ optional taxonomy), return the result. */
+  const stopAndTranscribe = useCallback(
+    async (taxonomy?: Record<string, string[]>): Promise<VoiceGroceryResult | null> => {
+      setStatus("processing");
+      try {
+        await recorder.stop();
+        const uri = recorder.uri;
+        if (!uri) return null;
+        return await voiceApi.grocery(uri, taxonomy);
+      } finally {
+        setStatus("idle");
+      }
+    },
+    [recorder],
+  );
 
   return { status, start, stopAndTranscribe };
 }
