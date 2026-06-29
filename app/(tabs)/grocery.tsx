@@ -38,6 +38,7 @@ import {
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { C, R, S } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 
 /** Fallback emoji map for items with legacy English subcategory keys not found
  *  in the family's effective list (e.g. items added before customization). */
@@ -61,6 +62,7 @@ const EMPTY_KEYS: Record<ShoppingCategory, string> = {
 
 export default function GroceryScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useThemeColor();
   const grocery = useFamilyStore((s) => s.grocery);
   const customizations = useFamilyStore((s) => s.customizations);
   const [modalOpen, setModalOpen] = useState(false);
@@ -313,7 +315,7 @@ export default function GroceryScreen() {
           list, which disappeared on long lists; a FAB stays visible. */}
       <FAB
         icon="plus"
-        style={[styles.fab, { bottom: insets.bottom + S.lg }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
         color="#FFF"
         onPress={() => setModalOpen(true)}
         accessibilityRole="button"

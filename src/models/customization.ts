@@ -22,10 +22,19 @@ export interface FamilyCustomizations {
   grocerySubcategories?: Partial<Record<ShoppingCategory, GrocerySubcategory[]>>;
   /** Family avatar shown at the top of the home screen. */
   familyEmoji?: string;
+  /**
+   * Brand/theme accent (hex). Applied app-wide to modal buttons, the nav menu,
+   * and the floating action buttons. Falls back to `C.primary` (#003333) when
+   * unset — see `useThemeColor`. Picked from the family-member colour palette.
+   */
+  themeColor?: string;
 }
 
 /** Default family icon when none has been set. */
 export const DEFAULT_FAMILY_EMOJI = "🏡";
+
+/** Default theme accent when the family hasn't picked one (mirrors C.primary). */
+export const DEFAULT_THEME_COLOR = "#003333";
 
 /**
  * Hebrew defaults with icons and colors, used when a family hasn't set its

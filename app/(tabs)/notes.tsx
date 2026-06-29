@@ -24,6 +24,7 @@ import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
 import VoiceFab from "@src/components/VoiceFab";
 import { t } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 
@@ -122,6 +123,7 @@ function NoteCard({
 
 export default function NotesScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useThemeColor();
   const { modal } = useLocalSearchParams<{ modal?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -213,7 +215,7 @@ export default function NotesScreen() {
       <FAB
         icon="plus"
         testID="btn-add-note"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: C.primary }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
         color="#FFF"
         onPress={() => {
           setVoiceDraft(undefined);

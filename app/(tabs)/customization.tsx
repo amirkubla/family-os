@@ -37,7 +37,7 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import type { BudgetCategory } from "@src/models/budget";
 import SectionHeader from "@src/components/SectionHeader";
 import PaginatedPicker from "@src/components/PaginatedPicker";
-import { FAMILY_EMOJI_OPTIONS } from "@src/ui/semanticColors";
+import { FAMILY_EMOJI_OPTIONS, COLOR_SWATCHES_LARGE } from "@src/ui/semanticColors";
 import {
   effectiveSubcategories,
   OTHER_SUBCATEGORY,
@@ -250,6 +250,32 @@ function FamilyIconSection() {
 }
 
 // ---------------------------------------------------------------------------
+// Theme colour section — the family's brand accent, applied app-wide to modal
+// buttons, the floating nav menu, and the page FABs (via useThemeColor).
+// ---------------------------------------------------------------------------
+
+function ThemeColorSection() {
+  const customizations = useFamilyStore((s) => s.customizations);
+  const current = customizations.themeColor ?? C.primary;
+  return (
+    <>
+      <SectionHeader label={t("customization.themeColor")} />
+      <Card style={styles.card} mode="elevated">
+        <Card.Content>
+          <PaginatedPicker
+            kind="color"
+            options={COLOR_SWATCHES_LARGE}
+            value={current}
+            onChange={(color) => updateCustomizationsRemote({ ...customizations, themeColor: color })}
+            testIDPrefix="theme-color"
+          />
+        </Card.Content>
+      </Card>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 export default function CustomizationScreen() {
   const router = useRouter();
@@ -284,6 +310,8 @@ export default function CustomizationScreen() {
         <Text style={styles.subtitle}>{t("customization.subtitle")}</Text>
 
         <FamilyIconSection />
+
+        <ThemeColorSection />
 
         <Text style={styles.hint}>{t("customization.subcategoriesHint")}</Text>
 

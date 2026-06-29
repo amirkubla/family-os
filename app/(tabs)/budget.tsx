@@ -20,6 +20,7 @@ import {
 } from "@src/lib/sync/remoteCrud";
 import { t, LOCALE } from "@src/i18n";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget";
@@ -82,6 +83,7 @@ function nextMonth(ym: string): string {
 
 export default function BudgetScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useThemeColor();
   const budgetCategories = useFamilyStore((s) => s.budgetCategories);
   const allExpenses = useFamilyStore((s) => s.expenses);
   const familyMembers = useFamilyStore((s) => s.familyMembers);
@@ -788,7 +790,7 @@ export default function BudgetScreen() {
         icon="plus"
         style={[
           styles.fab,
-          { bottom: insets.bottom + S.lg },
+          { bottom: insets.bottom + S.lg, backgroundColor: theme },
           Platform.OS === "web" && ({ position: "fixed" } as any),
         ]}
         onPress={() => {

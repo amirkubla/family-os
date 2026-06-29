@@ -12,6 +12,7 @@ import { FAB } from "react-native-paper";
 
 import { C } from "@src/ui/tokens";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
 import type { VoiceStatus } from "@src/hooks/useVoiceRecorder";
 
@@ -26,12 +27,13 @@ interface Props {
 }
 
 export default function VoiceFab({ status, onPress, bottom, testID, webFixed }: Props) {
+  const theme = useThemeColor();
   return (
     <FAB
       icon={status === "recording" ? "stop" : "microphone"}
       loading={status === "processing"}
       style={[
-        { position: "absolute", ...FAB_LEFT, bottom, backgroundColor: C.primary },
+        { position: "absolute", ...FAB_LEFT, bottom, backgroundColor: theme },
         status === "recording" && { backgroundColor: C.red },
         webFixed && Platform.OS === "web" ? ({ position: "fixed" } as any) : null,
       ]}

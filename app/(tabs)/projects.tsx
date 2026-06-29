@@ -24,6 +24,7 @@ import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
 import VoiceFab from "@src/components/VoiceFab";
 import { t, statusLabel } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { STATUS_COLORS } from "@src/ui/semanticColors";
@@ -131,6 +132,7 @@ function ProjectCard({
 
 export default function ProjectsScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useThemeColor();
   const { modal, status: initialStatus } = useLocalSearchParams<{ modal?: string; status?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -229,7 +231,7 @@ export default function ProjectsScreen() {
         icon="plus"
         testID="btn-add-project"
         accessibilityLabel="btn-add-project"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: C.primary }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
         color="#FFF"
         onPress={() => {
           setVoiceDraft(undefined);

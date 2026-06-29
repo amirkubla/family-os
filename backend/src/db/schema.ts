@@ -44,6 +44,9 @@ export type FamilyCustomizations = {
     health?: string[];
     home?: string[];
   };
+  familyEmoji?: string;
+  /** Brand/theme accent (hex). Free-form — stored in the JSONB blob. */
+  themeColor?: string;
 };
 
 export const families = pgTable("families", {

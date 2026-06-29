@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, S, R } from "@src/ui/tokens";
 import { FAB_LEFT, FAB_RIGHT } from "@src/ui/fabAnchor";
 import { RTL_ROW } from "@src/ui/rtl";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
 
 /** When provided, ModalWrapper renders prev/next arrows flanking the content. */
@@ -66,6 +67,7 @@ export default function ModalWrapper({
   saveLabel,
   carousel,
 }: Props) {
+  const theme = useThemeColor();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const anim = useRef(new Animated.Value(1)).current; // 1 = closed (off bottom), 0 = open
@@ -112,8 +114,8 @@ export default function ModalWrapper({
           <View style={styles.headerCenter}>
             {title ? (
               <View style={styles.titleRow}>
-                {icon ? <Ionicons name={icon} size={20} color={C.primary} /> : null}
-                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                {icon ? <Ionicons name={icon} size={20} color={theme} /> : null}
+                <Text style={[styles.title, { color: theme }]} numberOfLines={1}>{title}</Text>
               </View>
             ) : null}
             {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
@@ -134,7 +136,7 @@ export default function ModalWrapper({
             <Pressable
               onPress={onSave}
               disabled={saveDisabled || saveLoading}
-              style={[styles.saveBtn, { top: btnTop }, (saveDisabled || saveLoading) && styles.saveBtnDisabled]}
+              style={[styles.saveBtn, { top: btnTop, backgroundColor: theme }, (saveDisabled || saveLoading) && styles.saveBtnDisabled]}
               accessibilityRole="button"
               accessibilityLabel={saveLabel ?? t("save")}
               testID="btn-save"

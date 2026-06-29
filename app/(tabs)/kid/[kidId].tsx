@@ -55,6 +55,7 @@ import { t, dayName, statusLabel } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { STATUS_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
@@ -190,6 +191,7 @@ function KidEventRow({
 
 export default function KidScheduleScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useThemeColor();
   const { kidId } = useLocalSearchParams<{ kidId: string }>();
   const storeKids = useFamilyStore((s) => s.kids);
 
@@ -1030,7 +1032,7 @@ export default function KidScheduleScreen() {
         {/* FAB */}
         <FAB
           icon="plus"
-          style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: C.primary }]}
+          style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
           color="#FFF"
           onPress={openAddCarousel}
         />

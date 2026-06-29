@@ -487,6 +487,7 @@ const he = {
     subtitle:
       "הגדרות אישיות למשפחה שלכם. ההגדרות נשמרות לכל בני המשפחה ויסונכרנו אוטומטית.",
     familyIcon: "אייקון המשפחה",
+    themeColor: "צבע ערכת הנושא",
     grocerySubcategories: "תת-קטגוריות מכולת",
     healthSubcategories: "תת-קטגוריות פארם",
     homeSubcategories: "תת-קטגוריות לבית",

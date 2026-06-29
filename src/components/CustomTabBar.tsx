@@ -25,7 +25,7 @@ import { useRouter } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { FAB_RIGHT } from "@src/ui/fabAnchor";
-import { C } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
 
 // ── Nav icons ────────────────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ export default function CustomTabBar({
   // Active kids drive the nested "ילדים" layer.
   const kids = useFamilyStore((s) => s.kids);
   const activeKids = kids.filter((k) => k.isActive);
+  const theme = useThemeColor();
 
   const [expanded, setExpanded] = useState(false);
   // Which menu layer is showing: the flat main menu, or the nested kid list.
@@ -147,6 +148,14 @@ export default function CustomTabBar({
   // item (main tabs + ops actions are all registered tab screens).
   const activeName = state.routes[state.index]?.name;
 
+  // Circle colours driven by the family theme. Default: themed fill + white
+  // ring/icon; the focused item inverts to a white fill + themed ring/icon.
+  const circleStyle = (focused: boolean) =>
+    focused
+      ? { backgroundColor: "#FFFFFF", borderColor: theme }
+      : { backgroundColor: theme };
+  const iconColor = (focused: boolean) => (focused ? theme : "#FFFFFF");
+
   const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const menuOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.4, 1] });
   const menuTranslate = anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
@@ -163,7 +172,7 @@ export default function CustomTabBar({
         node: (
           <Pressable
             onPress={() => handleSelect(route.name, route.key, isFocused)}
-            style={[styles.circle, webCursor, isFocused && styles.circleActive]}
+            style={[styles.circle, webCursor, circleStyle(isFocused)]}
             accessibilityRole="button"
             accessibilityLabel={label}
             accessibilityState={{ selected: isFocused }}
@@ -172,7 +181,7 @@ export default function CustomTabBar({
             <Ionicons
               name={TAB_ICONS[route.name] ?? "ellipse"}
               size={32}
-              color={isFocused ? C.primary : "#FFFFFF"}
+              color={iconColor(isFocused)}
             />
           </Pressable>
         ),
@@ -185,13 +194,13 @@ export default function CustomTabBar({
         node: (
           <Pressable
             onPress={() => handleOpSelect(op.route)}
-            style={[styles.circle, webCursor, isFocused && styles.circleActive]}
+            style={[styles.circle, webCursor, circleStyle(isFocused)]}
             accessibilityRole="button"
             accessibilityLabel={t(op.labelKey)}
             accessibilityState={{ selected: isFocused }}
             testID={`nav-op-${op.route}`}
           >
-            <Ionicons name={op.icon} size={32} color={isFocused ? C.primary : "#FFFFFF"} />
+            <Ionicons name={op.icon} size={32} color={iconColor(isFocused)} />
           </Pressable>
         ),
       };
@@ -203,7 +212,7 @@ export default function CustomTabBar({
             node: (
               <Pressable
                 onPress={() => setView("kids")}
-                style={[styles.circle, webCursor]}
+                style={[styles.circle, webCursor, circleStyle(false)]}
                 accessibilityRole="button"
                 accessibilityLabel={t("home.kids")}
                 testID="nav-kids"
@@ -222,7 +231,7 @@ export default function CustomTabBar({
       node: (
         <Pressable
           onPress={() => handleKidSelect(kid.id)}
-          style={[styles.circle, webCursor]}
+          style={[styles.circle, webCursor, circleStyle(false)]}
           accessibilityRole="button"
           accessibilityLabel={kid.name}
           testID={`nav-kid-${kid.id}`}
@@ -236,7 +245,7 @@ export default function CustomTabBar({
       node: (
         <Pressable
           onPress={() => setView("main")}
-          style={[styles.circle, webCursor]}
+          style={[styles.circle, webCursor, circleStyle(false)]}
           accessibilityRole="button"
           accessibilityLabel={t("nav.back")}
           testID="nav-kids-back"
@@ -287,7 +296,7 @@ export default function CustomTabBar({
           style={[
             styles.fab,
             webCursor,
-            { backgroundColor: expanded ? "#3A3A4A" : C.primary },
+            { backgroundColor: expanded ? "#3A3A4A" : theme },
           ]}
           accessibilityRole="button"
           accessibilityLabel={expanded ? "סגור תפריט ניווט" : "פתח תפריט ניווט"}
@@ -321,21 +330,16 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   // Icon-only circular menu button (no text labels — icons are intuitive).
-  // Themed fill (C.primary) with a white ring and a white icon.
+  // Layout only — fill + ring colour are applied inline from the family theme
+  // (see circleStyle); default is themed fill + white ring, focused inverts.
   circle: {
     width: 54,
     height: 54,
     borderRadius: 27,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: C.primary,
     borderWidth: 1.5,
     borderColor: "#FFFFFF",
-  },
-  // Current tab — inverted (white fill, themed ring + icon) as the selected cue.
-  circleActive: {
-    backgroundColor: "#FFFFFF",
-    borderColor: C.primary,
   },
   kidEmoji: {
     fontSize: 30,

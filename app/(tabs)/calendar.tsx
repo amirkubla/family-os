@@ -43,6 +43,7 @@ import { t, dayName, assigneeTypeLabel } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { C, R, S } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { ASSIGNEE_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
@@ -195,6 +196,7 @@ type CalendarView = "month" | "week" | "day";
 
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useThemeColor();
   const { modal } = useLocalSearchParams<{ modal?: string }>();
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
@@ -523,7 +525,7 @@ export default function CalendarScreen() {
       {/* FAB */}
       <FAB
         icon="plus"
-        style={[styles.fab, { bottom: insets.bottom + S.lg }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
         color="#FFF"
         onPress={openAdd}
         // a11y + automation hooks (QA Pass 2 BUG #8 — FAB had zero a11y props,

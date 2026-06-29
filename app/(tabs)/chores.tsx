@@ -31,6 +31,7 @@ import VoiceFab from "@src/components/VoiceFab";
 import type { VoiceChoreResult } from "@src/lib/api/endpoints";
 import { t } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 
@@ -144,6 +145,7 @@ function ChoreRow({
 
 export default function ChoresScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useThemeColor();
   const { modal } = useLocalSearchParams<{ modal?: string }>();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -237,7 +239,7 @@ export default function ChoresScreen() {
         icon="plus"
         testID="btn-add-chore"
         accessibilityLabel="btn-add-chore"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: C.primary }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
         color="#FFF"
         onPress={() => {
           setEditingChore(null);
