@@ -31,7 +31,7 @@ export default function VoiceFab({ status, onPress, bottom, testID, webFixed }: 
       icon={status === "recording" ? "stop" : "microphone"}
       loading={status === "processing"}
       style={[
-        { position: "absolute", ...FAB_LEFT, bottom, backgroundColor: C.teal },
+        { position: "absolute", ...FAB_LEFT, bottom, backgroundColor: C.primary },
         status === "recording" && { backgroundColor: C.red },
         webFixed && Platform.OS === "web" ? ({ position: "fixed" } as any) : null,
       ]}

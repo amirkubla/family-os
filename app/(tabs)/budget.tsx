@@ -1043,7 +1043,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: S.lg,  // overridden inline with insets.bottom + S.lg
     ...FAB_LEFT,
-    backgroundColor: ACCENT,
+    backgroundColor: C.primary,
   },
 
   nudgeBanner: {

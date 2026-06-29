@@ -213,7 +213,7 @@ export default function NotesScreen() {
       <FAB
         icon="plus"
         testID="btn-add-note"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: NOTE_COLORS.accent }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: C.primary }]}
         color="#FFF"
         onPress={() => {
           setVoiceDraft(undefined);

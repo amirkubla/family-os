@@ -427,6 +427,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     ...FAB_LEFT,
     bottom: S.lg,
-    backgroundColor: C.purple,
+    backgroundColor: C.primary,
   },
 });
