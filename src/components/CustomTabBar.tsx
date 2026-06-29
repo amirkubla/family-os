@@ -298,8 +298,10 @@ export default function CustomTabBar({
 
 const styles = StyleSheet.create({
   backdrop: {
+    // Transparent — no page-dimming scrim; this layer only exists to capture
+    // an outside tap that closes the menu.
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15,15,30,0.18)",
+    backgroundColor: "transparent",
   },
   anchor: {
     position: "absolute",
@@ -322,7 +324,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: C.primary,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: "#FFFFFF",
   },
   // Current tab — inverted (white fill, themed ring + icon) as the selected cue.
