@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: C.primary,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "#FFFFFF",
   },
   // Current tab — inverted (white fill, themed ring + icon) as the selected cue.
