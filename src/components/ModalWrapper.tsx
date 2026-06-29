@@ -20,6 +20,9 @@ import { FAB_LEFT, FAB_RIGHT } from "@src/ui/fabAnchor";
 import { RTL_ROW } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 
+/** Dark-blue Save CTA — distinct from the near-black text colour. */
+const SAVE_BLUE = "#1E40AF";
+
 /** When provided, ModalWrapper renders prev/next arrows flanking the content. */
 export interface ModalCarousel {
   onPrev: () => void;
@@ -136,9 +139,10 @@ export default function ModalWrapper({
               onPress={onSave}
               disabled={saveDisabled}
               loading={saveLoading}
-              style={[styles.saveBtn, { top: insets.top + S.xs }]}
+              style={[styles.saveBtn, { top: btnTop }]}
+              contentStyle={styles.saveContent}
               labelStyle={styles.saveLabel}
-              buttonColor={C.textPrimary}
+              buttonColor={SAVE_BLUE}
               textColor="#FFFFFF"
               testID="btn-save"
             >
@@ -236,7 +240,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     ...FAB_RIGHT,
     borderRadius: R.xl,
+    height: 40,
+    justifyContent: "center",
   },
+  saveContent: { height: 40 },
   saveLabel: { fontSize: 14, fontWeight: "700" },
   flex: { flex: 1 },
   content: {
