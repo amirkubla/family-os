@@ -9,7 +9,7 @@
  * at the bottom.
  */
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   View,
   Pressable,
@@ -50,9 +50,8 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 // "ילדים" entry + its nested kid layer.
 const KIDS_PAL = { active: "#E0699B", bg: "#FBE9F1" };
 
-// "ניהול" (ops) entry + its nested layer. Grocery + budget live here too
-// (demoted from the main row) alongside chores/notes/projects.
-const OPS_PAL = { active: "#5B6CCF", bg: "#ECEEFB" };
+// Management actions — rendered inline in the main menu (no nested layer).
+// Grocery + budget live here too, alongside chores/notes/projects.
 const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; color: string; labelKey: string }[] = [
   { route: "grocery",  icon: "cart-outline",          color: "#2D9F6F", labelKey: "tabs.grocery" },
   { route: "budget",   icon: "wallet-outline",        color: "#9B59B6", labelKey: "tabs.budget" },
@@ -69,6 +68,52 @@ const C_TEXT_MUTED = "#A8A3B8";
 
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
+
+// Delay between consecutive items in the staggered open animation (ms).
+const STAGGER = 45;
+
+/**
+ * MenuCircle — animated wrapper that pops a menu item in on mount. Items mount
+ * when the menu opens (and on layer switch), so the entrance cascades from the
+ * item nearest the FAB up to the farthest. Quick spring, noticeable stagger.
+ */
+function MenuCircle({
+  index,
+  total,
+  children,
+}: {
+  index: number;
+  total: number;
+  children: React.ReactNode;
+}) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const fromBottom = total - 1 - index; // nearest-FAB item first
+    Animated.sequence([
+      Animated.delay(fromBottom * STAGGER),
+      Animated.spring(v, {
+        toValue: 1,
+        tension: 260,
+        friction: 18,
+        useNativeDriver: !isWeb,
+      }),
+    ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <Animated.View
+      style={{
+        opacity: v,
+        transform: [
+          { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
+          { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
+        ],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -88,9 +133,8 @@ export default function CustomTabBar({
   const activeKids = kids.filter((k) => k.isActive);
 
   const [expanded, setExpanded] = useState(false);
-  // Which menu layer is showing: the main tabs, the nested kid list, or the
-  // nested ops (chores/notes/projects) list.
-  const [view, setView] = useState<"main" | "kids" | "ops">("main");
+  // Which menu layer is showing: the flat main menu, or the nested kid list.
+  const [view, setView] = useState<"main" | "kids">("main");
   const anim = useRef(new Animated.Value(0)).current;
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -165,7 +209,104 @@ export default function CustomTabBar({
 
   const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const menuOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.4, 1] });
-  const menuTranslate = anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
+
+  // Flat list of circles for the current layer. Main = the tabs + every
+  // management action inline (no nested "ניהול" tap); kids = the kid list + back.
+  const mainItems: { key: string; node: React.ReactNode }[] = [
+    ...navRoutes.map((route) => {
+      const idx = state.routes.indexOf(route);
+      const isFocused = state.index === idx;
+      const pal = TAB_COLORS[route.name];
+      const label = descriptors[route.key]?.options?.title ?? route.name;
+      return {
+        key: route.key,
+        node: (
+          <Pressable
+            onPress={() => handleSelect(route.name, route.key, isFocused)}
+            style={[styles.circle, webCursor, { backgroundColor: isFocused ? pal.active : "#FFFFFF" }]}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ selected: isFocused }}
+            testID={`tab-${route.name}`}
+          >
+            <Ionicons
+              name={TAB_ICONS[route.name] ?? "ellipse-outline"}
+              size={24}
+              color={isFocused ? "#FFFFFF" : pal.active}
+            />
+          </Pressable>
+        ),
+      };
+    }),
+    ...OPS_ITEMS.map((op) => ({
+      key: `op-${op.route}`,
+      node: (
+        <Pressable
+          onPress={() => handleOpSelect(op.route)}
+          style={[styles.circle, webCursor, { borderColor: op.color, borderWidth: 2 }]}
+          accessibilityRole="button"
+          accessibilityLabel={t(op.labelKey)}
+          testID={`nav-op-${op.route}`}
+        >
+          <Ionicons name={op.icon} size={24} color={op.color} />
+        </Pressable>
+      ),
+    })),
+    ...(activeKids.length > 0
+      ? [
+          {
+            key: "kids-trigger",
+            node: (
+              <Pressable
+                onPress={() => setView("kids")}
+                style={[styles.circle, webCursor]}
+                accessibilityRole="button"
+                accessibilityLabel={t("home.kids")}
+                testID="nav-kids"
+              >
+                <Ionicons name="happy-outline" size={24} color={KIDS_PAL.active} />
+              </Pressable>
+            ),
+          },
+        ]
+      : []),
+  ];
+
+  const kidsItems: { key: string; node: React.ReactNode }[] = [
+    ...activeKids.map((kid) => {
+      const color = kid.color ?? KIDS_PAL.active;
+      return {
+        key: kid.id,
+        node: (
+          <Pressable
+            onPress={() => handleKidSelect(kid.id)}
+            style={[styles.circle, webCursor, { borderColor: color, borderWidth: 2 }]}
+            accessibilityRole="button"
+            accessibilityLabel={kid.name}
+            testID={`nav-kid-${kid.id}`}
+          >
+            <Text style={styles.kidEmoji}>{kid.emoji ?? "🧒"}</Text>
+          </Pressable>
+        ),
+      };
+    }),
+    {
+      key: "kids-back",
+      node: (
+        <Pressable
+          onPress={() => setView("main")}
+          style={[styles.circle, webCursor]}
+          accessibilityRole="button"
+          accessibilityLabel={t("nav.back")}
+          testID="nav-kids-back"
+        >
+          <Ionicons name="chevron-forward" size={24} color={C_TEXT_MUTED} />
+        </Pressable>
+      ),
+    },
+  ];
+
+  const items = view === "kids" ? kidsItems : mainItems;
 
   return (
     <View
@@ -184,125 +325,17 @@ export default function CustomTabBar({
 
       {/* Bottom-right anchored column: menu items + FAB */}
       <View style={[styles.anchor, { bottom: bottomPad }]} pointerEvents="box-none">
-        {/* Speed-dial menu items (above the FAB) */}
+        {/* Speed-dial menu items (above the FAB) — cascade in from the FAB up */}
         {expanded && (
           <Animated.View
-            style={[
-              styles.menu,
-              { opacity: menuOpacity, transform: [{ translateY: menuTranslate }] },
-            ]}
+            style={[styles.menu, { opacity: menuOpacity }]}
             pointerEvents="auto"
           >
-            {view === "main" ? (
-              <>
-                {navRoutes.map((route) => {
-                  const idx = state.routes.indexOf(route);
-                  const isFocused = state.index === idx;
-                  const pal = TAB_COLORS[route.name];
-                  const label = descriptors[route.key]?.options?.title ?? route.name;
-                  return (
-                    <Pressable
-                      key={route.key}
-                      onPress={() => handleSelect(route.name, route.key, isFocused)}
-                      style={[
-                        styles.circle,
-                        webCursor,
-                        { backgroundColor: isFocused ? pal.active : "#FFFFFF" },
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={label}
-                      accessibilityState={{ selected: isFocused }}
-                      testID={`tab-${route.name}`}
-                    >
-                      <Ionicons
-                        name={TAB_ICONS[route.name] ?? "ellipse-outline"}
-                        size={24}
-                        color={isFocused ? "#FFFFFF" : pal.active}
-                      />
-                    </Pressable>
-                  );
-                })}
-
-                {/* "ניהול" — opens the nested chores/notes/projects layer */}
-                <Pressable
-                  onPress={() => setView("ops")}
-                  style={[styles.circle, webCursor]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("nav.ops")}
-                  testID="nav-ops"
-                >
-                  <Ionicons name="apps-outline" size={24} color={OPS_PAL.active} />
-                </Pressable>
-
-                {/* "ילדים" — opens the nested kid layer (does not navigate) */}
-                {activeKids.length > 0 && (
-                  <Pressable
-                    onPress={() => setView("kids")}
-                    style={[styles.circle, webCursor]}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("home.kids")}
-                    testID="nav-kids"
-                  >
-                    <Ionicons name="happy-outline" size={24} color={KIDS_PAL.active} />
-                  </Pressable>
-                )}
-              </>
-            ) : view === "kids" ? (
-              <>
-                {activeKids.map((kid) => {
-                  const color = kid.color ?? KIDS_PAL.active;
-                  return (
-                    <Pressable
-                      key={kid.id}
-                      onPress={() => handleKidSelect(kid.id)}
-                      style={[styles.circle, webCursor, { borderColor: color, borderWidth: 2 }]}
-                      accessibilityRole="button"
-                      accessibilityLabel={kid.name}
-                      testID={`nav-kid-${kid.id}`}
-                    >
-                      <Text style={styles.kidEmoji}>{kid.emoji ?? "🧒"}</Text>
-                    </Pressable>
-                  );
-                })}
-
-                {/* Back to the main layer */}
-                <Pressable
-                  onPress={() => setView("main")}
-                  style={[styles.circle, webCursor]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("nav.back")}
-                  testID="nav-kids-back"
-                >
-                  <Ionicons name="chevron-forward" size={24} color={C_TEXT_MUTED} />
-                </Pressable>
-              </>
-            ) : (
-              <>
-                {OPS_ITEMS.map((op) => (
-                  <Pressable
-                    key={op.route}
-                    onPress={() => handleOpSelect(op.route)}
-                    style={[styles.circle, webCursor, { borderColor: op.color, borderWidth: 2 }]}
-                    accessibilityRole="button"
-                    accessibilityLabel={t(op.labelKey)}
-                    testID={`nav-op-${op.route}`}
-                  >
-                    <Ionicons name={op.icon} size={24} color={op.color} />
-                  </Pressable>
-                ))}
-
-                {/* Back to the main layer */}
-                <Pressable
-                  onPress={() => setView("main")}
-                  style={[styles.circle, webCursor]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("nav.back")}
-                  testID="nav-ops-back"
-                >
-                  <Ionicons name="chevron-forward" size={24} color={C_TEXT_MUTED} />
-                </Pressable>
-              </>
-            )}
+            {items.map((item, i) => (
+              <MenuCircle key={item.key} index={i} total={items.length}>
+                {item.node}
+              </MenuCircle>
+            ))}
           </Animated.View>
         )}
 
