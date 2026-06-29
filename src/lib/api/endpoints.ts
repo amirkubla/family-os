@@ -238,6 +238,32 @@ export const telegramApi = {
   },
 };
 
+// Voice → grocery (POC): upload a recorded clip; the Assistant transcribes it
+// (Whisper) and returns parsed items WITHOUT writing them — the app reviews +
+// adds. The audio is sent as multipart/form-data (field name "audio").
+export interface VoiceGroceryResult {
+  transcript: string;
+  items: { title: string; qty?: string | null; shopping_category: string }[];
+}
+
+export const voiceApi = {
+  grocery: async (audioUri: string): Promise<VoiceGroceryResult> => {
+    const form = new FormData();
+    // React Native FormData accepts a {uri,name,type} object for file parts.
+    form.append("audio", {
+      uri: audioUri,
+      name: "voice.m4a",
+      type: "audio/m4a",
+    } as any);
+    const res = await fetch(`${ASSISTANT_URL}/voice/grocery`, {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
+    return res.json() as Promise<VoiceGroceryResult>;
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Budget Categories
 // ---------------------------------------------------------------------------

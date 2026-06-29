@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Platform, Alert } from "react-native";
 import {
   Card,
   Text,
@@ -18,8 +18,13 @@ import {
   deleteGroceryRemote,
   clearBoughtRemote,
   clearAllCategoryRemote,
+  addGroceryRemote,
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
+import GroceryVoiceReviewModal from "@src/components/GroceryVoiceReviewModal";
+import { useGroceryVoice } from "@src/hooks/useGroceryVoice";
+import { inferGrocerySubcategory } from "@src/lib/groceryCategoryInfer";
+import type { VoiceGroceryResult } from "@src/lib/api/endpoints";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import { SHOPPING_CATEGORIES } from "@src/models/grocery";
@@ -67,6 +72,41 @@ export default function GroceryScreen() {
       setModalOpen(true);
     }
   }, [modal]);
+
+  // ── Voice → grocery (POC) ──
+  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useGroceryVoice();
+  const [voiceResult, setVoiceResult] = useState<VoiceGroceryResult | null>(null);
+
+  // Tap to start recording; tap again to stop → upload → open the review sheet.
+  const handleMic = async () => {
+    try {
+      if (voiceStatus === "recording") {
+        const result = await stopAndTranscribe();
+        if (result) setVoiceResult(result);
+      } else if (voiceStatus === "idle") {
+        const ok = await startVoice();
+        if (!ok) Alert.alert(t("voice.micDenied"));
+      }
+    } catch {
+      Alert.alert(t("voice.error"));
+    }
+  };
+
+  // Add the reviewed items through the normal optimistic grocery CRUD.
+  const handleVoiceConfirm = (items: VoiceGroceryResult["items"]) => {
+    for (const it of items) {
+      const cat = (SHOPPING_CATEGORIES as string[]).includes(it.shopping_category)
+        ? (it.shopping_category as ShoppingCategory)
+        : "grocery";
+      addGroceryRemote({
+        title: it.title,
+        shoppingCategory: cat,
+        qty: it.qty ?? undefined,
+        subcategory: inferGrocerySubcategory(it.title, cat),
+      });
+    }
+    setVoiceResult(null);
+  };
 
   const filtered = grocery.filter((g) => g.shoppingCategory === selectedCategory);
   const unbought = filtered.filter((g) => !g.isBought);
@@ -280,11 +320,36 @@ export default function GroceryScreen() {
         testID="add-grocery-item"
       />
 
+      {/* Voice → grocery (POC): records, transcribes via the Assistant, then
+          opens a review sheet. Stacked above the "+" add FAB. */}
+      <FAB
+        icon={voiceStatus === "recording" ? "stop" : "microphone"}
+        loading={voiceStatus === "processing"}
+        style={[
+          styles.micFab,
+          { bottom: insets.bottom + S.lg + 68 },
+          voiceStatus === "recording" && { backgroundColor: C.red },
+        ]}
+        color="#FFF"
+        onPress={handleMic}
+        accessibilityRole="button"
+        accessibilityLabel={t("voice.record")}
+        testID="grocery-voice-fab"
+      />
+
       <GroceryAddModal
         visible={modalOpen || !!editingItem}
         onDismiss={() => { setModalOpen(false); setEditingItem(null); }}
         defaultShoppingCategory={selectedCategory}
         editItem={editingItem}
+      />
+
+      <GroceryVoiceReviewModal
+        visible={!!voiceResult}
+        transcript={voiceResult?.transcript ?? ""}
+        items={voiceResult?.items ?? []}
+        onConfirm={handleVoiceConfirm}
+        onDismiss={() => setVoiceResult(null)}
       />
     </SafeAreaView>
   );
@@ -366,5 +431,12 @@ const styles = StyleSheet.create({
     ...FAB_LEFT,
     bottom: S.lg,
     backgroundColor: C.purple,
+  },
+  // Voice FAB stacked just above the "+" add FAB, same side.
+  micFab: {
+    position: "absolute",
+    ...FAB_LEFT,
+    bottom: S.lg,
+    backgroundColor: C.teal,
   },
 });

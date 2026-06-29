@@ -55,7 +55,13 @@
         }
       ],
       "expo-web-browser",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "המיקרופון משמש להקלטת פריטים והוספתם לרשימה בעזרת העוזר החכם."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

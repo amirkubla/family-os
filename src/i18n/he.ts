@@ -112,6 +112,18 @@ const he = {
     itemCount: "{{count}} פריטים",
   },
 
+  // ── Voice → grocery (POC) ──
+  voice: {
+    record: "הקלטה",
+    recording: "מקליט… הקש לסיום",
+    processing: "מתמלל…",
+    reviewTitle: "פריטים מההקלטה",
+    noItems: "לא זוהו פריטים — נסו שוב",
+    addItems: "הוסף {{count}} פריטים",
+    micDenied: "כדי להקליט יש לאשר גישה למיקרופון",
+    error: "ההקלטה נכשלה — נסו שוב",
+  },
+
   // ── Shopping categories ──
   shoppingCategory: {
     grocery: "מכולת",
