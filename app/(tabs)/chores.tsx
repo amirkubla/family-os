@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform, ScrollView, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Platform, ScrollView } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
@@ -26,6 +26,8 @@ import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { useChoreVoice } from "@src/hooks/useChoreVoice";
+import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
+import VoiceFab from "@src/components/VoiceFab";
 import type { VoiceChoreResult } from "@src/lib/api/endpoints";
 import { t } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
@@ -155,8 +157,10 @@ export default function ChoresScreen() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
-  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useChoreVoice();
   const [voiceResult, setVoiceResult] = useState<VoiceChoreResult | null>(null);
+  const { status: voiceStatus, onMic } = useVoiceCapture(useChoreVoice, {
+    onResult: setVoiceResult,
+  });
 
   useEffect(() => {
     if (modal === "add") {
@@ -164,21 +168,6 @@ export default function ChoresScreen() {
       setModalOpen(true);
     }
   }, [modal]);
-
-  // Tap to record; tap again to stop → transcribe → open the review sheet.
-  const handleMic = async () => {
-    try {
-      if (voiceStatus === "recording") {
-        const result = await stopAndTranscribe();
-        if (result) setVoiceResult(result);
-      } else if (voiceStatus === "idle") {
-        const ok = await startVoice();
-        if (!ok) Alert.alert(t("voice.micDenied"));
-      }
-    } catch {
-      Alert.alert(t("voice.error"));
-    }
-  };
 
   // Add the reviewed tasks through the normal optimistic chore CRUD.
   const handleVoiceConfirm = (items: VoiceChoreResult["items"]) => {
@@ -237,18 +226,10 @@ export default function ChoresScreen() {
 
       {/* Voice → tasks: record, transcribe via the Assistant, then open the
           review sheet. Stacked above the "+" add FAB. */}
-      <FAB
-        icon={voiceStatus === "recording" ? "stop" : "microphone"}
-        loading={voiceStatus === "processing"}
-        style={[
-          styles.micFab,
-          { bottom: insets.bottom + S.lg + 68 },
-          voiceStatus === "recording" && { backgroundColor: C.red },
-        ]}
-        color="#FFF"
-        onPress={handleMic}
-        accessibilityRole="button"
-        accessibilityLabel={t("voice.record")}
+      <VoiceFab
+        status={voiceStatus}
+        onPress={onMic}
+        bottom={insets.bottom + S.lg + 68}
         testID="chore-voice-fab"
       />
 
@@ -383,6 +364,4 @@ const styles = StyleSheet.create({
   choreActions: { flexDirection: RTL_ROW, alignItems: "center" },
   choreActionBtn: { margin: 0, width: 28, height: 28 },
   fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
-  // Voice FAB stacked just above the "+" add FAB, same side.
-  micFab: { position: "absolute", ...FAB_LEFT, bottom: S.lg, backgroundColor: C.teal },
 });

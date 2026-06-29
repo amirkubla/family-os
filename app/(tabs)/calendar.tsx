@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Alert } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import {
   Card,
   Text,
@@ -54,6 +54,8 @@ import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { useEventVoice } from "@src/hooks/useEventVoice";
+import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
+import VoiceFab from "@src/components/VoiceFab";
 import VoiceDetailReviewModal, { type DetailRow } from "@src/components/VoiceDetailReviewModal";
 import type { VoiceEventResult } from "@src/lib/api/endpoints";
 
@@ -289,27 +291,15 @@ export default function CalendarScreen() {
   };
 
   // ── Voice → event ──
-  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useEventVoice();
   const [voiceResult, setVoiceResult] = useState<VoiceEventResult | null>(null);
-
-  const handleMic = async () => {
-    try {
-      if (voiceStatus === "recording") {
-        const context = {
-          today: toYMD(new Date()),
-          members: familyMembers.filter((m) => m.isActive).map((m) => m.name),
-          kids: kids.filter((k) => k.isActive).map((k) => k.name),
-        };
-        const result = await stopAndTranscribe(context);
-        if (result) setVoiceResult(result);
-      } else if (voiceStatus === "idle") {
-        const ok = await startVoice();
-        if (!ok) Alert.alert(t("voice.micDenied"));
-      }
-    } catch {
-      Alert.alert(t("voice.error"));
-    }
-  };
+  const { status: voiceStatus, onMic } = useVoiceCapture(useEventVoice, {
+    getContext: () => ({
+      today: toYMD(new Date()),
+      members: familyMembers.filter((m) => m.isActive).map((m) => m.name),
+      kids: kids.filter((k) => k.isActive).map((k) => k.name),
+    }),
+    onResult: setVoiceResult,
+  });
 
   // Rows for the review sheet + the Hebrew "missing" labels.
   const fmtReminder = (m: number): string =>
@@ -523,18 +513,10 @@ export default function CalendarScreen() {
 
       {/* Voice → event: record, transcribe + parse via the Assistant, then
           review. Stacked above the "+" add FAB. */}
-      <FAB
-        icon={voiceStatus === "recording" ? "stop" : "microphone"}
-        loading={voiceStatus === "processing"}
-        style={[
-          styles.micFab,
-          { bottom: insets.bottom + S.lg + 68 },
-          voiceStatus === "recording" && { backgroundColor: C.red },
-        ]}
-        color="#FFF"
-        onPress={handleMic}
-        accessibilityRole="button"
-        accessibilityLabel={t("voice.record")}
+      <VoiceFab
+        status={voiceStatus}
+        onPress={onMic}
+        bottom={insets.bottom + S.lg + 68}
         testID="event-voice-fab"
       />
 
@@ -665,12 +647,5 @@ const styles = StyleSheet.create({
     ...FAB_LEFT,
     bottom: S.lg,
     backgroundColor: C.purple,
-  },
-  // Voice FAB stacked just above the "+" add FAB, same side.
-  micFab: {
-    position: "absolute",
-    ...FAB_LEFT,
-    bottom: S.lg,
-    backgroundColor: C.teal,
   },
 });

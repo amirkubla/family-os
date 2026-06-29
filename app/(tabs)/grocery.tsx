@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Platform, Alert } from "react-native";
+import { View, StyleSheet, ScrollView, Platform } from "react-native";
 import {
   Card,
   Text,
@@ -23,6 +23,8 @@ import {
 import GroceryAddModal from "@src/components/GroceryAddModal";
 import VoiceReviewModal from "@src/components/VoiceReviewModal";
 import { useGroceryVoice } from "@src/hooks/useGroceryVoice";
+import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
+import VoiceFab from "@src/components/VoiceFab";
 import { inferGrocerySubcategory } from "@src/lib/groceryCategoryInfer";
 import type { VoiceGroceryResult } from "@src/lib/api/endpoints";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
@@ -77,29 +79,18 @@ export default function GroceryScreen() {
   }, [modal]);
 
   // ── Voice → grocery (POC) ──
-  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useGroceryVoice();
   const [voiceResult, setVoiceResult] = useState<VoiceGroceryResult | null>(null);
-
-  // Tap to start recording; tap again to stop → upload → open the review sheet.
-  const handleMic = async () => {
-    try {
-      if (voiceStatus === "recording") {
-        // Pass the family's sub-category names per category so the Assistant
-        // can label each spoken item.
-        const taxonomy: Record<string, string[]> = {};
-        for (const cat of SHOPPING_CATEGORIES) {
-          taxonomy[cat] = effectiveSubcategories(customizations, cat).map((s) => s.name);
-        }
-        const result = await stopAndTranscribe(taxonomy);
-        if (result) setVoiceResult(result);
-      } else if (voiceStatus === "idle") {
-        const ok = await startVoice();
-        if (!ok) Alert.alert(t("voice.micDenied"));
+  const { status: voiceStatus, onMic } = useVoiceCapture(useGroceryVoice, {
+    // The family's sub-category names per category so the Assistant can label items.
+    getContext: () => {
+      const taxonomy: Record<string, string[]> = {};
+      for (const cat of SHOPPING_CATEGORIES) {
+        taxonomy[cat] = effectiveSubcategories(customizations, cat).map((s) => s.name);
       }
-    } catch {
-      Alert.alert(t("voice.error"));
-    }
-  };
+      return taxonomy;
+    },
+    onResult: setVoiceResult,
+  });
 
   // Add the reviewed items through the normal optimistic grocery CRUD.
   const handleVoiceConfirm = (items: VoiceGroceryResult["items"]) => {
@@ -330,20 +321,12 @@ export default function GroceryScreen() {
         testID="add-grocery-item"
       />
 
-      {/* Voice → grocery (POC): records, transcribes via the Assistant, then
-          opens a review sheet. Stacked above the "+" add FAB. */}
-      <FAB
-        icon={voiceStatus === "recording" ? "stop" : "microphone"}
-        loading={voiceStatus === "processing"}
-        style={[
-          styles.micFab,
-          { bottom: insets.bottom + S.lg + 68 },
-          voiceStatus === "recording" && { backgroundColor: C.red },
-        ]}
-        color="#FFF"
-        onPress={handleMic}
-        accessibilityRole="button"
-        accessibilityLabel={t("voice.record")}
+      {/* Voice → grocery: records, transcribes via the Assistant, then opens a
+          review sheet. Stacked above the "+" add FAB. */}
+      <VoiceFab
+        status={voiceStatus}
+        onPress={onMic}
+        bottom={insets.bottom + S.lg + 68}
         testID="grocery-voice-fab"
       />
 
@@ -445,12 +428,5 @@ const styles = StyleSheet.create({
     ...FAB_LEFT,
     bottom: S.lg,
     backgroundColor: C.purple,
-  },
-  // Voice FAB stacked just above the "+" add FAB, same side.
-  micFab: {
-    position: "absolute",
-    ...FAB_LEFT,
-    bottom: S.lg,
-    backgroundColor: C.teal,
   },
 });

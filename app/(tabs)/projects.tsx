@@ -20,6 +20,8 @@ import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { useProjectVoice } from "@src/hooks/useProjectVoice";
+import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
+import VoiceFab from "@src/components/VoiceFab";
 import { t, statusLabel } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -156,7 +158,18 @@ export default function ProjectsScreen() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   // Voice-project draft pre-filled into the editor (cleared on every other open).
   const [voiceDraft, setVoiceDraft] = useState<{ title?: string; description?: string } | undefined>(undefined);
-  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useProjectVoice();
+  // Open the editor pre-filled on the transcribed draft (or warn if empty).
+  const { status: voiceStatus, onMic } = useVoiceCapture(useProjectVoice, {
+    onResult: (r) => {
+      if (r.description.trim()) {
+        setVoiceDraft({ title: r.title || undefined, description: r.description });
+        setEditingProject(null);
+        setModalOpen(true);
+      } else {
+        Alert.alert(t("voice.noNote"));
+      }
+    },
+  });
 
   useEffect(() => {
     if (modal === "add") {
@@ -165,28 +178,6 @@ export default function ProjectsScreen() {
       setModalOpen(true);
     }
   }, [modal]);
-
-  // Tap to record; tap again to stop → transcribe → open the editor on the
-  // generated draft (name + description) for review before saving.
-  const handleMic = async () => {
-    try {
-      if (voiceStatus === "recording") {
-        const result = await stopAndTranscribe();
-        if (result && result.description.trim()) {
-          setVoiceDraft({ title: result.title || undefined, description: result.description });
-          setEditingProject(null);
-          setModalOpen(true);
-        } else if (result) {
-          Alert.alert(t("voice.noNote"));
-        }
-      } else if (voiceStatus === "idle") {
-        const ok = await startVoice();
-        if (!ok) Alert.alert(t("voice.micDenied"));
-      }
-    } catch {
-      Alert.alert(t("voice.error"));
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -227,18 +218,10 @@ export default function ProjectsScreen() {
 
       {/* Voice → project: record, transcribe via the Assistant, then open the
           editor pre-filled for review. Stacked above the "+" add FAB. */}
-      <FAB
-        icon={voiceStatus === "recording" ? "stop" : "microphone"}
-        loading={voiceStatus === "processing"}
-        style={[
-          styles.micFab,
-          { bottom: insets.bottom + S.lg + 68 },
-          voiceStatus === "recording" && { backgroundColor: C.red },
-        ]}
-        color="#FFF"
-        onPress={handleMic}
-        accessibilityRole="button"
-        accessibilityLabel={t("voice.record")}
+      <VoiceFab
+        status={voiceStatus}
+        onPress={onMic}
+        bottom={insets.bottom + S.lg + 68}
         testID="project-voice-fab"
       />
 
@@ -340,6 +323,4 @@ const styles = StyleSheet.create({
   projectProgressFill: { height: 6, borderRadius: 3 },
   projectProgressLabel: { fontSize: 12, fontWeight: "700", minWidth: 36, textAlign: "left" },
   fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
-  // Voice FAB stacked just above the "+" add FAB, same side.
-  micFab: { position: "absolute", ...FAB_LEFT, bottom: S.lg, backgroundColor: C.teal },
 });

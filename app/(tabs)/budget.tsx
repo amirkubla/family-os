@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Pressable,
   Platform,
-  Alert,
 } from "react-native";
 import { Text, FAB, IconButton } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,8 +31,10 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import SectionHeader from "@src/components/SectionHeader";
 import SpendByCategoryCharts, { type SpendSlice } from "@src/components/budget/SpendByCategoryCharts";
 import SummaryHeroCard from "@src/components/budget/SummaryHeroCard";
-import PaymentVoiceReviewModal from "@src/components/PaymentVoiceReviewModal";
+import VoiceDetailReviewModal, { type DetailRow } from "@src/components/VoiceDetailReviewModal";
 import { usePaymentVoice } from "@src/hooks/usePaymentVoice";
+import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
+import VoiceFab from "@src/components/VoiceFab";
 import type { VoicePaymentResult } from "@src/lib/api/endpoints";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -100,8 +101,14 @@ export default function BudgetScreen() {
     () => familyMembers.find((m) => m.userId === session?.user.id)?.id,
     [familyMembers, session?.user.id],
   );
-  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = usePaymentVoice();
   const [voiceResult, setVoiceResult] = useState<VoicePaymentResult | null>(null);
+  const { status: voiceStatus, onMic } = useVoiceCapture(usePaymentVoice, {
+    getContext: () => ({
+      categories: budgetCategories.map((c) => c.name),
+      members: familyMembers.filter((m) => m.isActive).map((m) => m.name),
+    }),
+    onResult: setVoiceResult,
+  });
 
   // Resolve the payer the Assistant matched (by name) to a member id, else the
   // current user — "if not specified otherwise, the current user paid".
@@ -111,24 +118,6 @@ export default function BudgetScreen() {
   }, [voiceResult, familyMembers, currentMemberId]);
   const payerName =
     familyMembers.find((m) => m.id === resolvedPayerId)?.name ?? t("budget.anyone");
-
-  const handleMic = async () => {
-    try {
-      if (voiceStatus === "recording") {
-        const context = {
-          categories: budgetCategories.map((c) => c.name),
-          members: familyMembers.filter((m) => m.isActive).map((m) => m.name),
-        };
-        const result = await stopAndTranscribe(context);
-        if (result) setVoiceResult(result);
-      } else if (voiceStatus === "idle") {
-        const ok = await startVoice();
-        if (!ok) Alert.alert(t("voice.micDenied"));
-      }
-    } catch {
-      Alert.alert(t("voice.error"));
-    }
-  };
 
   // Add the reviewed payment through the normal optimistic expense CRUD.
   const handleVoicePaymentConfirm = () => {
@@ -147,6 +136,32 @@ export default function BudgetScreen() {
     });
     setVoiceResult(null);
   };
+
+  // Rows for the review sheet + the Hebrew "missing" labels.
+  const paymentRows = useMemo<DetailRow[] | null>(() => {
+    const p = voiceResult?.payment;
+    if (!p) return null;
+    const recur = !p.is_recurring
+      ? t("voice.paymentOneTime")
+      : p.recurrence_type === "weekly"
+        ? t("voice.paymentEveryWeek", { day: DAYS_OF_WEEK_HE[p.recurrence_day ?? 0] ?? "" })
+        : t("voice.paymentEveryMonth", { day: String(p.recurrence_day ?? "") });
+    const rows: DetailRow[] = [];
+    if (p.title) rows.push({ label: t("budget.paymentTitle"), value: p.title });
+    rows.push({ label: t("budget.amount"), value: p.amount != null ? formatILS(Math.round(p.amount * 100)) : "—" });
+    rows.push({ label: t("budget.category"), value: p.category ?? "אחר" });
+    rows.push({ label: t("budget.payer"), value: payerName });
+    rows.push({ label: t("eventModal.schedule"), value: recur });
+    return rows;
+  }, [voiceResult, payerName]);
+
+  const paymentMissing = useMemo(
+    () =>
+      (voiceResult?.missing ?? []).map((k) =>
+        k === "amount" ? t("voice.missingAmount") : k === "recurrence" ? t("voice.missingRecurrence") : k,
+      ),
+    [voiceResult],
+  );
 
   // All recurring expense templates (not filtered by month). Kid payments
   // (kidId set) are managed on the kid screen, so they're excluded here.
@@ -761,20 +776,12 @@ export default function BudgetScreen() {
 
       {/* Voice → payment: record, transcribe + parse via the Assistant, then
           review. Stacked above the "+" add FAB. */}
-      <FAB
-        icon={voiceStatus === "recording" ? "stop" : "microphone"}
-        loading={voiceStatus === "processing"}
-        style={[
-          styles.micFab,
-          { bottom: insets.bottom + S.lg + 68 },
-          voiceStatus === "recording" && { backgroundColor: C.red },
-          Platform.OS === "web" && ({ position: "fixed" } as any),
-        ]}
-        color="#fff"
-        onPress={handleMic}
-        accessibilityRole="button"
-        accessibilityLabel={t("voice.record")}
+      <VoiceFab
+        status={voiceStatus}
+        onPress={onMic}
+        bottom={insets.bottom + S.lg + 68}
         testID="payment-voice-fab"
+        webFixed
       />
 
       <FAB
@@ -807,12 +814,13 @@ export default function BudgetScreen() {
         onDismiss={dismissConfirm}
       />
 
-      <PaymentVoiceReviewModal
+      <VoiceDetailReviewModal
         visible={!!voiceResult}
+        heading={t("voice.reviewTitlePayment")}
         transcript={voiceResult?.transcript ?? ""}
-        payment={voiceResult?.payment ?? null}
-        payerName={payerName}
-        missing={voiceResult?.missing ?? []}
+        rows={paymentRows}
+        missing={paymentMissing}
+        confirmLabel={t("voice.addPayment")}
         onConfirm={handleVoicePaymentConfirm}
         onDismiss={() => setVoiceResult(null)}
       />
@@ -1036,13 +1044,6 @@ const styles = StyleSheet.create({
     bottom: S.lg,  // overridden inline with insets.bottom + S.lg
     ...FAB_LEFT,
     backgroundColor: ACCENT,
-  },
-  // Voice FAB stacked just above the "+" add FAB, same side.
-  micFab: {
-    position: "absolute",
-    bottom: S.lg,
-    ...FAB_LEFT,
-    backgroundColor: C.teal,
   },
 
   nudgeBanner: {
