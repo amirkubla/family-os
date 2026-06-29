@@ -9,7 +9,7 @@
  * at the bottom.
  */
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Pressable,
@@ -68,52 +68,6 @@ const C_TEXT_MUTED = "#A8A3B8";
 
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
-
-// Delay between consecutive items in the staggered open animation (ms).
-const STAGGER = 45;
-
-/**
- * MenuCircle — animated wrapper that pops a menu item in on mount. Items mount
- * when the menu opens (and on layer switch), so the entrance cascades from the
- * item nearest the FAB up to the farthest. Quick spring, noticeable stagger.
- */
-function MenuCircle({
-  index,
-  total,
-  children,
-}: {
-  index: number;
-  total: number;
-  children: React.ReactNode;
-}) {
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const fromBottom = total - 1 - index; // nearest-FAB item first
-    Animated.sequence([
-      Animated.delay(fromBottom * STAGGER),
-      Animated.spring(v, {
-        toValue: 1,
-        tension: 260,
-        friction: 18,
-        useNativeDriver: !isWeb,
-      }),
-    ]).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return (
-    <Animated.View
-      style={{
-        opacity: v,
-        transform: [
-          { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
-          { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
-        ],
-      }}
-    >
-      {children}
-    </Animated.View>
-  );
-}
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -209,6 +163,7 @@ export default function CustomTabBar({
 
   const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const menuOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.4, 1] });
+  const menuTranslate = anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
 
   // Flat list of circles for the current layer. Main = the tabs + every
   // management action inline (no nested "ניהול" tap); kids = the kid list + back.
@@ -325,16 +280,17 @@ export default function CustomTabBar({
 
       {/* Bottom-right anchored column: menu items + FAB */}
       <View style={[styles.anchor, { bottom: bottomPad }]} pointerEvents="box-none">
-        {/* Speed-dial menu items (above the FAB) — cascade in from the FAB up */}
+        {/* Speed-dial menu items (above the FAB) — open together */}
         {expanded && (
           <Animated.View
-            style={[styles.menu, { opacity: menuOpacity }]}
+            style={[
+              styles.menu,
+              { opacity: menuOpacity, transform: [{ translateY: menuTranslate }] },
+            ]}
             pointerEvents="auto"
           >
-            {items.map((item, i) => (
-              <MenuCircle key={item.key} index={i} total={items.length}>
-                {item.node}
-              </MenuCircle>
+            {items.map((item) => (
+              <React.Fragment key={item.key}>{item.node}</React.Fragment>
             ))}
           </Animated.View>
         )}
