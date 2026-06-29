@@ -28,7 +28,9 @@ import { FAB_RIGHT } from "@src/ui/fabAnchor";
 import { C } from "@src/ui/tokens";
 import { t } from "@src/i18n";
 
-// ── Nav icons (filled = heavy brush, white on the themed circle) ─────────────
+// ── Nav icons + per-route colours ────────────────────────────────────────────
+// Icons are filled (heavy brush) and keep their own colour; the wrapping circle
+// is a thick C.primary ring with a transparent interior.
 
 // Settings is intentionally absent — it's reached via the gear on the home
 // dashboard, so it doesn't need a slot in the floating nav.
@@ -40,19 +42,32 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   budget:   "wallet",
 };
 
+const TAB_COLOR: Record<string, string> = {
+  today:    "#C49A2A",  // honey gold
+  calendar: "#3A7BD5",  // sapphire blue
+  grocery:  "#2D9F6F",  // emerald green
+  home:     "#2AACB4",  // ocean teal
+  budget:   "#9B59B6",  // violet purple
+};
+
+// "ילדים" entry colour.
+const KIDS_COLOR = "#E0699B";
+
 // Management actions — rendered inline in the main menu (no nested layer).
 // Grocery + budget live here too, alongside chores/notes/projects.
-const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; labelKey: string }[] = [
-  { route: "grocery",  icon: "cart",          labelKey: "tabs.grocery" },
-  { route: "budget",   icon: "wallet",        labelKey: "tabs.budget" },
-  { route: "chores",   icon: "checkbox",      labelKey: "home.chores" },
-  { route: "notes",    icon: "document-text", labelKey: "home.notes" },
-  { route: "projects", icon: "rocket",        labelKey: "home.projects" },
+const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; color: string; labelKey: string }[] = [
+  { route: "grocery",  icon: "cart",          color: "#2D9F6F", labelKey: "tabs.grocery" },
+  { route: "budget",   icon: "wallet",        color: "#9B59B6", labelKey: "tabs.budget" },
+  { route: "chores",   icon: "checkbox",      color: "#1FA67A", labelKey: "home.chores" },
+  { route: "notes",    icon: "document-text", color: "#C49A2A", labelKey: "home.notes" },
+  { route: "projects", icon: "rocket",        color: "#6C63FF", labelKey: "home.projects" },
 ];
 
 // Routes shown directly in the main menu (today/calendar/home); everything else
 // lives in OPS_ITEMS, also rendered inline.
 const MAIN_ROUTES = ["today", "calendar", "home"];
+
+const C_TEXT_MUTED = "#A8A3B8";
 
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
@@ -170,7 +185,11 @@ export default function CustomTabBar({
             accessibilityState={{ selected: isFocused }}
             testID={`tab-${route.name}`}
           >
-            <Ionicons name={TAB_ICONS[route.name] ?? "ellipse"} size={24} color="#FFFFFF" />
+            <Ionicons
+              name={TAB_ICONS[route.name] ?? "ellipse"}
+              size={24}
+              color={isFocused ? "#FFFFFF" : (TAB_COLOR[route.name] ?? C.primary)}
+            />
           </Pressable>
         ),
       };
@@ -185,7 +204,7 @@ export default function CustomTabBar({
           accessibilityLabel={t(op.labelKey)}
           testID={`nav-op-${op.route}`}
         >
-          <Ionicons name={op.icon} size={24} color="#FFFFFF" />
+          <Ionicons name={op.icon} size={24} color={op.color} />
         </Pressable>
       ),
     })),
@@ -201,7 +220,7 @@ export default function CustomTabBar({
                 accessibilityLabel={t("home.kids")}
                 testID="nav-kids"
               >
-                <Ionicons name="happy" size={24} color="#FFFFFF" />
+                <Ionicons name="happy" size={24} color={KIDS_COLOR} />
               </Pressable>
             ),
           },
@@ -234,7 +253,7 @@ export default function CustomTabBar({
           accessibilityLabel={t("nav.back")}
           testID="nav-kids-back"
         >
-          <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+          <Ionicons name="chevron-forward" size={24} color={C_TEXT_MUTED} />
         </Pressable>
       ),
     },
@@ -314,24 +333,20 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   // Icon-only circular menu button (no text labels — icons are intuitive).
-  // Themed fill (C.primary) with a white icon — matches the modal accent.
+  // Transparent interior with a thick C.primary ring; the icon keeps its colour.
   circle: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: C.primary,
-    shadowColor: "#1E293B",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 6,
+    backgroundColor: "transparent",
+    borderWidth: 3,
+    borderColor: C.primary,
   },
-  // Current tab — a white ring around the themed circle.
+  // Current tab — fill the ring so it reads as selected (icon flips to white).
   circleActive: {
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
+    backgroundColor: C.primary,
   },
   kidEmoji: {
     fontSize: 22,
