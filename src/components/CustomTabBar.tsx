@@ -143,6 +143,9 @@ export default function CustomTabBar({
   // Main-row tabs only (today/calendar/home). Grocery + budget live under the
   // ops layer; href:null screens (kid/customization) are excluded.
   const navRoutes = state.routes.filter((r) => MAIN_ROUTES.includes(r.name));
+  // Currently focused route name — drives the "selected" inversion for every
+  // item (main tabs + ops actions are all registered tab screens).
+  const activeName = state.routes[state.index]?.name;
 
   const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const menuOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.4, 1] });
@@ -175,20 +178,24 @@ export default function CustomTabBar({
         ),
       };
     }),
-    ...OPS_ITEMS.map((op) => ({
-      key: `op-${op.route}`,
-      node: (
-        <Pressable
-          onPress={() => handleOpSelect(op.route)}
-          style={[styles.circle, webCursor]}
-          accessibilityRole="button"
-          accessibilityLabel={t(op.labelKey)}
-          testID={`nav-op-${op.route}`}
-        >
-          <Ionicons name={op.icon} size={28} color={C.primary} />
-        </Pressable>
-      ),
-    })),
+    ...OPS_ITEMS.map((op) => {
+      const isFocused = op.route === activeName;
+      return {
+        key: `op-${op.route}`,
+        node: (
+          <Pressable
+            onPress={() => handleOpSelect(op.route)}
+            style={[styles.circle, webCursor, isFocused && styles.circleActive]}
+            accessibilityRole="button"
+            accessibilityLabel={t(op.labelKey)}
+            accessibilityState={{ selected: isFocused }}
+            testID={`nav-op-${op.route}`}
+          >
+            <Ionicons name={op.icon} size={28} color={isFocused ? "#FFFFFF" : C.primary} />
+          </Pressable>
+        ),
+      };
+    }),
     ...(activeKids.length > 0
       ? [
           {
@@ -298,10 +305,8 @@ export default function CustomTabBar({
 
 const styles = StyleSheet.create({
   backdrop: {
-    // Transparent — no page-dimming scrim; this layer only exists to capture
-    // an outside tap that closes the menu.
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(15,15,30,0.18)",
   },
   anchor: {
     position: "absolute",
