@@ -270,6 +270,21 @@ export interface VoiceProjectResult {
   description: string;
 }
 
+export interface VoicePaymentResult {
+  transcript: string;
+  payment: {
+    title: string;
+    amount: number | null; // shekels
+    is_recurring: boolean;
+    recurrence_type: "weekly" | "monthly" | null;
+    recurrence_day: number | null;
+    category: string | null;
+    payer: string | null;
+  };
+  /** Machine keys ("amount" | "recurrence") to map to a Hebrew message. */
+  missing: string[];
+}
+
 /**
  * Build a multipart body carrying the recorded audio. On web the recorder
  * yields a blob: URL → fetch it into a real Blob (the RN {uri} file trick is
@@ -326,6 +341,19 @@ export const voiceApi = {
     const res = await fetch(`${ASSISTANT_URL}/voice/project`, { method: "POST", body: form });
     if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
     return res.json() as Promise<VoiceProjectResult>;
+  },
+
+  // Payment: parsed expense + a `missing` check. `context` carries the family's
+  // budget-category names + member names so the LLM can derive category/payer.
+  payment: async (
+    audioUri: string,
+    context?: { categories: string[]; members: string[] },
+  ): Promise<VoicePaymentResult> => {
+    const form = await buildAudioForm(audioUri);
+    if (context) form.append("context", JSON.stringify(context));
+    const res = await fetch(`${ASSISTANT_URL}/voice/payment`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
+    return res.json() as Promise<VoicePaymentResult>;
   },
 };
 

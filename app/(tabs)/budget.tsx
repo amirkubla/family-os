@@ -5,11 +5,13 @@ import {
   StyleSheet,
   Pressable,
   Platform,
+  Alert,
 } from "react-native";
 import { Text, FAB, IconButton } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useAuthStore } from "@src/auth/useAuthStore";
 import {
   addExpenseRemote,
   updateExpenseRemote,
@@ -30,6 +32,9 @@ import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import SectionHeader from "@src/components/SectionHeader";
 import SpendByCategoryCharts, { type SpendSlice } from "@src/components/budget/SpendByCategoryCharts";
 import SummaryHeroCard from "@src/components/budget/SummaryHeroCard";
+import PaymentVoiceReviewModal from "@src/components/PaymentVoiceReviewModal";
+import { usePaymentVoice } from "@src/hooks/usePaymentVoice";
+import type { VoicePaymentResult } from "@src/lib/api/endpoints";
 import { Ionicons } from "@expo/vector-icons";
 
 // ---------------------------------------------------------------------------
@@ -88,6 +93,60 @@ export default function BudgetScreen() {
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
+
+  // ── Voice → payment ──
+  const session = useAuthStore((s) => s.session);
+  const currentMemberId = useMemo(
+    () => familyMembers.find((m) => m.userId === session?.user.id)?.id,
+    [familyMembers, session?.user.id],
+  );
+  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = usePaymentVoice();
+  const [voiceResult, setVoiceResult] = useState<VoicePaymentResult | null>(null);
+
+  // Resolve the payer the Assistant matched (by name) to a member id, else the
+  // current user — "if not specified otherwise, the current user paid".
+  const resolvedPayerId = useMemo(() => {
+    const named = voiceResult?.payment.payer;
+    return (named && familyMembers.find((m) => m.name === named)?.id) || currentMemberId;
+  }, [voiceResult, familyMembers, currentMemberId]);
+  const payerName =
+    familyMembers.find((m) => m.id === resolvedPayerId)?.name ?? t("budget.anyone");
+
+  const handleMic = async () => {
+    try {
+      if (voiceStatus === "recording") {
+        const context = {
+          categories: budgetCategories.map((c) => c.name),
+          members: familyMembers.filter((m) => m.isActive).map((m) => m.name),
+        };
+        const result = await stopAndTranscribe(context);
+        if (result) setVoiceResult(result);
+      } else if (voiceStatus === "idle") {
+        const ok = await startVoice();
+        if (!ok) Alert.alert(t("voice.micDenied"));
+      }
+    } catch {
+      Alert.alert(t("voice.error"));
+    }
+  };
+
+  // Add the reviewed payment through the normal optimistic expense CRUD.
+  const handleVoicePaymentConfirm = () => {
+    const p = voiceResult?.payment;
+    if (!p || voiceResult.missing.length > 0 || p.amount == null) return;
+    addExpenseRemote({
+      amount: Math.round(p.amount * 100), // shekels → agorot
+      categoryName: p.category ?? "אחר",
+      payerMemberId: resolvedPayerId,
+      date: toYMD(new Date()),
+      note: p.title || undefined,
+      paid: !p.is_recurring, // one-time = settled (current user paid); recurring = template
+      isRecurring: p.is_recurring,
+      recurrenceType: p.is_recurring ? (p.recurrence_type ?? undefined) : undefined,
+      recurrenceDay: p.is_recurring ? (p.recurrence_day ?? undefined) : undefined,
+    });
+    setVoiceResult(null);
+  };
 
   // All recurring expense templates (not filtered by month). Kid payments
   // (kidId set) are managed on the kid screen, so they're excluded here.
@@ -700,6 +759,24 @@ export default function BudgetScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* Voice → payment: record, transcribe + parse via the Assistant, then
+          review. Stacked above the "+" add FAB. */}
+      <FAB
+        icon={voiceStatus === "recording" ? "stop" : "microphone"}
+        loading={voiceStatus === "processing"}
+        style={[
+          styles.micFab,
+          { bottom: insets.bottom + S.lg + 68 },
+          voiceStatus === "recording" && { backgroundColor: C.red },
+          Platform.OS === "web" && ({ position: "fixed" } as any),
+        ]}
+        color="#fff"
+        onPress={handleMic}
+        accessibilityRole="button"
+        accessibilityLabel={t("voice.record")}
+        testID="payment-voice-fab"
+      />
+
       <FAB
         icon="plus"
         style={[
@@ -728,6 +805,16 @@ export default function BudgetScreen() {
         visible={confirmVisible}
         onConfirm={confirmDelete}
         onDismiss={dismissConfirm}
+      />
+
+      <PaymentVoiceReviewModal
+        visible={!!voiceResult}
+        transcript={voiceResult?.transcript ?? ""}
+        payment={voiceResult?.payment ?? null}
+        payerName={payerName}
+        missing={voiceResult?.missing ?? []}
+        onConfirm={handleVoicePaymentConfirm}
+        onDismiss={() => setVoiceResult(null)}
       />
     </SafeAreaView>
   );
@@ -949,6 +1036,13 @@ const styles = StyleSheet.create({
     bottom: S.lg,  // overridden inline with insets.bottom + S.lg
     ...FAB_LEFT,
     backgroundColor: ACCENT,
+  },
+  // Voice FAB stacked just above the "+" add FAB, same side.
+  micFab: {
+    position: "absolute",
+    bottom: S.lg,
+    ...FAB_LEFT,
+    backgroundColor: C.teal,
   },
 
   nudgeBanner: {
