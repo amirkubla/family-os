@@ -1,56 +1,33 @@
 /**
- * useGroceryVoice — record a Hebrew voice clip and turn it into grocery items.
+ * useGroceryVoice — record a Hebrew clip → grocery items via /voice/grocery.
  *
- * POC flow: start() records via the device mic (expo-audio); stopAndTranscribe()
- * stops, uploads the clip to the Assistant's /voice/grocery endpoint (Whisper +
- * grocery parsing), and returns { transcript, items } for the caller to review
- * before adding. Nothing is written here.
- *
- * Recording is a native capability — needs the mic permission + a dev/EAS build
- * (not Expo Go web). iOS first.
+ * Thin wrapper over useVoiceRecorder: stopAndTranscribe() stops recording,
+ * uploads the clip (+ optional sub-category taxonomy) to the Assistant, and
+ * returns { transcript, items } for the caller to review before adding.
+ * Nothing is written here.
  */
 
-import { useCallback, useState } from "react";
-import {
-  useAudioRecorder,
-  RecordingPresets,
-  requestRecordingPermissionsAsync,
-  setAudioModeAsync,
-} from "expo-audio";
+import { useCallback } from "react";
 
 import { voiceApi, type VoiceGroceryResult } from "@src/lib/api/endpoints";
+import { useVoiceRecorder } from "./useVoiceRecorder";
 
-export type VoiceStatus = "idle" | "recording" | "processing";
+export type { VoiceStatus } from "./useVoiceRecorder";
 
 export function useGroceryVoice() {
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const [status, setStatus] = useState<VoiceStatus>("idle");
+  const { status, start, stop, reset } = useVoiceRecorder();
 
-  /** Request mic permission + begin recording. Returns false if denied. */
-  const start = useCallback(async (): Promise<boolean> => {
-    const perm = await requestRecordingPermissionsAsync();
-    if (!perm.granted) return false;
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record();
-    setStatus("recording");
-    return true;
-  }, [recorder]);
-
-  /** Stop recording, upload the clip (+ optional taxonomy), return the result. */
   const stopAndTranscribe = useCallback(
     async (taxonomy?: Record<string, string[]>): Promise<VoiceGroceryResult | null> => {
-      setStatus("processing");
       try {
-        await recorder.stop();
-        const uri = recorder.uri;
+        const uri = await stop();
         if (!uri) return null;
         return await voiceApi.grocery(uri, taxonomy);
       } finally {
-        setStatus("idle");
+        reset();
       }
     },
-    [recorder],
+    [stop, reset],
   );
 
   return { status, start, stopAndTranscribe };

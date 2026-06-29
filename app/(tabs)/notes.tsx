@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Platform, ScrollView, Alert } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
@@ -19,6 +19,7 @@ import OwnerBadge from "@src/components/OwnerBadge";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
+import { useNoteVoice } from "@src/hooks/useNoteVoice";
 import { t } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -133,14 +134,40 @@ export default function NotesScreen() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  // Voice-note draft pre-filled into the editor (cleared on every other open).
+  const [voiceDraft, setVoiceDraft] = useState<{ title?: string; body: string } | undefined>(undefined);
+  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useNoteVoice();
 
   // Deep-link: ?modal=add opens the add sheet on mount.
   useEffect(() => {
     if (modal === "add") {
+      setVoiceDraft(undefined);
       setEditingNote(null);
       setModalOpen(true);
     }
   }, [modal]);
+
+  // Tap to record; tap again to stop → transcribe → open the editor on the
+  // generated draft (title + body) for review before saving.
+  const handleMic = async () => {
+    try {
+      if (voiceStatus === "recording") {
+        const result = await stopAndTranscribe();
+        if (result && result.body.trim()) {
+          setVoiceDraft({ title: result.title || undefined, body: result.body });
+          setEditingNote(null);
+          setModalOpen(true);
+        } else if (result) {
+          Alert.alert(t("voice.noNote"));
+        }
+      } else if (voiceStatus === "idle") {
+        const ok = await startVoice();
+        if (!ok) Alert.alert(t("voice.micDenied"));
+      }
+    } catch {
+      Alert.alert(t("voice.error"));
+    }
+  };
 
   // Reorder via per-card arrows: swap with the adjacent item, then persist the
   // new top-to-bottom id order. (Replaces drag-to-reorder, same as kid view.)
@@ -172,6 +199,7 @@ export default function NotesScreen() {
               index={index}
               count={notes.length}
               onEdit={() => {
+                setVoiceDraft(undefined);
                 setEditingNote(item);
                 setModalOpen(true);
               }}
@@ -182,12 +210,30 @@ export default function NotesScreen() {
         )}
       </ScrollView>
 
+      {/* Voice → note: record, transcribe via the Assistant, then open the
+          editor pre-filled for review. Stacked above the "+" add FAB. */}
+      <FAB
+        icon={voiceStatus === "recording" ? "stop" : "microphone"}
+        loading={voiceStatus === "processing"}
+        style={[
+          styles.micFab,
+          { bottom: insets.bottom + S.lg + 68 },
+          voiceStatus === "recording" && { backgroundColor: C.red },
+        ]}
+        color="#FFF"
+        onPress={handleMic}
+        accessibilityRole="button"
+        accessibilityLabel={t("voice.record")}
+        testID="note-voice-fab"
+      />
+
       <FAB
         icon="plus"
         testID="btn-add-note"
         style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: NOTE_COLORS.accent }]}
         color="#FFF"
         onPress={() => {
+          setVoiceDraft(undefined);
           setEditingNote(null);
           setModalOpen(true);
         }}
@@ -198,8 +244,10 @@ export default function NotesScreen() {
         onDismiss={() => {
           setModalOpen(false);
           setEditingNote(null);
+          setVoiceDraft(undefined);
         }}
         editNote={editingNote}
+        initialDraft={voiceDraft}
       />
       <ConfirmDeleteModal visible={confirmVisible} onConfirm={confirmDelete} onDismiss={dismissConfirm} />
     </SafeAreaView>
@@ -265,4 +313,6 @@ const styles = StyleSheet.create({
     marginTop: S.md,
   },
   fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
+  // Voice FAB stacked just above the "+" add FAB, same side.
+  micFab: { position: "absolute", ...FAB_LEFT, bottom: S.lg, backgroundColor: C.teal },
 });

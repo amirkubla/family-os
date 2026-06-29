@@ -25,9 +25,14 @@ interface Props {
   lockedKidName?: string;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
   carousel?: ModalCarousel;
+  /**
+   * When set (and not editing), pre-fills title + body for review — used by the
+   * voice-note flow to open the editor on a transcribed draft before saving.
+   */
+  initialDraft?: { title?: string; body: string };
 }
 
-export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, lockedKidName, carousel }: Props) {
+export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, lockedKidName, carousel, initialDraft }: Props) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [kidId, setKidId] = useState<string | undefined>(undefined);
@@ -46,12 +51,12 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
       setKidId(editNote.kidId);
       setOwnerMemberId(editNote.ownerMemberId);
     } else {
-      setTitle("");
-      setBody("");
+      setTitle(initialDraft?.title ?? "");
+      setBody(initialDraft?.body ?? "");
       setKidId(defaultKidId);
       setOwnerMemberId(undefined);
     }
-  }, [editNote, visible, defaultKidId]);
+  }, [editNote, visible, defaultKidId, initialDraft]);
 
   const reset = () => { setTitle(""); setBody(""); setKidId(undefined); setOwnerMemberId(undefined); };
 

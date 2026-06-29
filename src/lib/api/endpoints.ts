@@ -240,9 +240,9 @@ export const telegramApi = {
   },
 };
 
-// Voice → grocery (POC): upload a recorded clip; the Assistant transcribes it
-// (Whisper) and returns parsed items WITHOUT writing them — the app reviews +
-// adds. The audio is sent as multipart/form-data (field name "audio").
+// Voice (POC): upload a recorded clip; the Assistant transcribes it
+// (gpt-4o-transcribe) and returns structured data WITHOUT writing it — the app
+// reviews + writes. Audio is multipart/form-data (field name "audio").
 export interface VoiceGroceryResult {
   transcript: string;
   items: {
@@ -253,39 +253,52 @@ export interface VoiceGroceryResult {
   }[];
 }
 
+export interface VoiceNoteResult {
+  transcript: string;
+  title: string;
+  body: string;
+}
+
+/**
+ * Build a multipart body carrying the recorded audio. On web the recorder
+ * yields a blob: URL → fetch it into a real Blob (the RN {uri} file trick is
+ * native-only and would send an empty/garbled part on web).
+ */
+async function buildAudioForm(audioUri: string): Promise<FormData> {
+  const form = new FormData();
+  if (Platform.OS === "web") {
+    const blob = await (await fetch(audioUri)).blob();
+    const ext = blob.type.includes("webm")
+      ? "webm"
+      : blob.type.includes("mp4") || blob.type.includes("mpeg")
+        ? "mp4"
+        : "m4a";
+    form.append("audio", blob, `voice.${ext}`);
+  } else {
+    form.append("audio", { uri: audioUri, name: "voice.m4a", type: "audio/m4a" } as any);
+  }
+  return form;
+}
+
 export const voiceApi = {
   grocery: async (
     audioUri: string,
     taxonomy?: Record<string, string[]>,
   ): Promise<VoiceGroceryResult> => {
-    const form = new FormData();
-    if (Platform.OS === "web") {
-      // expo-audio yields a blob: URL on web; fetch it into a real Blob so the
-      // multipart body carries actual bytes (the RN {uri} file trick is
-      // native-only and would send an empty/garbled part on web).
-      const blob = await (await fetch(audioUri)).blob();
-      const ext = blob.type.includes("webm")
-        ? "webm"
-        : blob.type.includes("mp4") || blob.type.includes("mpeg")
-          ? "mp4"
-          : "m4a";
-      form.append("audio", blob, `voice.${ext}`);
-    } else {
-      // React Native FormData accepts a {uri,name,type} object for file parts.
-      form.append("audio", {
-        uri: audioUri,
-        name: "voice.m4a",
-        type: "audio/m4a",
-      } as any);
-    }
+    const form = await buildAudioForm(audioUri);
     // The family's sub-category taxonomy so the Assistant can categorize items.
     if (taxonomy) form.append("subcategories", JSON.stringify(taxonomy));
-    const res = await fetch(`${ASSISTANT_URL}/voice/grocery`, {
-      method: "POST",
-      body: form,
-    });
+    const res = await fetch(`${ASSISTANT_URL}/voice/grocery`, { method: "POST", body: form });
     if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
     return res.json() as Promise<VoiceGroceryResult>;
+  },
+
+  // Free-form note: returns the transcript as the body + an LLM-generated title.
+  note: async (audioUri: string): Promise<VoiceNoteResult> => {
+    const form = await buildAudioForm(audioUri);
+    const res = await fetch(`${ASSISTANT_URL}/voice/note`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
+    return res.json() as Promise<VoiceNoteResult>;
   },
 };
 
