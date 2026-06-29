@@ -139,11 +139,6 @@ export default function CustomTabBar({
     [router, collapse],
   );
 
-  // Active tab → FAB icon
-  const activeRoute = state.routes[state.index];
-  const activeName = activeRoute?.name ?? "home";
-  const activeIcon = TAB_ICONS[activeName] ?? "ellipse";
-
   const handleSelect = useCallback(
     (routeName: string, routeKey: string, isFocused: boolean) => {
       const event = navigation.emit({
@@ -306,7 +301,7 @@ export default function CustomTabBar({
           accessibilityState={{ expanded }}
           testID="nav-fab"
         >
-          <Ionicons name={expanded ? "close" : activeIcon} size={26} color="#FFFFFF" />
+          <Ionicons name={expanded ? "close" : "list"} size={26} color="#FFFFFF" />
         </Pressable>
       </View>
     </View>
