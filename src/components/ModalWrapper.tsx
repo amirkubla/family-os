@@ -22,7 +22,7 @@ import { RTL_ROW } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 
 /** Accent for the docked header — title, logo, and Save CTA. */
-const MODAL_ACCENT = "#006666";
+const MODAL_ACCENT = "#003333";
 
 /** When provided, ModalWrapper renders prev/next arrows flanking the content. */
 export interface ModalCarousel {
