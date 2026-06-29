@@ -318,13 +318,13 @@ const styles = StyleSheet.create({
   // Icon-only circular menu button (no text labels — icons are intuitive).
   // Themed fill (C.primary) with a thick white ring and a white icon.
   circle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: C.primary,
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: "#FFFFFF",
   },
   // Current tab — inverted (white fill, themed ring + icon) as the selected cue.
@@ -333,8 +333,8 @@ const styles = StyleSheet.create({
     borderColor: C.primary,
   },
   kidEmoji: {
-    fontSize: 22,
-    lineHeight: 26,
+    fontSize: 24,
+    lineHeight: 28,
     textAlign: "center",
   },
   fab: {
