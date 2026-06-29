@@ -19,8 +19,10 @@ import {
   clearBoughtRemote,
   clearAllCategoryRemote,
   addGroceryRemote,
+  updateCustomizationsRemote,
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
+import GroceryCategoriesModal from "@src/components/GroceryCategoriesModal";
 import VoiceReviewModal from "@src/components/VoiceReviewModal";
 import { useGroceryVoice } from "@src/hooks/useGroceryVoice";
 import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
@@ -66,8 +68,19 @@ export default function GroceryScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
   const customizations = useFamilyStore((s) => s.customizations);
   const [modalOpen, setModalOpen] = useState(false);
+  const [catModalOpen, setCatModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ShoppingCategory>("grocery");
+
+  // Save the active category's sub-category list (optimistic + synced).
+  const setSubcategoriesFor = (next: GrocerySubcategory[]) =>
+    updateCustomizationsRemote({
+      ...customizations,
+      grocerySubcategories: {
+        ...(customizations.grocerySubcategories ?? {}),
+        [selectedCategory]: next,
+      },
+    });
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const { modal } = useLocalSearchParams<{ modal?: string }>();
 
@@ -173,11 +186,17 @@ export default function GroceryScreen() {
           />
         </View>
 
-        {/* Item count + clear all */}
+        {/* Customize categories + clear all */}
         <View style={styles.countRow}>
-          <Text style={styles.itemCount}>
-            {t("grocery.itemCount", { count: unbought.length })}
-          </Text>
+          <Button
+            compact
+            icon="pricetags-outline"
+            onPress={() => setCatModalOpen(true)}
+            textColor={theme}
+            testID="btn-customize-categories"
+          >
+            {t("grocery.customizeCategories")}
+          </Button>
           {filtered.length > 0 && (
             <Button
               compact
@@ -337,6 +356,14 @@ export default function GroceryScreen() {
         onDismiss={() => { setModalOpen(false); setEditingItem(null); }}
         defaultShoppingCategory={selectedCategory}
         editItem={editingItem}
+      />
+
+      <GroceryCategoriesModal
+        visible={catModalOpen}
+        onDismiss={() => setCatModalOpen(false)}
+        category={selectedCategory}
+        list={effectiveSubcategories(customizations, selectedCategory)}
+        onChange={setSubcategoriesFor}
       />
 
       <VoiceReviewModal

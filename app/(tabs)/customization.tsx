@@ -12,7 +12,7 @@
  * fire-and-forget the PUT. Server errors surface via the global snackbar.
  */
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, ScrollView, Platform, Pressable } from "react-native";
 import {
   Card,
@@ -32,121 +32,15 @@ import {
 } from "@src/lib/sync/remoteCrud";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import BudgetCategoryModal from "@src/components/BudgetCategoryModal";
-import GrocerySubcategoryModal from "@src/components/GrocerySubcategoryModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import type { BudgetCategory } from "@src/models/budget";
 import SectionHeader from "@src/components/SectionHeader";
 import PaginatedPicker from "@src/components/PaginatedPicker";
 import { FAMILY_EMOJI_OPTIONS, COLOR_SWATCHES_LARGE } from "@src/ui/semanticColors";
-import {
-  effectiveSubcategories,
-  OTHER_SUBCATEGORY,
-  DEFAULT_FAMILY_EMOJI,
-  type FamilyCustomizations,
-  type GrocerySubcategory,
-} from "@src/models/customization";
-import type { ShoppingCategory } from "@src/models/grocery";
-import { SHOPPING_CATEGORIES } from "@src/models/grocery";
-import { t, shoppingCategoryLabel } from "@src/i18n";
+import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
+import { t } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
-
-// ---------------------------------------------------------------------------
-// One grocery subcategory section (grocery / health / home)
-// ---------------------------------------------------------------------------
-
-function GrocerySubcategoriesSection({
-  category,
-  list,
-  onChange,
-}: {
-  category: ShoppingCategory;
-  list: GrocerySubcategory[];
-  onChange: (next: GrocerySubcategory[]) => void;
-}) {
-  const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editItem, setEditItem] = useState<GrocerySubcategory | null>(null);
-
-  const handleSave = (data: GrocerySubcategory) => {
-    if (editItem) {
-      onChange(list.map((s) => (s.name === editItem.name ? data : s)));
-    } else {
-      // Insert before "אחר" so it stays last.
-      const otherIdx = list.findIndex((s) => s.name === OTHER_SUBCATEGORY);
-      const next =
-        otherIdx >= 0
-          ? [...list.slice(0, otherIdx), data, ...list.slice(otherIdx)]
-          : [...list, data];
-      onChange(next);
-    }
-    setEditItem(null);
-  };
-
-  const SECTION_LABEL: Record<ShoppingCategory, string> = {
-    grocery: "customization.grocerySubcategories",
-    health: "customization.healthSubcategories",
-    home: "customization.homeSubcategories",
-  };
-
-  return (
-    <>
-      <SectionHeader label={`${t(SECTION_LABEL[category])} · ${shoppingCategoryLabel(category)}`} />
-      <Card style={styles.card} mode="elevated">
-        <Card.Content>
-          {list.map((sub) => {
-            const isOther = sub.name === OTHER_SUBCATEGORY;
-            return (
-              <View key={sub.name} style={styles.catRow}>
-                <View style={styles.catDot}>
-                  <Text style={styles.catEmoji}>{sub.icon}</Text>
-                </View>
-                <Text style={styles.catName}>{sub.name}</Text>
-                <IconButton
-                  icon={isOther ? "lock-outline" : "pencil-outline"}
-                  size={18}
-                  disabled={isOther}
-                  onPress={isOther ? undefined : () => { setEditItem(sub); setModalVisible(true); }}
-                  accessibilityLabel={
-                    isOther ? t("customization.otherCategoryLocked") : t("customization.editSubcategory")
-                  }
-                />
-                <IconButton
-                  icon="trash-can-outline"
-                  size={18}
-                  disabled={isOther}
-                  onPress={isOther ? undefined : () =>
-                    requestDelete(() => onChange(list.filter((s) => s.name !== sub.name)))
-                  }
-                  accessibilityLabel={t("customization.deleteSubcategory")}
-                />
-              </View>
-            );
-          })}
-
-          <Pressable
-            style={styles.addCatBtn}
-            onPress={() => { setEditItem(null); setModalVisible(true); }}
-          >
-            <Text style={styles.addCatText}>+ {t("customization.addSubcategory")}</Text>
-          </Pressable>
-        </Card.Content>
-      </Card>
-
-      <GrocerySubcategoryModal
-        visible={modalVisible}
-        onDismiss={() => { setModalVisible(false); setEditItem(null); }}
-        editSubcategory={editItem}
-        onSave={handleSave}
-      />
-      <ConfirmDeleteModal
-        visible={confirmVisible}
-        onConfirm={confirmDelete}
-        onDismiss={dismissConfirm}
-      />
-    </>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Budget categories section
@@ -279,29 +173,6 @@ function ThemeColorSection() {
 
 export default function CustomizationScreen() {
   const router = useRouter();
-  const customizations = useFamilyStore((s) => s.customizations);
-
-  const effective = useMemo(
-    () =>
-      Object.fromEntries(
-        SHOPPING_CATEGORIES.map((cat) => [cat, effectiveSubcategories(customizations, cat)]),
-      ) as Record<ShoppingCategory, GrocerySubcategory[]>,
-    [customizations],
-  );
-
-  const setListFor = useCallback(
-    (cat: ShoppingCategory, nextList: GrocerySubcategory[]) => {
-      const next: FamilyCustomizations = {
-        ...customizations,
-        grocerySubcategories: {
-          ...(customizations.grocerySubcategories ?? {}),
-          [cat]: nextList,
-        },
-      };
-      updateCustomizationsRemote(next);
-    },
-    [customizations],
-  );
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -312,17 +183,6 @@ export default function CustomizationScreen() {
         <FamilyIconSection />
 
         <ThemeColorSection />
-
-        <Text style={styles.hint}>{t("customization.subcategoriesHint")}</Text>
-
-        {SHOPPING_CATEGORIES.map((cat) => (
-          <GrocerySubcategoriesSection
-            key={cat}
-            category={cat}
-            list={effective[cat]}
-            onChange={(next) => setListFor(cat, next)}
-          />
-        ))}
 
         <BudgetCategoriesSection />
       </ScrollView>
