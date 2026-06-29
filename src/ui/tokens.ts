@@ -8,6 +8,12 @@
 // ---------------------------------------------------------------------------
 
 export const C = {
+  // Brand / theme primary — the single global accent (modal headers, nav, CTAs).
+  // Default #003333; will become per-family customizable via the customization
+  // screen later, at which point reads should go through a theme hook with this
+  // as the fallback.
+  primary: "#003333",
+
   // Surfaces
   bg: "#F5F5F7",
   surface: "#FFFFFF",

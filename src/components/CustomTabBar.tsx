@@ -25,46 +25,34 @@ import { useRouter } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { FAB_RIGHT } from "@src/ui/fabAnchor";
+import { C } from "@src/ui/tokens";
 import { t } from "@src/i18n";
 
-// ── Per-tab accent colours ──────────────────────────────────────────────────
+// ── Nav icons (filled = heavy brush, white on the themed circle) ─────────────
 
 // Settings is intentionally absent — it's reached via the gear on the home
 // dashboard, so it doesn't need a slot in the floating nav.
-const TAB_COLORS: Record<string, { active: string; bg: string }> = {
-  today:    { active: "#C49A2A", bg: "#FBF5E4" },  // honey gold
-  calendar: { active: "#3A7BD5", bg: "#E8F0FB" },  // sapphire blue
-  grocery:  { active: "#2D9F6F", bg: "#E6F6EF" },  // emerald green
-  home:     { active: "#2AACB4", bg: "#E4F6F7" },  // ocean teal
-  budget:   { active: "#9B59B6", bg: "#F3EBF9" },  // violet purple
-};
-
 const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  today:    "sunny-outline",
-  calendar: "calendar-outline",
-  grocery:  "cart-outline",
-  home:     "home-outline",
-  budget:   "wallet-outline",
+  today:    "sunny",
+  calendar: "calendar",
+  grocery:  "cart",
+  home:     "home",
+  budget:   "wallet",
 };
-
-// "ילדים" entry + its nested kid layer.
-const KIDS_PAL = { active: "#E0699B", bg: "#FBE9F1" };
 
 // Management actions — rendered inline in the main menu (no nested layer).
 // Grocery + budget live here too, alongside chores/notes/projects.
-const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; color: string; labelKey: string }[] = [
-  { route: "grocery",  icon: "cart-outline",          color: "#2D9F6F", labelKey: "tabs.grocery" },
-  { route: "budget",   icon: "wallet-outline",        color: "#9B59B6", labelKey: "tabs.budget" },
-  { route: "chores",   icon: "checkbox-outline",      color: "#1FA67A", labelKey: "home.chores" },
-  { route: "notes",    icon: "document-text-outline", color: "#C49A2A", labelKey: "home.notes" },
-  { route: "projects", icon: "rocket-outline",        color: "#6C63FF", labelKey: "home.projects" },
+const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; labelKey: string }[] = [
+  { route: "grocery",  icon: "cart",          labelKey: "tabs.grocery" },
+  { route: "budget",   icon: "wallet",        labelKey: "tabs.budget" },
+  { route: "chores",   icon: "checkbox",      labelKey: "home.chores" },
+  { route: "notes",    icon: "document-text", labelKey: "home.notes" },
+  { route: "projects", icon: "rocket",        labelKey: "home.projects" },
 ];
 
-// Routes shown directly in the main speed-dial row (everything else — grocery,
-// budget — lives under the "ניהול" ops layer).
+// Routes shown directly in the main menu (today/calendar/home); everything else
+// lives in OPS_ITEMS, also rendered inline.
 const MAIN_ROUTES = ["today", "calendar", "home"];
-
-const C_TEXT_MUTED = "#A8A3B8";
 
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
@@ -136,11 +124,10 @@ export default function CustomTabBar({
     [router, collapse],
   );
 
-  // Active tab → FAB colour + icon
+  // Active tab → FAB icon
   const activeRoute = state.routes[state.index];
   const activeName = activeRoute?.name ?? "home";
-  const activePal = TAB_COLORS[activeName] ?? TAB_COLORS.home;
-  const activeIcon = TAB_ICONS[activeName] ?? "ellipse-outline";
+  const activeIcon = TAB_ICONS[activeName] ?? "ellipse";
 
   const handleSelect = useCallback(
     (routeName: string, routeKey: string, isFocused: boolean) => {
@@ -171,24 +158,19 @@ export default function CustomTabBar({
     ...navRoutes.map((route) => {
       const idx = state.routes.indexOf(route);
       const isFocused = state.index === idx;
-      const pal = TAB_COLORS[route.name];
       const label = descriptors[route.key]?.options?.title ?? route.name;
       return {
         key: route.key,
         node: (
           <Pressable
             onPress={() => handleSelect(route.name, route.key, isFocused)}
-            style={[styles.circle, webCursor, { backgroundColor: isFocused ? pal.active : "#FFFFFF" }]}
+            style={[styles.circle, webCursor, isFocused && styles.circleActive]}
             accessibilityRole="button"
             accessibilityLabel={label}
             accessibilityState={{ selected: isFocused }}
             testID={`tab-${route.name}`}
           >
-            <Ionicons
-              name={TAB_ICONS[route.name] ?? "ellipse-outline"}
-              size={24}
-              color={isFocused ? "#FFFFFF" : pal.active}
-            />
+            <Ionicons name={TAB_ICONS[route.name] ?? "ellipse"} size={24} color="#FFFFFF" />
           </Pressable>
         ),
       };
@@ -198,12 +180,12 @@ export default function CustomTabBar({
       node: (
         <Pressable
           onPress={() => handleOpSelect(op.route)}
-          style={[styles.circle, webCursor, { borderColor: op.color, borderWidth: 2 }]}
+          style={[styles.circle, webCursor]}
           accessibilityRole="button"
           accessibilityLabel={t(op.labelKey)}
           testID={`nav-op-${op.route}`}
         >
-          <Ionicons name={op.icon} size={24} color={op.color} />
+          <Ionicons name={op.icon} size={24} color="#FFFFFF" />
         </Pressable>
       ),
     })),
@@ -219,7 +201,7 @@ export default function CustomTabBar({
                 accessibilityLabel={t("home.kids")}
                 testID="nav-kids"
               >
-                <Ionicons name="happy-outline" size={24} color={KIDS_PAL.active} />
+                <Ionicons name="happy" size={24} color="#FFFFFF" />
               </Pressable>
             ),
           },
@@ -228,23 +210,20 @@ export default function CustomTabBar({
   ];
 
   const kidsItems: { key: string; node: React.ReactNode }[] = [
-    ...activeKids.map((kid) => {
-      const color = kid.color ?? KIDS_PAL.active;
-      return {
-        key: kid.id,
-        node: (
-          <Pressable
-            onPress={() => handleKidSelect(kid.id)}
-            style={[styles.circle, webCursor, { borderColor: color, borderWidth: 2 }]}
-            accessibilityRole="button"
-            accessibilityLabel={kid.name}
-            testID={`nav-kid-${kid.id}`}
-          >
-            <Text style={styles.kidEmoji}>{kid.emoji ?? "🧒"}</Text>
-          </Pressable>
-        ),
-      };
-    }),
+    ...activeKids.map((kid) => ({
+      key: kid.id,
+      node: (
+        <Pressable
+          onPress={() => handleKidSelect(kid.id)}
+          style={[styles.circle, webCursor]}
+          accessibilityRole="button"
+          accessibilityLabel={kid.name}
+          testID={`nav-kid-${kid.id}`}
+        >
+          <Text style={styles.kidEmoji}>{kid.emoji ?? "🧒"}</Text>
+        </Pressable>
+      ),
+    })),
     {
       key: "kids-back",
       node: (
@@ -255,7 +234,7 @@ export default function CustomTabBar({
           accessibilityLabel={t("nav.back")}
           testID="nav-kids-back"
         >
-          <Ionicons name="chevron-forward" size={24} color={C_TEXT_MUTED} />
+          <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
         </Pressable>
       ),
     },
@@ -301,7 +280,7 @@ export default function CustomTabBar({
           style={[
             styles.fab,
             webCursor,
-            { backgroundColor: expanded ? "#3A3A4A" : activePal.active },
+            { backgroundColor: expanded ? "#3A3A4A" : C.primary },
           ]}
           accessibilityRole="button"
           accessibilityLabel={expanded ? "סגור תפריט ניווט" : "פתח תפריט ניווט"}
@@ -335,20 +314,24 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   // Icon-only circular menu button (no text labels — icons are intuitive).
+  // Themed fill (C.primary) with a white icon — matches the modal accent.
   circle: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(226, 232, 240, 0.8)",
+    backgroundColor: C.primary,
     shadowColor: "#1E293B",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.18,
     shadowRadius: 8,
     elevation: 6,
+  },
+  // Current tab — a white ring around the themed circle.
+  circleActive: {
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
   kidEmoji: {
     fontSize: 22,

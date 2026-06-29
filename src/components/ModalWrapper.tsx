@@ -21,9 +21,6 @@ import { FAB_LEFT, FAB_RIGHT } from "@src/ui/fabAnchor";
 import { RTL_ROW } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 
-/** Accent for the docked header — title, logo, and Save CTA. */
-const MODAL_ACCENT = "#003333";
-
 /** When provided, ModalWrapper renders prev/next arrows flanking the content. */
 export interface ModalCarousel {
   onPrev: () => void;
@@ -115,7 +112,7 @@ export default function ModalWrapper({
           <View style={styles.headerCenter}>
             {title ? (
               <View style={styles.titleRow}>
-                {icon ? <Ionicons name={icon} size={20} color={MODAL_ACCENT} /> : null}
+                {icon ? <Ionicons name={icon} size={20} color={C.primary} /> : null}
                 <Text style={styles.title} numberOfLines={1}>{title}</Text>
               </View>
             ) : null}
@@ -219,7 +216,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: MODAL_ACCENT,
+    color: C.primary,
     writingDirection: "rtl",
   },
   subtitle: {
@@ -249,7 +246,7 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: S.lg,
     borderRadius: R.xl,
-    backgroundColor: MODAL_ACCENT,
+    backgroundColor: C.primary,
   },
   saveBtnDisabled: { opacity: 0.45 },
   saveLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "700", writingDirection: "rtl" },
