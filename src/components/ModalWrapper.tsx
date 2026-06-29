@@ -20,8 +20,8 @@ import { FAB_LEFT, FAB_RIGHT } from "@src/ui/fabAnchor";
 import { RTL_ROW } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 
-/** Dark-blue Save CTA — distinct from the near-black text colour. */
-const SAVE_BLUE = "#1E40AF";
+/** Dark-blue accent for the docked header — title, logo, and Save CTA. */
+const MODAL_BLUE = "#1E40AF";
 
 /** When provided, ModalWrapper renders prev/next arrows flanking the content. */
 export interface ModalCarousel {
@@ -114,7 +114,7 @@ export default function ModalWrapper({
           <View style={styles.headerCenter}>
             {title ? (
               <View style={styles.titleRow}>
-                {icon ? <Ionicons name={icon} size={20} color={C.textPrimary} /> : null}
+                {icon ? <Ionicons name={icon} size={20} color={MODAL_BLUE} /> : null}
                 <Text style={styles.title} numberOfLines={1}>{title}</Text>
               </View>
             ) : null}
@@ -142,7 +142,7 @@ export default function ModalWrapper({
               style={[styles.saveBtn, { top: btnTop }]}
               contentStyle={styles.saveContent}
               labelStyle={styles.saveLabel}
-              buttonColor={SAVE_BLUE}
+              buttonColor={MODAL_BLUE}
               textColor="#FFFFFF"
               testID="btn-save"
             >
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: C.textPrimary,
+    color: MODAL_BLUE,
     writingDirection: "rtl",
   },
   subtitle: {
