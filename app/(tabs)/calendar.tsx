@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Alert } from "react-native";
 import {
   Card,
   Text,
@@ -53,6 +53,9 @@ import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
+import { useEventVoice } from "@src/hooks/useEventVoice";
+import VoiceDetailReviewModal, { type DetailRow } from "@src/components/VoiceDetailReviewModal";
+import type { VoiceEventResult } from "@src/lib/api/endpoints";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -196,6 +199,8 @@ export default function CalendarScreen() {
   const selectedDow = dayOfWeekFromYMD(selectedDate);
   const dayEvents = useFamilyEventsForDate(selectedDate, selectedDow);
   const dayBlocks = useAllKidBlocksForDate(selectedDate, selectedDow);
+  const familyMembers = useFamilyStore((s) => s.familyMembers);
+  const kids = useFamilyStore((s) => s.kids);
 
   // Single agenda for the selected day, events + kid blocks merged and ordered
   // by start time (each list is already time-sorted; this interleaves them).
@@ -281,6 +286,105 @@ export default function CalendarScreen() {
     } else {
       addFamilyEventRemote(data);
     }
+  };
+
+  // ── Voice → event ──
+  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useEventVoice();
+  const [voiceResult, setVoiceResult] = useState<VoiceEventResult | null>(null);
+
+  const handleMic = async () => {
+    try {
+      if (voiceStatus === "recording") {
+        const context = {
+          today: toYMD(new Date()),
+          members: familyMembers.filter((m) => m.isActive).map((m) => m.name),
+          kids: kids.filter((k) => k.isActive).map((k) => k.name),
+        };
+        const result = await stopAndTranscribe(context);
+        if (result) setVoiceResult(result);
+      } else if (voiceStatus === "idle") {
+        const ok = await startVoice();
+        if (!ok) Alert.alert(t("voice.micDenied"));
+      }
+    } catch {
+      Alert.alert(t("voice.error"));
+    }
+  };
+
+  // Rows for the review sheet + the Hebrew "missing" labels.
+  const fmtReminder = (m: number): string =>
+    m % 1440 === 0 ? (m === 1440 ? "יום לפני" : `${m / 1440} ימים לפני`)
+    : m % 60 === 0 ? (m === 60 ? "שעה לפני" : `${m / 60} שעות לפני`)
+    : `${m} דק׳ לפני`;
+
+  const eventRows = useMemo<DetailRow[] | null>(() => {
+    const e = voiceResult?.event;
+    if (!e) return null;
+    const time = e.all_day
+      ? t("voice.eventAllDay")
+      : e.start_time
+        ? e.end_time ? `${e.start_time}–${e.end_time}` : e.start_time
+        : "";
+    const span = e.is_recurring
+      ? e.days_of_week.map((d) => dayName(d)).join(", ")
+      : (e.date ?? "");
+    const when = [span, time].filter(Boolean).join(" · ");
+    const rows: DetailRow[] = [];
+    if (e.title) rows.push({ label: t("eventModal.titleLabel"), value: e.title });
+    if (when) rows.push({ label: t("eventModal.schedule"), value: when });
+    rows.push({ label: t("eventModal.assignee"), value: e.assignee_name ?? assigneeTypeLabel("family") });
+    if (e.location) rows.push({ label: t("eventModal.location"), value: e.location });
+    if (e.reminders.length)
+      rows.push({ label: t("eventModal.reminders"), value: e.reminders.map(fmtReminder).join(", ") });
+    return rows;
+  }, [voiceResult]);
+
+  const eventMissing = useMemo(
+    () =>
+      (voiceResult?.missing ?? []).map((k) =>
+        k === "title" ? t("voice.missingTitle")
+        : k === "date" ? t("voice.missingDate")
+        : k === "time" ? t("voice.missingTime")
+        : k === "days" ? t("voice.missingDays")
+        : k,
+      ),
+    [voiceResult],
+  );
+
+  const handleVoiceEventConfirm = () => {
+    const e = voiceResult?.event;
+    if (!e || (voiceResult?.missing.length ?? 0) > 0) return;
+    const toMin = (s: string) => {
+      const [h, m] = s.split(":").map(Number);
+      return (h || 0) * 60 + (m || 0);
+    };
+    const startMinutes = e.all_day ? 0 : e.start_time ? toMin(e.start_time) : 0;
+    const endMinutes = e.all_day
+      ? 1439
+      : e.end_time ? toMin(e.end_time) : Math.min(startMinutes + 60, 1439);
+    let assigneeType: AssigneeType = "family";
+    let assigneeId: string | undefined;
+    if (e.assignee_type === "member" && e.assignee_name) {
+      const m = familyMembers.find((x) => x.name === e.assignee_name);
+      if (m) { assigneeType = "member"; assigneeId = m.id; }
+    } else if (e.assignee_type === "kid" && e.assignee_name) {
+      const k = kids.find((x) => x.name === e.assignee_name);
+      if (k) { assigneeType = "kid"; assigneeId = k.id; }
+    }
+    addFamilyEventRemote({
+      title: e.title,
+      assigneeType,
+      assigneeId,
+      daysOfWeek: e.is_recurring ? e.days_of_week : [],
+      startMinutes,
+      endMinutes,
+      location: e.location || undefined,
+      isRecurring: e.is_recurring,
+      date: e.is_recurring ? undefined : (e.date ?? undefined),
+      allDay: e.all_day || undefined,
+      reminders: e.reminders.length ? e.reminders : undefined,
+    });
+    setVoiceResult(null);
   };
 
   const handleGridEventPress = useCallback((id: string, source: "event" | "block") => {
@@ -417,6 +521,23 @@ export default function CalendarScreen() {
         )}
       </ScrollView>
 
+      {/* Voice → event: record, transcribe + parse via the Assistant, then
+          review. Stacked above the "+" add FAB. */}
+      <FAB
+        icon={voiceStatus === "recording" ? "stop" : "microphone"}
+        loading={voiceStatus === "processing"}
+        style={[
+          styles.micFab,
+          { bottom: insets.bottom + S.lg + 68 },
+          voiceStatus === "recording" && { backgroundColor: C.red },
+        ]}
+        color="#FFF"
+        onPress={handleMic}
+        accessibilityRole="button"
+        accessibilityLabel={t("voice.record")}
+        testID="event-voice-fab"
+      />
+
       {/* FAB */}
       <FAB
         icon="plus"
@@ -467,6 +588,17 @@ export default function CalendarScreen() {
         visible={confirmVisible}
         onConfirm={confirmDelete}
         onDismiss={dismissConfirm}
+      />
+
+      <VoiceDetailReviewModal
+        visible={!!voiceResult}
+        heading={t("voice.reviewTitleEvent")}
+        transcript={voiceResult?.transcript ?? ""}
+        rows={eventRows}
+        missing={eventMissing}
+        confirmLabel={t("calendar.addEvent")}
+        onConfirm={handleVoiceEventConfirm}
+        onDismiss={() => setVoiceResult(null)}
       />
     </SafeAreaView>
   );
@@ -533,5 +665,12 @@ const styles = StyleSheet.create({
     ...FAB_LEFT,
     bottom: S.lg,
     backgroundColor: C.purple,
+  },
+  // Voice FAB stacked just above the "+" add FAB, same side.
+  micFab: {
+    position: "absolute",
+    ...FAB_LEFT,
+    bottom: S.lg,
+    backgroundColor: C.teal,
   },
 });

@@ -285,6 +285,25 @@ export interface VoicePaymentResult {
   missing: string[];
 }
 
+export interface VoiceEventResult {
+  transcript: string;
+  event: {
+    title: string;
+    is_recurring: boolean;
+    date: string | null;
+    start_time: string | null;
+    end_time: string | null;
+    all_day: boolean;
+    days_of_week: number[];
+    assignee_type: "member" | "kid" | null;
+    assignee_name: string | null;
+    location: string | null;
+    reminders: number[];
+  };
+  /** Machine keys ("title"|"date"|"time"|"days") to map to a Hebrew message. */
+  missing: string[];
+}
+
 /**
  * Build a multipart body carrying the recorded audio. On web the recorder
  * yields a blob: URL → fetch it into a real Blob (the RN {uri} file trick is
@@ -354,6 +373,19 @@ export const voiceApi = {
     const res = await fetch(`${ASSISTANT_URL}/voice/payment`, { method: "POST", body: form });
     if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
     return res.json() as Promise<VoicePaymentResult>;
+  },
+
+  // Calendar event: parsed event + a `missing` check. `context` carries today's
+  // date (to resolve relative dates) + member/kid names (to match an assignee).
+  event: async (
+    audioUri: string,
+    context?: { today: string; members: string[]; kids: string[] },
+  ): Promise<VoiceEventResult> => {
+    const form = await buildAudioForm(audioUri);
+    if (context) form.append("context", JSON.stringify(context));
+    const res = await fetch(`${ASSISTANT_URL}/voice/event`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
+    return res.json() as Promise<VoiceEventResult>;
   },
 };
 
