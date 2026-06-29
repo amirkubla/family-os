@@ -4,7 +4,7 @@
  */
 
 import { StyleSheet } from "react-native";
-import { C, S, R } from "./tokens";
+import { C, S, R, SHADOW } from "./tokens";
 import { RTL_ROW, RTL_ALIGN_RIGHT, TEXT_RIGHT } from "./rtl";
 
 /** Blue theme for SegmentedButtons — pass as `theme` prop */
@@ -21,7 +21,7 @@ export const SEGMENT_COLORS = {
 // Premium accent colors
 const MODAL_ACCENT = "#6C63FF";
 const MODAL_ACCENT_LIGHT = "#F0EEFF";
-const SECTION_BG = "#FAFAFC";
+const SECTION_BG = "#FFFFFF"; // white cards on the grey modal content area
 const SECTION_BORDER = "#EDEDF3";
 
 export const MS = StyleSheet.create({
@@ -65,11 +65,10 @@ export const MS = StyleSheet.create({
   // ---------------------------------------------------------------------------
   section: {
     backgroundColor: SECTION_BG,
-    borderRadius: R.md,
-    borderWidth: 1,
-    borderColor: SECTION_BORDER,
+    borderRadius: R.lg,
     padding: S.md,
-    marginBottom: S.sm,
+    marginBottom: S.md,
+    ...SHADOW.sm,
   },
   sectionHeader: {
     flexDirection: RTL_ROW,

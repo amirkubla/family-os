@@ -239,21 +239,17 @@ export default function FamilyEventModal({
   };
 
   return (
-    <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      {/* ── Header ── */}
-      <View style={MS.headerBar}>
-        <View style={MS.headerIconWrap}>
-          <Text style={MS.headerIcon}>🎉</Text>
-        </View>
-        <Text style={MS.heading}>
-          {editEvent ? t("eventModal.editTitle") : t("eventModal.addTitle")}
-        </Text>
-      </View>
-
-      {!editEvent && defaultDate && (
-        <Text style={MS.subtitle}>{formatDateHe(defaultDate)}</Text>
-      )}
-
+    <ModalWrapper
+      visible={visible}
+      onDismiss={onDismiss}
+      icon="calendar-outline"
+      title={editEvent ? t("eventModal.editTitle") : t("eventModal.addTitle")}
+      subtitle={!editEvent && defaultDate ? formatDateHe(defaultDate) : undefined}
+      onSave={handleSubmit(doSubmit)}
+      saveDisabled={submitting}
+      saveLoading={submitting}
+      saveLabel={editEvent ? t("save") : t("add")}
+    >
       {/* ── Title & Assignee section ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
@@ -574,26 +570,6 @@ export default function FamilyEventModal({
           {t("eventModal.delete")}
         </Button>
       )}
-      <View style={MS.actions}>
-        <Button
-          mode="outlined"
-          onPress={onDismiss}
-          style={MS.cancelBtn}
-          labelStyle={MS.cancelLabel}
-        >
-          {t("cancel")}
-        </Button>
-        <Button
-          mode="contained"
-          onPress={handleSubmit(doSubmit)}
-          disabled={submitting}
-          loading={submitting}
-          style={MS.saveBtn}
-          labelStyle={MS.saveBtnLabel}
-        >
-          {editEvent ? t("save") : t("add")}
-        </Button>
-      </View>
     </ModalWrapper>
   );
 }

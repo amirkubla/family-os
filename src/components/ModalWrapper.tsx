@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  View,
+  Text,
   StyleSheet,
   Pressable,
   KeyboardAvoidingView,
@@ -10,11 +12,12 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Portal } from "react-native-paper";
+import { Button, Portal } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { C, S } from "@src/ui/tokens";
-import { FAB_LEFT } from "@src/ui/fabAnchor";
+import { C, S, R } from "@src/ui/tokens";
+import { FAB_LEFT, FAB_RIGHT } from "@src/ui/fabAnchor";
+import { RTL_ROW } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 
 /** When provided, ModalWrapper renders prev/next arrows flanking the content. */
@@ -27,23 +30,44 @@ interface Props {
   visible: boolean;
   onDismiss: () => void;
   children: React.ReactNode;
+  /** Docked-header title (the modal's "context", e.g. "הוספת אירוע"). */
+  title?: string;
+  /** Header logo — an Ionicons glyph shown beside the title. */
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Optional caption under the title. */
+  subtitle?: string;
+  /** Primary action. When set, a Save button is docked at the header's right. */
+  onSave?: () => void;
+  saveDisabled?: boolean;
+  saveLoading?: boolean;
+  /** Save-button label (default: "שמור"). */
+  saveLabel?: string;
   /** Optional carousel arrows shown at the screen edges (kid "add" modals). */
   carousel?: ModalCarousel;
 }
 
 /**
- * ModalWrapper — full-screen sheet that wipes up from the bottom.
- *
- * Every modal in the app renders through this: it covers the whole page, slides
- * in from the bottom (and back down on close), and shows a cancel (✕) at the
- * top-left. Content scrolls; on wide screens it's capped + centred for
- * readability while the surface still fills the page.
+ * ModalWrapper — full-screen sheet that wipes up from the bottom, with a docked
+ * header: cancel (✕) at the top-left, the modal's logo + title centred, and an
+ * optional Save at the top-right. Content scrolls on a grey area below (so the
+ * white section cards pop), capped + centred on wide screens.
  */
-export default function ModalWrapper({ visible, onDismiss, children, carousel }: Props) {
+export default function ModalWrapper({
+  visible,
+  onDismiss,
+  children,
+  title,
+  icon,
+  subtitle,
+  onSave,
+  saveDisabled,
+  saveLoading,
+  saveLabel,
+  carousel,
+}: Props) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  // 1 = closed (translated off the bottom), 0 = fully open.
-  const anim = useRef(new Animated.Value(1)).current;
+  const anim = useRef(new Animated.Value(1)).current; // 1 = closed (off bottom), 0 = open
   const [rendered, setRendered] = useState(visible);
 
   useEffect(() => {
@@ -71,10 +95,9 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
   if (!rendered) return null;
 
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, height] });
+  const btnTop = insets.top + S.sm;
 
   return (
-    // Portal hosts the sheet at the app root so it covers the whole screen
-    // regardless of which scroll container opened it.
     <Portal>
       <Animated.View
         style={[
@@ -83,17 +106,46 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
           { transform: [{ translateY }] },
         ]}
       >
-        {/* Cancel (✕) — top-left on every platform (web:left / native:right→mirrored). */}
-        <Pressable
-          style={[styles.cancelBtn, { top: insets.top + S.sm }]}
-          onPress={onDismiss}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={t("cancel")}
-          testID="modal-cancel"
-        >
-          <Ionicons name="close" size={26} color={C.textPrimary} />
-        </Pressable>
+        {/* ── Docked header ── */}
+        <View style={[styles.header, { paddingTop: insets.top + S.sm }]}>
+          <View style={styles.headerCenter}>
+            {title ? (
+              <View style={styles.titleRow}>
+                {icon ? <Ionicons name={icon} size={20} color={C.textPrimary} /> : null}
+                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+              </View>
+            ) : null}
+            {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+          </View>
+
+          <Pressable
+            style={[styles.cancelBtn, { top: btnTop }]}
+            onPress={onDismiss}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t("cancel")}
+            testID="modal-cancel"
+          >
+            <Ionicons name="close" size={24} color={C.textPrimary} />
+          </Pressable>
+
+          {onSave ? (
+            <Button
+              mode="contained"
+              icon="check"
+              onPress={onSave}
+              disabled={saveDisabled}
+              loading={saveLoading}
+              style={[styles.saveBtn, { top: insets.top + S.xs }]}
+              labelStyle={styles.saveLabel}
+              buttonColor={C.textPrimary}
+              textColor="#FFFFFF"
+              testID="modal-save"
+            >
+              {saveLabel ?? t("save")}
+            </Button>
+          ) : null}
+        </View>
 
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -102,10 +154,7 @@ export default function ModalWrapper({ visible, onDismiss, children, carousel }:
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.content,
-              { paddingTop: insets.top + 52, paddingBottom: insets.bottom + S.xl },
-            ]}
+            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + S.xl }]}
           >
             {children}
           </ScrollView>
@@ -148,14 +197,29 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 9999,
-    backgroundColor: C.surface,
+    backgroundColor: C.bg,
   },
-  flex: { flex: 1 },
-  content: {
-    paddingHorizontal: S.lg,
-    width: "100%",
-    maxWidth: 560,
-    alignSelf: "center",
+  header: {
+    backgroundColor: C.surface,
+    paddingBottom: S.md,
+    paddingHorizontal: 64, // clearance so a long title never sits under the buttons
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.border,
+    ...(Platform.OS === "web" ? ({ zIndex: 2 } as any) : {}),
+  },
+  headerCenter: { alignItems: "center", justifyContent: "center", minHeight: 40 },
+  titleRow: { flexDirection: RTL_ROW, alignItems: "center", gap: 6 },
+  title: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: C.textPrimary,
+    writingDirection: "rtl",
+  },
+  subtitle: {
+    fontSize: 13,
+    color: C.textSecondary,
+    writingDirection: "rtl",
+    marginTop: 2,
   },
   cancelBtn: {
     position: "absolute",
@@ -164,8 +228,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: C.surfaceSubtle,
     alignItems: "center",
     justifyContent: "center",
+  },
+  saveBtn: {
+    position: "absolute",
+    ...FAB_RIGHT,
+    borderRadius: R.xl,
+  },
+  saveLabel: { fontSize: 14, fontWeight: "700" },
+  flex: { flex: 1 },
+  content: {
+    paddingHorizontal: S.lg,
+    paddingTop: S.lg,
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
   },
   sideArrow: {
     position: "absolute",
