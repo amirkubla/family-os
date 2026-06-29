@@ -121,6 +121,8 @@ const he = {
     noItems: "לא זוהו פריטים — נסו שוב",
     addItems: "הוסף {{count}} פריטים",
     noNote: "לא זוהה תוכן — נסו שוב",
+    reviewTitleTasks: "מטלות מההקלטה",
+    addTasks: "הוסף {{count}} מטלות",
     micDenied: "כדי להקליט יש לאשר גישה למיקרופון",
     error: "ההקלטה נכשלה — נסו שוב",
   },

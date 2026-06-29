@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Platform, ScrollView, Alert } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
@@ -14,15 +14,19 @@ import { useLocalSearchParams } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Chore } from "@src/models/chore";
 import {
+  addChoreRemote,
   toggleChoreDoneRemote,
   toggleChoreSelectedForTodayRemote,
   deleteChoreRemote,
   reorderChoresRemote,
 } from "@src/lib/sync/remoteCrud";
 import ChoreAddModal from "@src/components/ChoreAddModal";
+import VoiceReviewModal from "@src/components/VoiceReviewModal";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
+import { useChoreVoice } from "@src/hooks/useChoreVoice";
+import type { VoiceChoreResult } from "@src/lib/api/endpoints";
 import { t } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -151,6 +155,8 @@ export default function ChoresScreen() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
+  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useChoreVoice();
+  const [voiceResult, setVoiceResult] = useState<VoiceChoreResult | null>(null);
 
   useEffect(() => {
     if (modal === "add") {
@@ -158,6 +164,27 @@ export default function ChoresScreen() {
       setModalOpen(true);
     }
   }, [modal]);
+
+  // Tap to record; tap again to stop → transcribe → open the review sheet.
+  const handleMic = async () => {
+    try {
+      if (voiceStatus === "recording") {
+        const result = await stopAndTranscribe();
+        if (result) setVoiceResult(result);
+      } else if (voiceStatus === "idle") {
+        const ok = await startVoice();
+        if (!ok) Alert.alert(t("voice.micDenied"));
+      }
+    } catch {
+      Alert.alert(t("voice.error"));
+    }
+  };
+
+  // Add the reviewed tasks through the normal optimistic chore CRUD.
+  const handleVoiceConfirm = (items: VoiceChoreResult["items"]) => {
+    for (const it of items) addChoreRemote({ title: it.title });
+    setVoiceResult(null);
+  };
 
   const openEdit = (chore: Chore) => {
     setEditingChore(chore);
@@ -208,6 +235,23 @@ export default function ChoresScreen() {
         )}
       </ScrollView>
 
+      {/* Voice → tasks: record, transcribe via the Assistant, then open the
+          review sheet. Stacked above the "+" add FAB. */}
+      <FAB
+        icon={voiceStatus === "recording" ? "stop" : "microphone"}
+        loading={voiceStatus === "processing"}
+        style={[
+          styles.micFab,
+          { bottom: insets.bottom + S.lg + 68 },
+          voiceStatus === "recording" && { backgroundColor: C.red },
+        ]}
+        color="#FFF"
+        onPress={handleMic}
+        accessibilityRole="button"
+        accessibilityLabel={t("voice.record")}
+        testID="chore-voice-fab"
+      />
+
       <FAB
         icon="plus"
         testID="btn-add-chore"
@@ -227,6 +271,16 @@ export default function ChoresScreen() {
           setEditingChore(null);
         }}
         editChore={editingChore}
+      />
+
+      <VoiceReviewModal
+        visible={!!voiceResult}
+        transcript={voiceResult?.transcript ?? ""}
+        items={voiceResult?.items ?? []}
+        heading={t("voice.reviewTitleTasks")}
+        confirmLabel={(n) => t("voice.addTasks", { count: n })}
+        onConfirm={handleVoiceConfirm}
+        onDismiss={() => setVoiceResult(null)}
       />
       <ConfirmDeleteModal visible={confirmVisible} onConfirm={confirmDelete} onDismiss={dismissConfirm} />
     </SafeAreaView>
@@ -329,4 +383,6 @@ const styles = StyleSheet.create({
   choreActions: { flexDirection: RTL_ROW, alignItems: "center" },
   choreActionBtn: { margin: 0, width: 28, height: 28 },
   fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
+  // Voice FAB stacked just above the "+" add FAB, same side.
+  micFab: { position: "absolute", ...FAB_LEFT, bottom: S.lg, backgroundColor: C.teal },
 });

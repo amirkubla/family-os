@@ -21,7 +21,7 @@ import {
   addGroceryRemote,
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
-import GroceryVoiceReviewModal from "@src/components/GroceryVoiceReviewModal";
+import VoiceReviewModal from "@src/components/VoiceReviewModal";
 import { useGroceryVoice } from "@src/hooks/useGroceryVoice";
 import { inferGrocerySubcategory } from "@src/lib/groceryCategoryInfer";
 import type { VoiceGroceryResult } from "@src/lib/api/endpoints";
@@ -47,6 +47,9 @@ const LEGACY_EMOJI: Record<string, string> = {
   Cleaning: "🧹", Laundry: "👕", Kitchen: "🍳", Bathroom: "🚿",
   PaperGoods: "🧻", Tools: "🔧", Decor: "🖼️", Other: "📦",
 };
+
+/** Main shopping-category emoji for the voice review list. */
+const CAT_EMOJI: Record<string, string> = { grocery: "🛒", home: "🏠", health: "💊" };
 
 const EMPTY_KEYS: Record<ShoppingCategory, string> = {
   grocery: "grocery.emptyGrocery",
@@ -351,10 +354,14 @@ export default function GroceryScreen() {
         editItem={editingItem}
       />
 
-      <GroceryVoiceReviewModal
+      <VoiceReviewModal
         visible={!!voiceResult}
         transcript={voiceResult?.transcript ?? ""}
         items={voiceResult?.items ?? []}
+        getTitle={(it) => it.title + (it.qty ? `  ·  ${it.qty}` : "")}
+        getMeta={(it) =>
+          `${CAT_EMOJI[it.shopping_category] ?? "🛒"} ${shoppingCategoryLabel(it.shopping_category)}`
+        }
         onConfirm={handleVoiceConfirm}
         onDismiss={() => setVoiceResult(null)}
       />

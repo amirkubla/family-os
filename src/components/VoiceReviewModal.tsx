@@ -1,9 +1,9 @@
 /**
- * GroceryVoiceReviewModal — review parsed items from a voice clip before adding.
+ * VoiceReviewModal — review items parsed from a voice clip before adding.
  *
- * Shows the transcript + the items the Assistant parsed, lets the user drop any
- * wrong ones, and on confirm hands the kept items back to the grocery screen,
- * which adds them through the normal optimistic CRUD.
+ * Generic over the item shape: shows the transcript + a toggleable list, lets
+ * the user drop wrong ones, and hands the kept items back on confirm. Shared by
+ * the grocery + chore voice flows — each supplies its own per-item labels.
  */
 
 import React, { useEffect, useState } from "react";
@@ -14,29 +14,36 @@ import ModalWrapper from "@src/components/ModalWrapper";
 import { MS } from "@src/ui/modalStyles";
 import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { t, shoppingCategoryLabel } from "@src/i18n";
-import type { VoiceGroceryResult } from "@src/lib/api/endpoints";
+import { t } from "@src/i18n";
 
-type Item = VoiceGroceryResult["items"][number];
-
-interface Props {
+interface Props<T extends { title: string }> {
   visible: boolean;
   transcript: string;
-  items: Item[];
-  onConfirm: (items: Item[]) => void;
+  items: T[];
+  /** Heading. Default: t("voice.reviewTitle"). */
+  heading?: string;
+  /** Primary line per item. Default: item.title. */
+  getTitle?: (item: T) => string;
+  /** Optional secondary line per item (e.g. grocery category). */
+  getMeta?: (item: T) => string | null;
+  /** Confirm-button label given the kept count. Default: addItems. */
+  confirmLabel?: (count: number) => string;
+  onConfirm: (kept: T[]) => void;
   onDismiss: () => void;
 }
 
-const CAT_EMOJI: Record<string, string> = { grocery: "🛒", home: "🏠", health: "💊" };
-
-export default function GroceryVoiceReviewModal({
+export default function VoiceReviewModal<T extends { title: string }>({
   visible,
   transcript,
   items,
+  heading,
+  getTitle,
+  getMeta,
+  confirmLabel,
   onConfirm,
   onDismiss,
-}: Props) {
-  const [list, setList] = useState<Item[]>(items);
+}: Props<T>) {
+  const [list, setList] = useState<T[]>(items);
 
   useEffect(() => {
     if (visible) setList(items);
@@ -46,7 +53,7 @@ export default function GroceryVoiceReviewModal({
 
   return (
     <ModalWrapper visible={visible} onDismiss={onDismiss}>
-      <Text style={MS.heading}>{t("voice.reviewTitle")}</Text>
+      <Text style={MS.heading}>{heading ?? t("voice.reviewTitle")}</Text>
       {transcript ? (
         <View style={styles.transcriptBox}>
           <Text style={styles.transcriptText}>🎙️  {transcript}</Text>
@@ -60,33 +67,37 @@ export default function GroceryVoiceReviewModal({
         </View>
       ) : (
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-          {list.map((it, i) => (
-            <View key={i} style={styles.row}>
-              <IconButton
-                icon="close"
-                size={18}
-                iconColor={C.textSecondary}
-                onPress={() => remove(i)}
-                accessibilityLabel={t("delete")}
-              />
-              <View style={styles.info}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {it.title}
-                  {it.qty ? `  ·  ${it.qty}` : ""}
-                </Text>
-                <Text style={styles.meta}>
-                  {CAT_EMOJI[it.shopping_category] ?? "🛒"} {shoppingCategoryLabel(it.shopping_category)}
-                </Text>
+          {list.map((it, i) => {
+            const meta = getMeta?.(it);
+            return (
+              <View key={i} style={styles.row}>
+                <IconButton
+                  icon="close"
+                  size={18}
+                  iconColor={C.textSecondary}
+                  onPress={() => remove(i)}
+                  accessibilityLabel={t("delete")}
+                />
+                <View style={styles.info}>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {getTitle ? getTitle(it) : it.title}
+                  </Text>
+                  {meta ? <Text style={styles.meta}>{meta}</Text> : null}
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </ScrollView>
       )}
 
       <View style={MS.actions}>
         <Button onPress={onDismiss}>{t("cancel")}</Button>
-        <Button mode="contained" disabled={list.length === 0} onPress={() => onConfirm(list)}>
-          {t("voice.addItems", { count: list.length })}
+        <Button
+          mode="contained"
+          disabled={list.length === 0}
+          onPress={() => onConfirm(list)}
+        >
+          {(confirmLabel ?? ((n: number) => t("voice.addItems", { count: n })))(list.length)}
         </Button>
       </View>
     </ModalWrapper>
@@ -108,11 +119,7 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
     fontStyle: "italic",
   },
-  empty: {
-    alignItems: "center",
-    paddingVertical: S.xl,
-    gap: S.sm,
-  },
+  empty: { alignItems: "center", paddingVertical: S.xl, gap: S.sm },
   emptyEmoji: { fontSize: 34 },
   emptyText: {
     fontSize: 14,
