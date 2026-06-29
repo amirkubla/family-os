@@ -168,7 +168,7 @@ export default function CustomTabBar({
           >
             <Ionicons
               name={TAB_ICONS[route.name] ?? "ellipse"}
-              size={24}
+              size={28}
               color={isFocused ? C.primary : "#FFFFFF"}
             />
           </Pressable>
@@ -185,7 +185,7 @@ export default function CustomTabBar({
           accessibilityLabel={t(op.labelKey)}
           testID={`nav-op-${op.route}`}
         >
-          <Ionicons name={op.icon} size={24} color="#FFFFFF" />
+          <Ionicons name={op.icon} size={28} color="#FFFFFF" />
         </Pressable>
       ),
     })),
@@ -201,7 +201,7 @@ export default function CustomTabBar({
                 accessibilityLabel={t("home.kids")}
                 testID="nav-kids"
               >
-                <Ionicons name="happy" size={24} color="#FFFFFF" />
+                <Ionicons name="happy" size={28} color="#FFFFFF" />
               </Pressable>
             ),
           },
@@ -234,7 +234,7 @@ export default function CustomTabBar({
           accessibilityLabel={t("nav.back")}
           testID="nav-kids-back"
         >
-          <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+          <Ionicons name="chevron-forward" size={28} color="#FFFFFF" />
         </Pressable>
       ),
     },
@@ -333,8 +333,8 @@ const styles = StyleSheet.create({
     borderColor: C.primary,
   },
   kidEmoji: {
-    fontSize: 24,
-    lineHeight: 28,
+    fontSize: 26,
+    lineHeight: 30,
     textAlign: "center",
   },
   fab: {
