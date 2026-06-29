@@ -48,11 +48,16 @@ export default function GroceryVoiceReviewModal({
     <ModalWrapper visible={visible} onDismiss={onDismiss}>
       <Text style={MS.heading}>{t("voice.reviewTitle")}</Text>
       {transcript ? (
-        <Text style={[MS.subtitle, styles.transcript]}>“{transcript}”</Text>
+        <View style={styles.transcriptBox}>
+          <Text style={styles.transcriptText}>🎙️  {transcript}</Text>
+        </View>
       ) : null}
 
       {list.length === 0 ? (
-        <Text style={[MS.subtitle, { textAlign: TEXT_RIGHT }]}>{t("voice.noItems")}</Text>
+        <View style={styles.empty}>
+          <Text style={styles.emptyEmoji}>🤔</Text>
+          <Text style={styles.emptyText}>{t("voice.noItems")}</Text>
+        </View>
       ) : (
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           {list.map((it, i) => (
@@ -89,11 +94,31 @@ export default function GroceryVoiceReviewModal({
 }
 
 const styles = StyleSheet.create({
-  transcript: {
+  transcriptBox: {
+    backgroundColor: C.surfaceSubtle,
+    borderRadius: R.md,
+    paddingVertical: S.sm,
+    paddingHorizontal: S.md,
+    marginBottom: S.md,
+  },
+  transcriptText: {
+    fontSize: 14,
+    color: C.textSecondary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
     fontStyle: "italic",
-    marginBottom: S.sm,
+  },
+  empty: {
+    alignItems: "center",
+    paddingVertical: S.xl,
+    gap: S.sm,
+  },
+  emptyEmoji: { fontSize: 34 },
+  emptyText: {
+    fontSize: 14,
+    color: C.textSecondary,
+    textAlign: "center",
+    writingDirection: "rtl",
   },
   scroll: { maxHeight: 300 },
   row: {
