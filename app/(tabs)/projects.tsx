@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Platform, ScrollView, Alert } from "react-native";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
@@ -19,6 +19,7 @@ import OwnerBadge from "@src/components/OwnerBadge";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
+import { useProjectVoice } from "@src/hooks/useProjectVoice";
 import { t, statusLabel } from "@src/i18n";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -153,13 +154,39 @@ export default function ProjectsScreen() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  // Voice-project draft pre-filled into the editor (cleared on every other open).
+  const [voiceDraft, setVoiceDraft] = useState<{ title?: string; description?: string } | undefined>(undefined);
+  const { status: voiceStatus, start: startVoice, stopAndTranscribe } = useProjectVoice();
 
   useEffect(() => {
     if (modal === "add") {
+      setVoiceDraft(undefined);
       setEditingProject(null);
       setModalOpen(true);
     }
   }, [modal]);
+
+  // Tap to record; tap again to stop → transcribe → open the editor on the
+  // generated draft (name + description) for review before saving.
+  const handleMic = async () => {
+    try {
+      if (voiceStatus === "recording") {
+        const result = await stopAndTranscribe();
+        if (result && result.description.trim()) {
+          setVoiceDraft({ title: result.title || undefined, description: result.description });
+          setEditingProject(null);
+          setModalOpen(true);
+        } else if (result) {
+          Alert.alert(t("voice.noNote"));
+        }
+      } else if (voiceStatus === "idle") {
+        const ok = await startVoice();
+        if (!ok) Alert.alert(t("voice.micDenied"));
+      }
+    } catch {
+      Alert.alert(t("voice.error"));
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -186,6 +213,7 @@ export default function ProjectsScreen() {
                 index={index}
                 count={projects.length}
                 onEdit={() => {
+                  setVoiceDraft(undefined);
                   setEditingProject(item);
                   setModalOpen(true);
                 }}
@@ -197,6 +225,23 @@ export default function ProjectsScreen() {
         )}
       </ScrollView>
 
+      {/* Voice → project: record, transcribe via the Assistant, then open the
+          editor pre-filled for review. Stacked above the "+" add FAB. */}
+      <FAB
+        icon={voiceStatus === "recording" ? "stop" : "microphone"}
+        loading={voiceStatus === "processing"}
+        style={[
+          styles.micFab,
+          { bottom: insets.bottom + S.lg + 68 },
+          voiceStatus === "recording" && { backgroundColor: C.red },
+        ]}
+        color="#FFF"
+        onPress={handleMic}
+        accessibilityRole="button"
+        accessibilityLabel={t("voice.record")}
+        testID="project-voice-fab"
+      />
+
       <FAB
         icon="plus"
         testID="btn-add-project"
@@ -204,6 +249,7 @@ export default function ProjectsScreen() {
         style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: PROJECT_COLORS.accent }]}
         color="#FFF"
         onPress={() => {
+          setVoiceDraft(undefined);
           setEditingProject(null);
           setModalOpen(true);
         }}
@@ -214,9 +260,11 @@ export default function ProjectsScreen() {
         onDismiss={() => {
           setModalOpen(false);
           setEditingProject(null);
+          setVoiceDraft(undefined);
         }}
         editProject={editingProject}
         initialStatus={!editingProject && initialStatus ? (initialStatus as any) : undefined}
+        initialDraft={voiceDraft}
       />
       <ConfirmDeleteModal visible={confirmVisible} onConfirm={confirmDelete} onDismiss={dismissConfirm} />
     </SafeAreaView>
@@ -292,4 +340,6 @@ const styles = StyleSheet.create({
   projectProgressFill: { height: 6, borderRadius: 3 },
   projectProgressLabel: { fontSize: 12, fontWeight: "700", minWidth: 36, textAlign: "left" },
   fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
+  // Voice FAB stacked just above the "+" add FAB, same side.
+  micFab: { position: "absolute", ...FAB_LEFT, bottom: S.lg, backgroundColor: C.teal },
 });

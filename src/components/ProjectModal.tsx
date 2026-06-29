@@ -169,9 +169,14 @@ interface Props {
   lockedKidName?: string;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
   carousel?: ModalCarousel;
+  /**
+   * When set (and not editing), pre-fills name + description for review — used
+   * by the voice-project flow to open the editor on a transcribed draft.
+   */
+  initialDraft?: { title?: string; description?: string };
 }
 
-export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName, carousel }: Props) {
+export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName, carousel, initialDraft }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>(initialStatus ?? "idea");
@@ -194,11 +199,12 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       setKidId(editProject.kidId);
       setOwnerMemberId(editProject.ownerMemberId);
     } else {
-      setTitle(""); setDescription(""); setStatus(initialStatus ?? "idea"); setProgress(0);
+      setTitle(initialDraft?.title ?? ""); setDescription(initialDraft?.description ?? "");
+      setStatus(initialStatus ?? "idea"); setProgress(0);
       setKidId(defaultKidId);
       setOwnerMemberId(undefined);
     }
-  }, [editProject, visible, defaultKidId, initialStatus]);
+  }, [editProject, visible, defaultKidId, initialStatus, initialDraft]);
 
   const reset = () => {
     setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);

@@ -264,6 +264,12 @@ export interface VoiceChoreResult {
   items: { title: string }[];
 }
 
+export interface VoiceProjectResult {
+  transcript: string;
+  title: string;
+  description: string;
+}
+
 /**
  * Build a multipart body carrying the recorded audio. On web the recorder
  * yields a blob: URL → fetch it into a real Blob (the RN {uri} file trick is
@@ -312,6 +318,14 @@ export const voiceApi = {
     const res = await fetch(`${ASSISTANT_URL}/voice/chore`, { method: "POST", body: form });
     if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
     return res.json() as Promise<VoiceChoreResult>;
+  },
+
+  // Project: returns the transcript as the description + an LLM-generated name.
+  project: async (audioUri: string): Promise<VoiceProjectResult> => {
+    const form = await buildAudioForm(audioUri);
+    const res = await fetch(`${ASSISTANT_URL}/voice/project`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(`Assistant voice API ${res.status}`);
+    return res.json() as Promise<VoiceProjectResult>;
   },
 };
 
