@@ -248,7 +248,6 @@ export default function FamilyEventModal({
       onSave={handleSubmit(doSubmit)}
       saveDisabled={submitting}
       saveLoading={submitting}
-      saveLabel={editEvent ? t("save") : t("add")}
     >
       {/* ── Title & Assignee section ── */}
       <View style={MS.section}>

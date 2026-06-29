@@ -203,7 +203,6 @@ export default function ScheduleBlockModal({
       icon="time-outline"
       title={editBlock ? t("blockModal.editTitle") : t("blockModal.addTitle")}
       onSave={handleSubmit(doSubmit)}
-      saveLabel={editBlock ? t("save") : t("add")}
     >
       {editKid && (
         <View style={MS.kidBadge}>

@@ -69,7 +69,6 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
       onSave={handleSubmit}
       saveDisabled={!title.trim() || submitting}
       saveLoading={submitting}
-      saveLabel={editChore ? t("save") : t("add")}
     >
       <TextInput
         testID="input-chore-title"

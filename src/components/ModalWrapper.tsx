@@ -9,10 +9,11 @@ import {
   ScrollView,
   Animated,
   Easing,
+  ActivityIndicator,
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Portal } from "react-native-paper";
+import { Portal } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { C, S, R } from "@src/ui/tokens";
@@ -20,8 +21,8 @@ import { FAB_LEFT, FAB_RIGHT } from "@src/ui/fabAnchor";
 import { RTL_ROW } from "@src/ui/rtl";
 import { t } from "@src/i18n";
 
-/** Dark-blue accent for the docked header — title, logo, and Save CTA. */
-const MODAL_BLUE = "#1E40AF";
+/** Accent for the docked header — title, logo, and Save CTA. */
+const MODAL_ACCENT = "#006666";
 
 /** When provided, ModalWrapper renders prev/next arrows flanking the content. */
 export interface ModalCarousel {
@@ -114,7 +115,7 @@ export default function ModalWrapper({
           <View style={styles.headerCenter}>
             {title ? (
               <View style={styles.titleRow}>
-                {icon ? <Ionicons name={icon} size={20} color={MODAL_BLUE} /> : null}
+                {icon ? <Ionicons name={icon} size={20} color={MODAL_ACCENT} /> : null}
                 <Text style={styles.title} numberOfLines={1}>{title}</Text>
               </View>
             ) : null}
@@ -133,21 +134,23 @@ export default function ModalWrapper({
           </Pressable>
 
           {onSave ? (
-            <Button
-              mode="contained"
-              icon="check"
+            <Pressable
               onPress={onSave}
-              disabled={saveDisabled}
-              loading={saveLoading}
-              style={[styles.saveBtn, { top: btnTop }]}
-              contentStyle={styles.saveContent}
-              labelStyle={styles.saveLabel}
-              buttonColor={MODAL_BLUE}
-              textColor="#FFFFFF"
+              disabled={saveDisabled || saveLoading}
+              style={[styles.saveBtn, { top: btnTop }, (saveDisabled || saveLoading) && styles.saveBtnDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel={saveLabel ?? t("save")}
               testID="btn-save"
             >
-              {saveLabel ?? t("save")}
-            </Button>
+              {saveLoading ? (
+                <ActivityIndicator size={16} color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                  <Text style={styles.saveLabel}>{saveLabel ?? t("save")}</Text>
+                </>
+              )}
+            </Pressable>
           ) : null}
         </View>
 
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: MODAL_BLUE,
+    color: MODAL_ACCENT,
     writingDirection: "rtl",
   },
   subtitle: {
@@ -239,12 +242,17 @@ const styles = StyleSheet.create({
   saveBtn: {
     position: "absolute",
     ...FAB_RIGHT,
-    borderRadius: R.xl,
-    height: 40,
+    flexDirection: RTL_ROW,
+    alignItems: "center",
     justifyContent: "center",
+    gap: 5,
+    height: 40,
+    paddingHorizontal: S.lg,
+    borderRadius: R.xl,
+    backgroundColor: MODAL_ACCENT,
   },
-  saveContent: { height: 40 },
-  saveLabel: { fontSize: 14, fontWeight: "700" },
+  saveBtnDisabled: { opacity: 0.45 },
+  saveLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "700", writingDirection: "rtl" },
   flex: { flex: 1 },
   content: {
     paddingHorizontal: S.lg,

@@ -124,7 +124,6 @@ export default function GroceryAddModal({
       onSave={handleSubmit}
       saveDisabled={!title.trim() || submitting}
       saveLoading={submitting}
-      saveLabel={isEditing ? t("save") : t("add")}
     >
       {/* ── Product details ── */}
       <View style={MS.section}>

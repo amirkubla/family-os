@@ -53,7 +53,6 @@ export default function BudgetCategoryModal({ visible, onDismiss, editCategory, 
       icon="pricetag-outline"
       title={editCategory ? t("budget.editCategory") : t("budget.addCategory")}
       onSave={handleSave}
-      saveLabel={t("save")}
     >
       <Text style={MS.label}>{t("budget.categoryName")}</Text>
       <TextInput

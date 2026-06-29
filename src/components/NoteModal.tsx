@@ -91,7 +91,6 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
       onSave={handleSubmit}
       saveDisabled={!body.trim() || submitting}
       saveLoading={submitting}
-      saveLabel={editNote ? t("save") : t("add")}
     >
       <TextInput
         testID="input-note-title"

@@ -156,7 +156,6 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
       title={(editExpense ? t("payment.edit") : t("payment.add")) +
         (lockedKidName ? ` ל${lockedKidName}` : "")}
       onSave={handleSave}
-      saveLabel={t("save")}
     >
       {/* Name */}
       <Text style={MS.label}>{t("payment.name")}</Text>

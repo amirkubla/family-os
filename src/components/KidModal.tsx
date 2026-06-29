@@ -60,7 +60,6 @@ export default function KidModal({ visible, onDismiss, editKid }: Props) {
       icon="happy-outline"
       title={isEditing ? t("settings.editKid") : t("settings.addKid")}
       onSave={handleSubmit}
-      saveLabel={t("save")}
     >
       <TextInput
         placeholder={t("settings.kidName")}

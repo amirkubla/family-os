@@ -71,7 +71,6 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
       icon="person-outline"
       title={isEditing ? t("settings.editMember") : t("settings.addMember")}
       onSave={handleSubmit}
-      saveLabel={t("save")}
     >
       <TextInput
         placeholder={t("settings.memberName")}

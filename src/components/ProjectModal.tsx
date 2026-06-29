@@ -250,7 +250,6 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       onSave={handleSubmit}
       saveDisabled={!title.trim() || submitting}
       saveLoading={submitting}
-      saveLabel={editProject ? t("save") : t("add")}
     >
       <TextInput
         testID="input-project-title"

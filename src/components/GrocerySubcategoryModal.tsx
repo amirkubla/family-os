@@ -49,7 +49,6 @@ export default function GrocerySubcategoryModal({ visible, onDismiss, editSubcat
       icon="pricetags-outline"
       title={editSubcategory ? t("customization.editSubcategory") : t("customization.addSubcategoryTitle")}
       onSave={handleSave}
-      saveLabel={t("save")}
     >
       <Text style={MS.label}>{t("customization.subcategoryName")}</Text>
       <TextInput

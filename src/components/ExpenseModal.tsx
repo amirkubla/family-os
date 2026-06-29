@@ -173,7 +173,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       icon="card-outline"
       title={editExpense ? t("budget.editExpense") : t("budget.addExpense")}
       onSave={handleSave}
-      saveLabel={t("save")}
     >
       {/* Payment-type selector — underline tabs (same as grocery/calendar) */}
       <View style={styles.typeSelector}>
