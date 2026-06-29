@@ -169,7 +169,7 @@ export default function CustomTabBar({
             <Ionicons
               name={TAB_ICONS[route.name] ?? "ellipse"}
               size={28}
-              color={isFocused ? C.primary : "#FFFFFF"}
+              color={isFocused ? "#FFFFFF" : C.primary}
             />
           </Pressable>
         ),
@@ -185,7 +185,7 @@ export default function CustomTabBar({
           accessibilityLabel={t(op.labelKey)}
           testID={`nav-op-${op.route}`}
         >
-          <Ionicons name={op.icon} size={28} color="#FFFFFF" />
+          <Ionicons name={op.icon} size={28} color={C.primary} />
         </Pressable>
       ),
     })),
@@ -201,7 +201,7 @@ export default function CustomTabBar({
                 accessibilityLabel={t("home.kids")}
                 testID="nav-kids"
               >
-                <Ionicons name="happy" size={28} color="#FFFFFF" />
+                <Ionicons name="happy" size={28} color={C.primary} />
               </Pressable>
             ),
           },
@@ -234,7 +234,7 @@ export default function CustomTabBar({
           accessibilityLabel={t("nav.back")}
           testID="nav-kids-back"
         >
-          <Ionicons name="chevron-forward" size={28} color="#FFFFFF" />
+          <Ionicons name="chevron-forward" size={28} color={C.primary} />
         </Pressable>
       ),
     },
@@ -316,21 +316,21 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   // Icon-only circular menu button (no text labels — icons are intuitive).
-  // Themed fill (C.primary) with a thick white ring and a white icon.
+  // White fill with a thick themed (C.primary) ring and a themed icon.
   circle: {
     width: 54,
     height: 54,
     borderRadius: 27,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: C.primary,
-    borderWidth: 2.5,
-    borderColor: "#FFFFFF",
-  },
-  // Current tab — inverted (white fill, themed ring + icon) as the selected cue.
-  circleActive: {
     backgroundColor: "#FFFFFF",
+    borderWidth: 2.5,
     borderColor: C.primary,
+  },
+  // Current tab — inverted (themed fill, white ring + icon) as the selected cue.
+  circleActive: {
+    backgroundColor: C.primary,
+    borderColor: "#FFFFFF",
   },
   kidEmoji: {
     fontSize: 26,
