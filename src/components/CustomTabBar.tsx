@@ -333,14 +333,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   // Icon-only circular menu button (no text labels — icons are intuitive).
-  // Transparent interior with a thick C.primary ring; the icon keeps its colour.
+  // White interior with a thick C.primary ring; the icon keeps its colour.
   circle: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     borderWidth: 3,
     borderColor: C.primary,
   },
