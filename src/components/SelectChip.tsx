@@ -3,9 +3,9 @@
  *
  * Matches the project/note owner-picker look: a Pressable pill that, when
  * selected, fills with `color` at 12% (`color + "20"`), gets a 2px `color`
- * border, bold `color` text, and a ✓. Unselected is white with a hairline
- * border. `color` is the member/kid's own colour, or the family theme for
- * generic options (e.g. "ללא" / "כולם").
+ * border, and bold `color` text. Unselected is white with a hairline border.
+ * `color` is the member/kid's own colour, or the family theme for generic
+ * options (e.g. "ללא" / "כולם").
  */
 
 import React from "react";
@@ -44,7 +44,6 @@ export default function SelectChip({ label, selected, onPress, color, emoji, tes
     >
       {emoji ? <Text style={styles.emoji}>{emoji}</Text> : null}
       <Text style={[styles.name, selected && { color, fontWeight: "800" }]}>{label}</Text>
-      {selected ? <Text style={styles.check}>✓</Text> : null}
     </Pressable>
   );
 }
@@ -60,5 +59,4 @@ const styles = StyleSheet.create({
   },
   emoji: { fontSize: 18 },
   name: { fontSize: 14, fontWeight: "600", color: C.textPrimary, writingDirection: "rtl" },
-  check: { fontSize: 12, marginStart: 2 },
 });
