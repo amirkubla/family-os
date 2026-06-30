@@ -192,13 +192,14 @@ function KidBlockRow({
 // Screen
 // ---------------------------------------------------------------------------
 
-type CalendarView = "month" | "week" | "day";
+type CalendarView = "month" | "week" | "3day" | "day";
 
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const { modal } = useLocalSearchParams<{ modal?: string }>();
-  const [calendarView, setCalendarView] = useState<CalendarView>("month");
+  // 3-day is the default view on every visit to the calendar.
+  const [calendarView, setCalendarView] = useState<CalendarView>("3day");
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
   const selectedDow = dayOfWeekFromYMD(selectedDate);
   const dayEvents = useFamilyEventsForDate(selectedDate, selectedDow);
@@ -440,9 +441,10 @@ export default function CalendarScreen() {
             value={calendarView}
             onChange={(v) => setCalendarView(v as CalendarView)}
             options={[
-              { value: "month", label: t("calendar.monthView") },
-              { value: "week", label: t("calendar.weekView") },
+              { value: "3day", label: t("calendar.threeDayView") },
               { value: "day", label: t("calendar.dayView") },
+              { value: "week", label: t("calendar.weekView") },
+              { value: "month", label: t("calendar.monthView") },
             ]}
             testIDPrefix="calendar-view"
           />
@@ -457,6 +459,17 @@ export default function CalendarScreen() {
                 onSelectDate={setSelectedDate}
                 markedDates={markedDates}
                 accentColor={C.purple}
+              />
+            )}
+            {calendarView === "3day" && (
+              <WeekCalendar
+                dayCount={3}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                markedDates={markedDates}
+                accentColor={C.purple}
+                onEventPress={handleGridEventPress}
+                onSlotPress={handleSlotPress}
               />
             )}
             {calendarView === "week" && (

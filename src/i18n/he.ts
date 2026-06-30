@@ -295,6 +295,7 @@ const he = {
     oneTimeEvent: "חד פעמי",
     monthView: "חודש",
     weekView: "שבוע",
+    threeDayView: "3 ימים",
     dayView: "יום",
     addEvent: "הוספת אירוע",
   },

@@ -43,6 +43,12 @@ interface Props {
   accentColor?: string;
   onEventPress?: (id: string, source: "event" | "block") => void;
   onSlotPress?: (date: string, startMinutes: number, endMinutes: number) => void;
+  /**
+   * How many day columns to show. 7 (default) = a Sunday-anchored week; a
+   * shorter count (e.g. 3) anchors on the selected date and pages by that many
+   * days. Lets one component back both the week and the 3-day views.
+   */
+  dayCount?: number;
   // When set, show ONLY this kid's items: family events assigned to the kid
   // (assigneeType==="kid" && assigneeId===kidId) and the kid's schedule
   // blocks. Unset = the family-wide view (all events + all kids' blocks).
@@ -190,12 +196,18 @@ export default function WeekCalendar({
   accentColor = DEFAULT_ACCENT,
   onEventPress,
   onSlotPress,
+  dayCount = 7,
   kidId,
 }: Props) {
   // ── Week navigation ──
   const [weekOffset, setWeekOffset] = React.useState(0);
 
-  const baseWeekStart = useMemo(() => startOfWeek(selectedDate), [selectedDate]);
+  const baseWeekStart = useMemo(() => {
+    // Week view (7) starts on Sunday; shorter views anchor on the selected date.
+    if (dayCount >= 7) return startOfWeek(selectedDate);
+    const [y, m, d] = selectedDate.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }, [selectedDate, dayCount]);
 
   React.useEffect(() => {
     setWeekOffset(0);
@@ -203,13 +215,13 @@ export default function WeekCalendar({
 
   const weekStart = useMemo(() => {
     const d = new Date(baseWeekStart);
-    d.setDate(d.getDate() + weekOffset * 7);
+    d.setDate(d.getDate() + weekOffset * dayCount);
     return d;
-  }, [baseWeekStart, weekOffset]);
+  }, [baseWeekStart, weekOffset, dayCount]);
 
   const days = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
+    () => Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i)),
+    [weekStart, dayCount],
   );
 
   const today = useMemo(() => ymd(new Date()), []);
@@ -219,7 +231,7 @@ export default function WeekCalendar({
 
   const weekLabel = useMemo(() => {
     const start = days[0];
-    const end = days[6];
+    const end = days[days.length - 1];
     if (start.getMonth() === end.getMonth()) {
       const month = end.toLocaleString(LOCALE, { month: "long", year: "numeric" });
       return `${start.getDate()}–${end.getDate()} ${month}`;
@@ -365,7 +377,7 @@ export default function WeekCalendar({
               style={styles.dayHeaderCell}
               onPress={() => onSelectDate(dateStr)}
             >
-              <Text style={styles.dowLabel}>{DAY_LABELS[i]}</Text>
+              <Text style={styles.dowLabel}>{DAY_LABELS[day.getDay()]}</Text>
               <View
                 style={[
                   styles.dayNumCircle,
