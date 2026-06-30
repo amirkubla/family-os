@@ -556,6 +556,8 @@ const he = {
     editExpense: "עריכת הוצאה",
     typeSingle: "חד פעמי",
     typeRecurring: "קבוע",
+    paymentType: "סוג תשלום",
+    frequency: "תדירות",
     paymentTitle: "כותרת",
     paymentTitlePlaceholder: "לדוגמה: חוג ציור",
     amount: "סכום (₪)",
