@@ -232,7 +232,7 @@ export default function ProjectsScreen() {
         icon="plus"
         testID="btn-add-project"
         accessibilityLabel="btn-add-project"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 25 }]}
         color="#FFF"
         onPress={() => {
           setVoiceDraft(undefined);

@@ -216,7 +216,7 @@ export default function NotesScreen() {
         customSize={50}
         icon="plus"
         testID="btn-add-note"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 25 }]}
         color="#FFF"
         onPress={() => {
           setVoiceDraft(undefined);

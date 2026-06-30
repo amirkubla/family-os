@@ -240,7 +240,7 @@ export default function ChoresScreen() {
         icon="plus"
         testID="btn-add-chore"
         accessibilityLabel="btn-add-chore"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 25 }]}
         color="#FFF"
         onPress={() => {
           setEditingChore(null);

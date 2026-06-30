@@ -1033,7 +1033,7 @@ export default function KidScheduleScreen() {
         <FAB
           customSize={50}
           icon="plus"
-          style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
+          style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 25 }]}
           color="#FFF"
           onPress={openAddCarousel}
         />
