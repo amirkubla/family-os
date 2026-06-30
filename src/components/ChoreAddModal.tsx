@@ -13,9 +13,14 @@ interface Props {
   visible: boolean;
   onDismiss: () => void;
   editChore?: Chore | null;
+  /** Pre-assign to a member when opening fresh (parent-page context). */
+  defaultMemberId?: string;
+  /** When set (parent-page context), lock the chore to this member: the
+   *  assignee picker is hidden and the member's name shows in the title. */
+  lockedMemberName?: string;
 }
 
-export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) {
+export default function ChoreAddModal({ visible, onDismiss, editChore, defaultMemberId, lockedMemberName }: Props) {
   const [title, setTitle] = useState("");
   // Assignee is a member XOR a kid (mirrors notes' OwnerPicker).
   const [assignedToMemberId, setAssignedToMemberId] = useState<string | undefined>(undefined);
@@ -34,10 +39,10 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
       setKidId(editChore.kidId);
     } else {
       setTitle("");
-      setAssignedToMemberId(undefined);
+      setAssignedToMemberId(defaultMemberId);
       setKidId(undefined);
     }
-  }, [editChore, visible]);
+  }, [editChore, visible, defaultMemberId]);
 
   const reset = () => { setTitle(""); setAssignedToMemberId(undefined); setKidId(undefined); };
 
@@ -63,7 +68,8 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
       visible={visible}
       onDismiss={handleDismiss}
       icon="checkbox-outline"
-      title={editChore ? t("choreModal.editTitle") : t("choreModal.title")}
+      title={(editChore ? t("choreModal.editTitle") : t("choreModal.title")) +
+        (lockedMemberName ? ` ל${lockedMemberName}` : "")}
       onSave={handleSubmit}
       saveDisabled={!title.trim() || submitting}
       saveLoading={submitting}
@@ -86,12 +92,15 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
         />
       </View>
 
-      {/* Assignee — its own section; a family member OR a kid (or nobody). */}
-      <OwnerPicker
-        kidId={kidId}
-        ownerMemberId={assignedToMemberId}
-        onChange={(next) => { setAssignedToMemberId(next.ownerMemberId); setKidId(next.kidId); }}
-      />
+      {/* Assignee — its own section; a family member OR a kid (or nobody).
+          Hidden when locked to a member (parent-page context). */}
+      {!lockedMemberName && (
+        <OwnerPicker
+          kidId={kidId}
+          ownerMemberId={assignedToMemberId}
+          onChange={(next) => { setAssignedToMemberId(next.ownerMemberId); setKidId(next.kidId); }}
+        />
+      )}
     </ModalWrapper>
   );
 }

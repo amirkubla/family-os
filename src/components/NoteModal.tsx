@@ -22,6 +22,11 @@ interface Props {
    * picker is hidden and the kid's name is shown in the modal title.
    */
   lockedKidName?: string;
+  /** Pre-select a member owner when opening fresh (parent-page context). */
+  defaultOwnerMemberId?: string;
+  /** When set (parent-page context), lock the note to this member: the owner
+   *  picker is hidden and the member's name is shown in the modal title. */
+  lockedMemberName?: string;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
   carousel?: ModalCarousel;
   /**
@@ -31,7 +36,7 @@ interface Props {
   initialDraft?: { title?: string; body: string };
 }
 
-export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, lockedKidName, carousel, initialDraft }: Props) {
+export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, lockedKidName, defaultOwnerMemberId, lockedMemberName, carousel, initialDraft }: Props) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [kidId, setKidId] = useState<string | undefined>(undefined);
@@ -53,9 +58,9 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
       setTitle(initialDraft?.title ?? "");
       setBody(initialDraft?.body ?? "");
       setKidId(defaultKidId);
-      setOwnerMemberId(undefined);
+      setOwnerMemberId(defaultOwnerMemberId);
     }
-  }, [editNote, visible, defaultKidId, initialDraft]);
+  }, [editNote, visible, defaultKidId, defaultOwnerMemberId, initialDraft]);
 
   const reset = () => { setTitle(""); setBody(""); setKidId(undefined); setOwnerMemberId(undefined); };
 
@@ -87,7 +92,7 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
       carousel={carousel}
       icon="document-text-outline"
       title={(editNote ? t("noteModal.editTitle") : t("noteModal.addTitle")) +
-        (lockedKidName ? ` ל${lockedKidName}` : "")}
+        ((lockedKidName ?? lockedMemberName) ? ` ל${lockedKidName ?? lockedMemberName}` : "")}
       onSave={handleSubmit}
       saveDisabled={!body.trim() || submitting}
       saveLoading={submitting}
@@ -116,8 +121,8 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
         contentStyle={[MS.inputContent, { minHeight: 150 }]}
       />
 
-      {/* Hidden in kid-page context — the note is locked to that kid. */}
-      {!lockedKidName && (
+      {/* Hidden in kid/parent-page context — the note is locked to that person. */}
+      {!(lockedKidName || lockedMemberName) && (
         <OwnerPicker
           kidId={kidId}
           ownerMemberId={ownerMemberId}

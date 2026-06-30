@@ -200,6 +200,7 @@ const he = {
     statProjects: "פרויקטים",
     statPaid: "שולם",
     noItems: "אין פריטים משויכים ל{{name}}",
+    noneYet: "אין עדיין",
     recurring: "קבוע",
     oneTime: "חד פעמי",
     done: "בוצע",

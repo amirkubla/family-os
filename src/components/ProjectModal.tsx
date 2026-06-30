@@ -170,6 +170,11 @@ interface Props {
    * picker is hidden and the kid's name is shown in the modal title.
    */
   lockedKidName?: string;
+  /** Pre-select a member owner when opening fresh (parent-page context). */
+  defaultOwnerMemberId?: string;
+  /** When set (parent-page context), lock the project to this member: the owner
+   *  picker is hidden and the member's name is shown in the modal title. */
+  lockedMemberName?: string;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
   carousel?: ModalCarousel;
   /**
@@ -179,7 +184,7 @@ interface Props {
   initialDraft?: { title?: string; description?: string };
 }
 
-export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName, carousel, initialDraft }: Props) {
+export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName, defaultOwnerMemberId, lockedMemberName, carousel, initialDraft }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>(initialStatus ?? "idea");
@@ -205,9 +210,9 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       setTitle(initialDraft?.title ?? ""); setDescription(initialDraft?.description ?? "");
       setStatus(initialStatus ?? "idea"); setProgress(0);
       setKidId(defaultKidId);
-      setOwnerMemberId(undefined);
+      setOwnerMemberId(defaultOwnerMemberId);
     }
-  }, [editProject, visible, defaultKidId, initialStatus, initialDraft]);
+  }, [editProject, visible, defaultKidId, defaultOwnerMemberId, initialStatus, initialDraft]);
 
   const reset = () => {
     setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);
@@ -249,7 +254,7 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       carousel={carousel}
       icon="rocket-outline"
       title={(editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")) +
-        (lockedKidName ? ` ל${lockedKidName}` : "")}
+        ((lockedKidName ?? lockedMemberName) ? ` ל${lockedKidName ?? lockedMemberName}` : "")}
       onSave={handleSubmit}
       saveDisabled={!title.trim() || submitting}
       saveLoading={submitting}
@@ -309,8 +314,8 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
         </>
       )}
 
-      {/* Hidden in kid-page context — the project is locked to that kid. */}
-      {!lockedKidName && (
+      {/* Hidden in kid/parent-page context — the project is locked to that person. */}
+      {!(lockedKidName || lockedMemberName) && (
         <OwnerPicker
           kidId={kidId}
           ownerMemberId={ownerMemberId}
