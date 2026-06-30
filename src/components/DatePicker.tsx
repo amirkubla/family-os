@@ -14,15 +14,14 @@
  */
 
 import React, { useRef, useCallback, useEffect } from "react";
-import { View, ScrollView, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import WheelColumn, { ITEM_HEIGHT, VISIBLE_ITEMS } from "./WheelColumn";
 import { dayName, dayNameShort } from "@src/i18n";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const ITEM_HEIGHT = 40;
-const VISIBLE_ITEMS = 5;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const PAD = Math.floor(VISIBLE_ITEMS / 2); // padding rows above/below centre
 
@@ -107,26 +106,15 @@ export default function WheelDatePicker({ value, onChange }: Props) {
   const monIdx  = month;
   const yearIdx = Math.max(0, Math.min(year - YEAR_START, YEARS.length - 1));
 
-  const dayRef  = useRef<ScrollView>(null);
-  const monRef  = useRef<ScrollView>(null);
-  const yearRef = useRef<ScrollView>(null);
-
   const selDay  = useRef(dayIdx);
   const selMon  = useRef(monIdx);
   const selYear = useRef(yearIdx);
 
-  // Scroll all columns to match the current value prop
+  // Keep the selected refs synced to the value prop.
   useEffect(() => {
     selDay.current  = dayIdx;
     selMon.current  = monIdx;
     selYear.current = yearIdx;
-
-    const t = setTimeout(() => {
-      dayRef.current?.scrollTo({ y: dayIdx  * ITEM_HEIGHT, animated: false });
-      monRef.current?.scrollTo({ y: monIdx  * ITEM_HEIGHT, animated: false });
-      yearRef.current?.scrollTo({ y: yearIdx * ITEM_HEIGHT, animated: false });
-    }, 50);
-    return () => clearTimeout(t);
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const emit = useCallback(() => {
@@ -137,123 +125,44 @@ export default function WheelDatePicker({ value, onChange }: Props) {
     onChange(toYMD(y, m0, d));
   }, [onChange]);
 
-  // Web: debounce onScroll; Native: use onMomentumScrollEnd / onScrollEndDrag
-  const dayDebounce  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const monDebounce  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const yearDebounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  const onDayScroll = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      selDay.current = Math.max(0, Math.min(idx, DAYS.length - 1));
-      emit();
-    }, [emit]);
-
-  const onMonScroll = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      selMon.current = Math.max(0, Math.min(idx, MONTHS.length - 1));
-      emit();
-    }, [emit]);
-
-  const onYearScroll = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      selYear.current = Math.max(0, Math.min(idx, YEARS.length - 1));
-      emit();
-    }, [emit]);
-
-  const debounced = (
-    fn: (e: { nativeEvent: { contentOffset: { y: number } } }) => void,
-    timerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>,
-  ) => (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => fn(e), 100);
-  };
-
   return (
     <View style={styles.container}>
       {/* Highlight band behind centre row */}
       <View style={styles.highlight} pointerEvents="none" />
 
       {/* Day column — rightmost in RTL */}
-      <WheelCol
-        ref={dayRef}
+      <WheelColumn
         data={DAYS}
-        initialOffset={dayIdx * ITEM_HEIGHT}
-        onScrollEnd={onDayScroll}
-        onScroll={Platform.OS === "web" ? debounced(onDayScroll, dayDebounce) : undefined}
-        formatItem={(v) => String(v).padStart(2, "0")}
+        selectedIndex={dayIdx}
+        onSettle={(i) => { selDay.current = i; emit(); }}
+        format={(v) => String(v).padStart(2, "0")}
         style={styles.colDay}
       />
 
       <Text style={styles.sep}>·</Text>
 
       {/* Month column — middle */}
-      <WheelCol
-        ref={monRef}
+      <WheelColumn
         data={MONTHS}
-        initialOffset={monIdx * ITEM_HEIGHT}
-        onScrollEnd={onMonScroll}
-        onScroll={Platform.OS === "web" ? debounced(onMonScroll, monDebounce) : undefined}
-        formatItem={(v) => MONTHS_HE_SHORT[v]}
+        selectedIndex={monIdx}
+        onSettle={(i) => { selMon.current = i; emit(); }}
+        format={(v) => MONTHS_HE_SHORT[v]}
         style={styles.colMonth}
       />
 
       <Text style={styles.sep}>·</Text>
 
       {/* Year column — leftmost in RTL */}
-      <WheelCol
-        ref={yearRef}
+      <WheelColumn
         data={YEARS}
-        initialOffset={yearIdx * ITEM_HEIGHT}
-        onScrollEnd={onYearScroll}
-        onScroll={Platform.OS === "web" ? debounced(onYearScroll, yearDebounce) : undefined}
-        formatItem={(v) => String(v)}
+        selectedIndex={yearIdx}
+        onSettle={(i) => { selYear.current = i; emit(); }}
+        format={(v) => String(v)}
         style={styles.colYear}
       />
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// WheelCol — generic drum-roll ScrollView column
-// ---------------------------------------------------------------------------
-
-interface ColProps {
-  data: number[];
-  initialOffset: number;
-  onScrollEnd: (e: { nativeEvent: { contentOffset: { y: number } } }) => void;
-  onScroll?: (e: { nativeEvent: { contentOffset: { y: number } } }) => void;
-  formatItem: (v: number) => string;
-  style?: object;
-}
-
-const WheelCol = React.forwardRef<ScrollView, ColProps>(
-  ({ data, initialOffset, onScrollEnd, onScroll, formatItem, style }, ref) => (
-    <ScrollView
-      ref={ref}
-      showsVerticalScrollIndicator={false}
-      snapToInterval={ITEM_HEIGHT}
-      decelerationRate="fast"
-      bounces={false}
-      nestedScrollEnabled
-      onMomentumScrollEnd={onScrollEnd}
-      onScrollEndDrag={onScrollEnd}
-      {...(onScroll ? { onScroll, scrollEventThrottle: 16 } : {})}
-      style={[styles.col, style]}
-      contentContainerStyle={{ paddingTop: PAD * ITEM_HEIGHT, paddingBottom: PAD * ITEM_HEIGHT }}
-      contentOffset={{ x: 0, y: initialOffset }}
-    >
-      {data.map((item) => (
-        <View key={item} style={styles.item}>
-          <Text style={styles.itemText}>{formatItem(item)}</Text>
-        </View>
-      ))}
-    </ScrollView>
-  ),
-);
-WheelCol.displayName = "WheelCol";
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -288,20 +197,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
     zIndex: 2,
   },
-  col: {
-    height: PICKER_HEIGHT,
-    zIndex: 1,
-  },
-  colDay:   { flex: 1 },
-  colMonth: { flex: 2.2 },
-  colYear:  { flex: 1.5 },
-  item: {
-    height: ITEM_HEIGHT,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  itemText: {
-    fontSize: 18,
-    color: "#1A1A2E",
-  },
+  colDay:   { flex: 1, zIndex: 1 },
+  colMonth: { flex: 2.2, zIndex: 1 },
+  colYear:  { flex: 1.5, zIndex: 1 },
 });

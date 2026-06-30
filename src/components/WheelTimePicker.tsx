@@ -6,14 +6,13 @@
  */
 
 import React, { useRef, useCallback, useEffect } from "react";
-import { View, ScrollView, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import WheelColumn, { ITEM_HEIGHT, VISIBLE_ITEMS } from "./WheelColumn";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const ITEM_HEIGHT = 40;
-const VISIBLE_ITEMS = 5;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const PAD_ITEMS = Math.floor(VISIBLE_ITEMS / 2); // items above/below center
 
@@ -56,159 +55,47 @@ export default function WheelTimePicker({
   const hourIndex = isNaN(h) ? 9 : h; // default 09
   const minuteIndex = isNaN(m) ? 0 : Math.round(m / minuteStep);
 
-  const hourRef = useRef<ScrollView>(null);
-  const minuteRef = useRef<ScrollView>(null);
-
-  // Track selected indices
+  // Track selected indices; keep them synced when the value prop changes.
   const selectedHour = useRef(hourIndex);
   const selectedMinute = useRef(minuteIndex);
-
-  // Scroll to correct position whenever value changes (mount + prop updates)
   useEffect(() => {
     selectedHour.current = hourIndex;
     selectedMinute.current = minuteIndex;
-    const timeout = setTimeout(() => {
-      hourRef.current?.scrollTo({
-        y: hourIndex * ITEM_HEIGHT,
-        animated: false,
-      });
-      minuteRef.current?.scrollTo({
-        y: minuteIndex * ITEM_HEIGHT,
-        animated: false,
-      });
-    }, 50);
-    return () => clearTimeout(timeout);
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const emitChange = useCallback(() => {
     const hh = String(selectedHour.current).padStart(2, "0");
     const mm = String(
-      (selectedMinute.current < minutes.length
-        ? minutes[selectedMinute.current]
-        : 0),
+      selectedMinute.current < minutes.length ? minutes[selectedMinute.current] : 0,
     ).padStart(2, "0");
     onChange(`${hh}:${mm}`);
   }, [onChange, minutes]);
-
-  // On web, onMomentumScrollEnd never fires and onScrollEndDrag fires before
-  // snapToInterval settles, so we debounce onScroll to capture the final position.
-  const hourDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const minuteDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  const onHourScroll = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      const clamped = Math.max(0, Math.min(idx, HOURS.length - 1));
-      if (selectedHour.current !== clamped) {
-        selectedHour.current = clamped;
-        emitChange();
-      }
-    },
-    [emitChange],
-  );
-
-  const onMinuteScroll = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      const clamped = Math.max(0, Math.min(idx, minutes.length - 1));
-      if (selectedMinute.current !== clamped) {
-        selectedMinute.current = clamped;
-        emitChange();
-      }
-    },
-    [emitChange, minutes.length],
-  );
-
-  const onHourScrollDebounced = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      clearTimeout(hourDebounce.current);
-      hourDebounce.current = setTimeout(() => onHourScroll(e), 100);
-    },
-    [onHourScroll],
-  );
-
-  const onMinuteScrollDebounced = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      clearTimeout(minuteDebounce.current);
-      minuteDebounce.current = setTimeout(() => onMinuteScroll(e), 100);
-    },
-    [onMinuteScroll],
-  );
 
   return (
     <View style={styles.container}>
       {/* Highlight band — sits behind the center row */}
       <View style={styles.highlightBand} pointerEvents="none" />
 
-      {/* Hours column */}
       <WheelColumn
-        ref={hourRef}
         data={HOURS}
-        initialOffset={hourIndex * ITEM_HEIGHT}
-        onScrollEnd={onHourScroll}
-        onScroll={Platform.OS === "web" ? onHourScrollDebounced : undefined}
-        formatItem={(v) => String(v).padStart(2, "0")}
+        selectedIndex={hourIndex}
+        onSettle={(i) => { selectedHour.current = i; emitChange(); }}
+        format={(v) => String(v).padStart(2, "0")}
+        style={styles.col}
       />
 
-      {/* Separator (colon) */}
       <Text style={styles.separator}>:</Text>
 
-      {/* Minutes column */}
       <WheelColumn
-        ref={minuteRef}
         data={minutes}
-        initialOffset={minuteIndex * ITEM_HEIGHT}
-        onScrollEnd={onMinuteScroll}
-        onScroll={Platform.OS === "web" ? onMinuteScrollDebounced : undefined}
-        formatItem={(v) => String(v).padStart(2, "0")}
+        selectedIndex={minuteIndex}
+        onSettle={(i) => { selectedMinute.current = i; emitChange(); }}
+        format={(v) => String(v).padStart(2, "0")}
+        style={styles.col}
       />
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// WheelColumn — generic scrollable column (ScrollView instead of FlatList)
-// ---------------------------------------------------------------------------
-
-interface WheelColumnProps {
-  data: number[];
-  initialOffset: number;
-  onScrollEnd: (e: { nativeEvent: { contentOffset: { y: number } } }) => void;
-  onScroll?: (e: { nativeEvent: { contentOffset: { y: number } } }) => void;
-  formatItem: (value: number) => string;
-}
-
-const WheelColumn = React.forwardRef<ScrollView, WheelColumnProps>(
-  ({ data, initialOffset, onScrollEnd, onScroll, formatItem }, ref) => {
-    return (
-      <ScrollView
-        ref={ref}
-        showsVerticalScrollIndicator={false}
-        snapToInterval={ITEM_HEIGHT}
-        decelerationRate="fast"
-        bounces={false}
-        nestedScrollEnabled
-        onMomentumScrollEnd={onScrollEnd}
-        onScrollEndDrag={onScrollEnd}
-        {...(onScroll && { onScroll, scrollEventThrottle: 16 })}
-        style={styles.column}
-        contentContainerStyle={{
-          paddingTop: PAD_ITEMS * ITEM_HEIGHT,
-          paddingBottom: PAD_ITEMS * ITEM_HEIGHT,
-        }}
-        contentOffset={{ x: 0, y: initialOffset }}
-      >
-        {data.map((item) => (
-          <View key={item} style={styles.itemContainer}>
-            <Text style={styles.itemText}>{formatItem(item)}</Text>
-          </View>
-        ))}
-      </ScrollView>
-    );
-  },
-);
-
-WheelColumn.displayName = "WheelColumn";
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -241,19 +128,5 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     zIndex: 2,
   },
-  column: {
-    flex: 1,
-    height: PICKER_HEIGHT,
-    zIndex: 1,
-  },
-  itemContainer: {
-    height: ITEM_HEIGHT,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  itemText: {
-    fontSize: 20,
-    fontFamily: "Rubik",
-    color: "#1A1A2E",
-  },
+  col: { flex: 1, zIndex: 1 },
 });
