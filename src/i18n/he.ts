@@ -110,7 +110,7 @@ const he = {
     clearAll: "נקה הכל",
     quickAdd: "הוספה",
     itemCount: "{{count}} פריטים",
-    customizeCategories: "התאמת קטגוריות",
+    customizeCategories: "ניהול קטגוריות",
   },
 
   // ── Voice → grocery (POC) ──

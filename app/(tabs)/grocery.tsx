@@ -190,7 +190,7 @@ export default function GroceryScreen() {
         <View style={styles.countRow}>
           <Button
             compact
-            icon="pricetags-outline"
+            icon="tag-multiple-outline"
             onPress={() => setCatModalOpen(true)}
             textColor={theme}
             testID="btn-customize-categories"
@@ -335,7 +335,7 @@ export default function GroceryScreen() {
       <FAB
         customSize={50}
         icon="plus"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 25 }]}
         color="#FFF"
         onPress={() => setModalOpen(true)}
         accessibilityRole="button"
