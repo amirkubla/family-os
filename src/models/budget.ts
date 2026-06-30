@@ -124,6 +124,12 @@ export function isPeriodLate(periodYMD: string, todayYMD: string): boolean {
   return periodYMD < todayYMD;
 }
 
+/**
+ * The fallback category. Expenses whose category doesn't match anything resolve
+ * to "אחר", so it must always exist — it's locked from edit/delete in the UI.
+ */
+export const OTHER_BUDGET_CATEGORY = "אחר";
+
 /** Default budget categories — mirrors the server-side auto-seed. */
 export const DEFAULT_BUDGET_CATEGORIES: { name: string; icon: string; color: string; sortOrder: number }[] = [
   { name: "מזון וקניות",   icon: "🛒", color: "#2D9F6F", sortOrder: 0 },

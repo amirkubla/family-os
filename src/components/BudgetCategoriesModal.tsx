@@ -28,7 +28,7 @@ import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
 import type { BudgetCategory } from "@src/models/budget";
-import { parseILS } from "@src/models/budget";
+import { parseILS, OTHER_BUDGET_CATEGORY } from "@src/models/budget";
 import { CATEGORY_ICON_OPTIONS, CATEGORY_COLOR_SWATCHES } from "@src/ui/semanticColors";
 
 const ICON_OPTIONS = CATEGORY_ICON_OPTIONS;
@@ -147,29 +147,37 @@ export default function BudgetCategoriesModal({ visible, onDismiss }: Props) {
           </>
         ) : (
           <View style={MS.section}>
-            {budgetCategories.map((cat) => (
-              <View key={cat.id} style={styles.row}>
-                <View style={styles.dot}>
-                  <Text style={styles.emoji}>{cat.icon}</Text>
+            {budgetCategories.map((cat) => {
+              // "אחר" is the fallback for unmatched expenses — never editable/deletable.
+              const isOther = cat.name === OTHER_BUDGET_CATEGORY;
+              return (
+                <View key={cat.id} style={styles.row}>
+                  <View style={styles.dot}>
+                    <Text style={styles.emoji}>{cat.icon}</Text>
+                  </View>
+                  <Text style={styles.name}>{cat.name}</Text>
+                  {cat.monthlyCap ? (
+                    <Text style={styles.cap}>₪{(cat.monthlyCap / 100).toLocaleString()}</Text>
+                  ) : null}
+                  <IconButton
+                    icon={isOther ? "lock-outline" : "pencil-outline"}
+                    size={18}
+                    disabled={isOther}
+                    onPress={isOther ? undefined : () => openForm(cat)}
+                    accessibilityLabel={t("budget.editCategory")}
+                  />
+                  <IconButton
+                    icon="trash-can-outline"
+                    size={18}
+                    disabled={isOther}
+                    onPress={
+                      isOther ? undefined : () => requestDelete(() => deleteBudgetCategoryRemote(cat.id))
+                    }
+                    accessibilityLabel={t("delete")}
+                  />
                 </View>
-                <Text style={styles.name}>{cat.name}</Text>
-                {cat.monthlyCap ? (
-                  <Text style={styles.cap}>₪{(cat.monthlyCap / 100).toLocaleString()}</Text>
-                ) : null}
-                <IconButton
-                  icon="pencil-outline"
-                  size={18}
-                  onPress={() => openForm(cat)}
-                  accessibilityLabel={t("budget.editCategory")}
-                />
-                <IconButton
-                  icon="trash-can-outline"
-                  size={18}
-                  onPress={() => requestDelete(() => deleteBudgetCategoryRemote(cat.id))}
-                  accessibilityLabel={t("delete")}
-                />
-              </View>
-            ))}
+              );
+            })}
 
             <Pressable
               style={[styles.addBtn, { borderColor: theme }]}
