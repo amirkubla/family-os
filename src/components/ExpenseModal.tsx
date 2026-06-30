@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TextInput as RNTextInput } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Text, TextInput, Button } from "react-native-paper";
 import ModalWrapper from "./ModalWrapper";
 import WheelPicker from "./WheelPicker";
@@ -189,6 +189,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           mode="outlined"
           style={MS.input}
           contentStyle={MS.inputContent}
+          activeOutlineColor={theme}
           error={!!titleError}
         />
         {titleError ? <Text style={MS.error}>{titleError}</Text> : null}
@@ -197,13 +198,16 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           <Text style={MS.sectionLabel}>{t("budget.amount")}</Text>
           <Text style={MS.sectionIcon}>💰</Text>
         </View>
-        <RNTextInput
+        <TextInput
+          placeholder={t("budget.amountPlaceholder")}
           value={form.amountText}
           onChangeText={(v) => { patch({ amountText: v }); setAmountError(""); }}
-          placeholder={t("budget.amountPlaceholder")}
           keyboardType="numeric"
-          style={[styles.amountInput, { borderBottomColor: amountError ? C.red : theme }]}
-          placeholderTextColor={C.textSecondary}
+          mode="outlined"
+          style={MS.input}
+          contentStyle={MS.inputContentNumeric}
+          activeOutlineColor={theme}
+          error={!!amountError}
         />
         {amountError ? <Text style={MS.error}>{amountError}</Text> : null}
       </View>
@@ -376,17 +380,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  amountInput: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: C.textPrimary,
-    textAlign: TEXT_RIGHT ?? "right",
-    borderBottomWidth: 2,
-    // borderBottomColor applied inline (theme, or red on error)
-    paddingVertical: S.xs,
-    marginBottom: S.sm,
-    writingDirection: "ltr",
-  },
   paidHint: {
     fontSize: 12,
     color: C.textSecondary,
