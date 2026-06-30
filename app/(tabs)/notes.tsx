@@ -67,9 +67,6 @@ function NoteCard({
       ]}
     >
       <View style={styles.noteTopRow}>
-        <View style={styles.noteIcon}>
-          <Text style={{ fontSize: 18 }}>{note.pinned ? "📌" : "📝"}</Text>
-        </View>
         <View style={{ flex: 1 }} />
         <IconButton
           icon="chevron-up"
