@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     gap: S.sm,
-    marginTop: S.sm,
+    marginTop: S.md + S.xs,
   },
   groupLabel: {
     fontSize: 13,
