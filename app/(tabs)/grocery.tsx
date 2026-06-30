@@ -163,14 +163,12 @@ export default function GroceryScreen() {
     health: "🧴",
     home: "🏠",
   };
-  // Single accent for the active underline — the פארם (pharm) teal — used
-  // across all three categories rather than a per-category colour.
-  const PHARM_ACCENT = "#2AACB4";
+  // The active category underline/pill uses the family theme colour.
   const segmentOptions = SHOPPING_CATEGORIES.map((cat) => ({
     value: cat,
     label: shoppingCategoryLabel(cat),
     emoji: CATEGORY_EMOJI[cat],
-    color: PHARM_ACCENT,
+    color: theme,
   }));
 
   return (
