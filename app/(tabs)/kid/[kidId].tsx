@@ -73,7 +73,7 @@ import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
-type CalendarView = "month" | "week" | "day";
+type CalendarView = "month" | "week" | "3day" | "day";
 
 // The kid-view FAB opens an "add" carousel that cycles through these in order.
 type AddType = "event" | "note" | "project" | "payment";
@@ -233,7 +233,7 @@ export default function KidScheduleScreen() {
 
   // Tab + calendar sub-view (month/week/day, mirroring the main /calendar)
   const [tab, setTab] = useState("calendar");
-  const [calendarView, setCalendarView] = useState<CalendarView>("month");
+  const [calendarView, setCalendarView] = useState<CalendarView>("3day");
 
   // Calendar state
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
@@ -594,9 +594,10 @@ export default function KidScheduleScreen() {
                   value={calendarView}
                   onChange={(v) => setCalendarView(v as CalendarView)}
                   options={[
-                    { value: "month", label: t("calendar.monthView"), color: kidColor },
-                    { value: "week", label: t("calendar.weekView"), color: kidColor },
+                    { value: "3day", label: t("calendar.threeDayView"), color: kidColor },
                     { value: "day", label: t("calendar.dayView"), color: kidColor },
+                    { value: "week", label: t("calendar.weekView"), color: kidColor },
+                    { value: "month", label: t("calendar.monthView"), color: kidColor },
                   ]}
                   testIDPrefix="kid-view"
                 />
@@ -610,6 +611,18 @@ export default function KidScheduleScreen() {
                       onSelectDate={setSelectedDate}
                       markedDates={markedDates}
                       accentColor={kidColor}
+                    />
+                  )}
+                  {calendarView === "3day" && (
+                    <WeekCalendar
+                      dayCount={3}
+                      selectedDate={selectedDate}
+                      onSelectDate={setSelectedDate}
+                      markedDates={markedDates}
+                      accentColor={kidColor}
+                      kidId={kidId}
+                      onEventPress={handleGridPress}
+                      onSlotPress={handleSlotPress}
                     />
                   )}
                   {calendarView === "week" && (
