@@ -29,10 +29,12 @@ import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
 import type { BudgetCategory } from "@src/models/budget";
 import { parseILS, OTHER_BUDGET_CATEGORY } from "@src/models/budget";
-import { CATEGORY_ICON_OPTIONS, CATEGORY_COLOR_SWATCHES } from "@src/ui/semanticColors";
+import { CATEGORY_ICON_OPTIONS, COLOR_SWATCHES_LARGE } from "@src/ui/semanticColors";
 
 const ICON_OPTIONS = CATEGORY_ICON_OPTIONS;
-const DEFAULT_COLOR = CATEGORY_COLOR_SWATCHES[0];
+// Same colour palette family-member / kid colours are picked from.
+const COLOR_SWATCHES = COLOR_SWATCHES_LARGE;
+const DEFAULT_COLOR = COLOR_SWATCHES[0];
 
 interface Props {
   visible: boolean;
@@ -48,6 +50,7 @@ export default function BudgetCategoriesModal({ visible, onDismiss }: Props) {
   const [editItem, setEditItem] = useState<BudgetCategory | null>(null);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("📦");
+  const [color, setColor] = useState(DEFAULT_COLOR);
   const [capText, setCapText] = useState("");
   const [nameError, setNameError] = useState("");
 
@@ -60,6 +63,7 @@ export default function BudgetCategoriesModal({ visible, onDismiss }: Props) {
     setEditItem(item);
     setName(item?.name ?? "");
     setIcon(item?.icon ?? "📦");
+    setColor(item?.color ?? DEFAULT_COLOR);
     setCapText(item?.monthlyCap ? String(item.monthlyCap / 100) : "");
     setNameError("");
     setMode("form");
@@ -72,7 +76,7 @@ export default function BudgetCategoriesModal({ visible, onDismiss }: Props) {
     const data = {
       name: trimmed,
       icon,
-      color: editItem?.color ?? DEFAULT_COLOR,
+      color,
       monthlyCap: monthlyCap || undefined,
     };
     if (editItem) {
@@ -134,6 +138,15 @@ export default function BudgetCategoriesModal({ visible, onDismiss }: Props) {
               testIDPrefix="cat-icon"
             />
 
+            <Text style={MS.label}>{t("budget.categoryColor")}</Text>
+            <PaginatedPicker
+              kind="color"
+              options={COLOR_SWATCHES}
+              value={color}
+              onChange={setColor}
+              testIDPrefix="cat-color"
+            />
+
             <Text style={MS.label}>{t("budget.monthlyCap")}</Text>
             <TextInput
               placeholder={t("budget.monthlyCapPlaceholder")}
@@ -152,7 +165,7 @@ export default function BudgetCategoriesModal({ visible, onDismiss }: Props) {
               const isOther = cat.name === OTHER_BUDGET_CATEGORY;
               return (
                 <View key={cat.id} style={styles.row}>
-                  <View style={styles.dot}>
+                  <View style={[styles.dot, { backgroundColor: cat.color + "22" }]}>
                     <Text style={styles.emoji}>{cat.icon}</Text>
                   </View>
                   <Text style={styles.name}>{cat.name}</Text>
