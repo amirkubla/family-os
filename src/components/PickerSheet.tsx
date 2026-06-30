@@ -77,24 +77,26 @@ export default function PickerSheet({ visible, title, onCancel, onDone, children
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel={t("cancel")} />
       </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.sheet,
-          Platform.OS === "web" && ({ position: "fixed" } as any),
-          { paddingBottom: insets.bottom + S.md, transform: [{ translateY }] },
-        ]}
+      {/* Full-width anchor centres the sheet horizontally + pins it to the bottom. */}
+      <View
+        style={[styles.anchor, Platform.OS === "web" && ({ position: "fixed" } as any)]}
+        pointerEvents="box-none"
       >
-        <View style={styles.header}>
-          <Pressable onPress={onCancel} hitSlop={10} testID="picker-cancel">
-            <Text style={[styles.action, { color: theme }]}>{t("cancel")}</Text>
-          </Pressable>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          <Pressable onPress={onDone} hitSlop={10} testID="picker-done">
-            <Text style={[styles.action, styles.done, { color: theme }]}>{t("done")}</Text>
-          </Pressable>
-        </View>
-        <View style={styles.content}>{children}</View>
-      </Animated.View>
+        <Animated.View
+          style={[styles.sheet, { paddingBottom: insets.bottom + S.md, transform: [{ translateY }] }]}
+        >
+          <View style={styles.header}>
+            <Pressable onPress={onCancel} hitSlop={10} testID="picker-cancel">
+              <Text style={[styles.action, { color: theme }]}>{t("cancel")}</Text>
+            </Pressable>
+            <Text style={styles.title} numberOfLines={1}>{title}</Text>
+            <Pressable onPress={onDone} hitSlop={10} testID="picker-done">
+              <Text style={[styles.action, styles.done, { color: theme }]}>{t("done")}</Text>
+            </Pressable>
+          </View>
+          <View style={styles.content}>{children}</View>
+        </Animated.View>
+      </View>
     </Portal>
   );
 }
@@ -105,18 +107,22 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(15,15,30,0.35)",
     zIndex: 10000,
   },
-  sheet: {
+  anchor: {
     position: "absolute",
+    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     zIndex: 10001,
+    justifyContent: "flex-end",
+    alignItems: "center",
+  },
+  sheet: {
     backgroundColor: C.surface,
     borderTopLeftRadius: R.xl,
     borderTopRightRadius: R.xl,
     width: "100%",
     maxWidth: 560,
-    alignSelf: "center",
   },
   header: {
     flexDirection: RTL_ROW,
