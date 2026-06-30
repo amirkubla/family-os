@@ -43,6 +43,7 @@ import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
+import SummaryHeroCard from "@src/components/budget/SummaryHeroCard";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { formatILS } from "@src/models/budget";
 
@@ -395,18 +396,14 @@ export default function TodayScreen() {
           </View>
         </Card>
 
-        {/* ── Budget mini-card — total spent only (no overall budget bar) ── */}
+        {/* ── Budget total — theme-gradient hero, same as the budget page ── */}
         {budgetSpent > 0 && (
           <Pressable
-            style={styles.budgetCard}
             onPress={() => router.push("/budget" as any)}
             accessibilityRole="button"
             accessibilityLabel="פתח מסך תקציב"
           >
-            <View style={[{ flexDirection: RTL_ROW }, styles.budgetCardRow]}>
-              <Text style={styles.budgetLabel}>{t("budget.thisMonth")}</Text>
-              <Text style={styles.budgetAmount}>{formatILS(budgetSpent)}</Text>
-            </View>
+            <SummaryHeroCard label={t("budget.thisMonth")} amount={formatILS(budgetSpent)} />
           </Pressable>
         )}
 
@@ -648,33 +645,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
 
-
-  // ── Budget mini-card ─────────────────────────────────────────────────────
-  budgetCard: {
-    backgroundColor: C.surface,
-    borderRadius: R.lg,
-    padding: S.md,
-    marginBottom: S.md,
-    ...SHADOW.sm,
-    borderRightWidth: 3,
-    borderRightColor: "#9B59B6",
-  },
-  budgetCardRow: {
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: S.xs,
-  },
-  budgetLabel: {
-    fontSize: 13,
-    color: C.textSecondary,
-    textAlign: TEXT_RIGHT,
-    writingDirection: "rtl",
-  },
-  budgetAmount: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: C.textPrimary,
-  },
 
   // ── Unified Today card ────────────────────────────────────────────────────
   todayCard: {
