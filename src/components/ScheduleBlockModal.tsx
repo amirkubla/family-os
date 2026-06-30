@@ -220,12 +220,8 @@ export default function ScheduleBlockModal({
         </View>
       )}
 
-      {/* ── Title & Type section ── */}
+      {/* ── Title section ── */}
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>✏️</Text>
-          <Text style={MS.sectionLabel}>{t("blockModal.titleLabel")}</Text>
-        </View>
         <Controller
           control={control}
           name="title"
@@ -246,10 +242,6 @@ export default function ScheduleBlockModal({
 
       {/* ── Schedule section ── */}
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>{isRecurring ? "🔄" : "1️⃣"}</Text>
-          <Text style={MS.sectionLabel}>{t("blockModal.schedule")}</Text>
-        </View>
         <View style={MS.segmented}>
           <SegmentedPills
             value={isRecurring ? "recurring" : "oneTime"}
@@ -264,10 +256,10 @@ export default function ScheduleBlockModal({
         {isRecurring && (
           <>
             <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionIcon}>📆</Text>
               <Text style={MS.sectionLabel}>{t("blockModal.day")}</Text>
+              <Text style={MS.sectionIcon}>📆</Text>
             </View>
-            <View style={MS.chipRow}>
+            <View style={[MS.chipRow, { gap: S.xs, flexWrap: "nowrap" }]}>
               {Array.from({ length: 7 }, (_, idx) => {
                 const sel = selectedDays.includes(idx);
                 return (
@@ -285,7 +277,7 @@ export default function ScheduleBlockModal({
                         setValue("daysOfWeek", [...cur, idx], { shouldValidate: true });
                       }
                     }}
-                    style={MS.chip}
+                    style={[MS.chip, { flex: 1, minWidth: 0 }]}
                     labelStyle={MS.chipLabel}
                     buttonColor={sel ? theme + "20" : undefined}
                     textColor={sel ? theme : C.textSecondary}
@@ -306,8 +298,8 @@ export default function ScheduleBlockModal({
         {!isRecurring && (
           <>
             <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionIcon}>📆</Text>
               <Text style={MS.sectionLabel}>{t("blockModal.date")}</Text>
+              <Text style={MS.sectionIcon}>📆</Text>
             </View>
             <Controller
               control={control}
@@ -324,8 +316,8 @@ export default function ScheduleBlockModal({
       {/* ── Time section ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
+          <Text style={MS.sectionLabel}>{t("eventModal.time")}</Text>
           <Text style={MS.sectionIcon}>⏰</Text>
-          <Text style={MS.sectionLabel}>{t("blockModal.startTime")}</Text>
         </View>
         <View style={MS.timeRow}>
           <View style={MS.timeCol}>
@@ -354,10 +346,6 @@ export default function ScheduleBlockModal({
 
       {/* ── Location section ── */}
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>📍</Text>
-          <Text style={MS.sectionLabel}>{t("blockModal.location")}</Text>
-        </View>
         <Controller
           control={control}
           name="location"
@@ -377,8 +365,8 @@ export default function ScheduleBlockModal({
       {/* ── Reminders section ── */}
       <View style={MS.section}>
         <View style={MS.sectionHeader}>
-          <Text style={MS.sectionIcon}>🔔</Text>
           <Text style={MS.sectionLabel}>{t("eventModal.reminders")}</Text>
+          <Text style={MS.sectionIcon}>🔔</Text>
         </View>
         <View style={MS.chipRow}>
           {REMINDER_PRESETS.map(({ minutes, label }) => {
