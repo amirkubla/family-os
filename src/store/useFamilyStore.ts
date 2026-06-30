@@ -222,6 +222,7 @@ interface FamilyState {
     color?: string;
     isRecurring?: boolean;
     date?: string;
+    endDate?: string;
     reminders?: number[];
   }) => ScheduleBlock;
   updateScheduleBlock: (
@@ -229,7 +230,7 @@ interface FamilyState {
     patch: Partial<
       Pick<
         ScheduleBlock,
-        "daysOfWeek" | "title" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "reminders"
+        "daysOfWeek" | "title" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "endDate" | "reminders"
       >
     >
   ) => void;
@@ -716,7 +717,7 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 16,
+      version: 17,
       storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => (_state, error) => {
         // Last-line-of-defense: if anything else in the rehydrate path throws
@@ -857,6 +858,13 @@ export const useFamilyStore = create<FamilyState>()(
           persisted.chores = (persisted.chores ?? []).map((c: any) => ({
             ...c,
             kidId: c.kidId ?? undefined,
+          }));
+        }
+        if (version < 17) {
+          // One-time schedule blocks can now span to an optional endDate.
+          persisted.scheduleBlocks = (persisted.scheduleBlocks ?? []).map((b: any) => ({
+            ...b,
+            endDate: b.endDate ?? undefined,
           }));
         }
         return persisted;

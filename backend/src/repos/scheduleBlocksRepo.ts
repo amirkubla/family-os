@@ -77,6 +77,7 @@ export const scheduleBlocksRepo = {
           location: sql`excluded.location`,
           color: sql`excluded.color`,
           date: sql`excluded.date`,
+          endDate: sql`excluded.end_date`,
           isRecurring: sql`excluded.is_recurring`,
           reminders: sql`excluded.reminders`,
           updatedAt: new Date(),

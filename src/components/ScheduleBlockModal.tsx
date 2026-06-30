@@ -45,6 +45,7 @@ const schema = z
     isRecurring: z.boolean(),
     daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1),
     date: z.string().optional(),
+    endDate: z.string().optional(),
     startTime: z
       .string()
       .regex(timeRegex, t("blockModal.useHHMM"))
@@ -76,6 +77,11 @@ const schema = z
       );
     },
     { message: t("blockModal.invalidDate"), path: ["date"] },
+  )
+  .refine(
+    // Multi-day end date must not precede the start date.
+    (d) => d.isRecurring || !d.endDate || !d.date || d.endDate >= d.date,
+    { message: t("eventModal.endDateBeforeStart"), path: ["endDate"] },
   );
 
 type FormData = z.infer<typeof schema>;
@@ -100,6 +106,7 @@ interface Props {
     location?: string;
     isRecurring: boolean;
     date?: string;
+    endDate?: string;
     reminders?: number[];
   }) => void;
   onDelete?: () => void;
@@ -159,6 +166,7 @@ export default function ScheduleBlockModal({
         isRecurring: editBlock.isRecurring,
         daysOfWeek: editBlock.daysOfWeek,
         date: editBlock.date ?? toYMD(new Date()),
+        endDate: editBlock.endDate,
         startTime: minutesToHHMM(editBlock.startMinutes),
         endTime: minutesToHHMM(editBlock.endMinutes),
         location: editBlock.location ?? "",
@@ -181,11 +189,18 @@ export default function ScheduleBlockModal({
 
   const selectedDays = watch("daysOfWeek");
   const isRecurring = watch("isRecurring");
+  const startDate = watch("date");
 
   const doSubmit = (data: FormData) => {
     const daysOfWeek = data.isRecurring
       ? data.daysOfWeek
       : [dayOfWeekFromYMD(data.date!)];
+
+    // Multi-day end date only when it's a one-time block after the start date.
+    const endDate =
+      !data.isRecurring && data.endDate && data.date && data.endDate > data.date
+        ? data.endDate
+        : undefined;
 
     onSubmit({
       title: data.title.trim(),
@@ -195,6 +210,7 @@ export default function ScheduleBlockModal({
       location: data.location?.trim() || undefined,
       isRecurring: data.isRecurring,
       date: data.isRecurring ? undefined : data.date,
+      endDate,
       reminders: selectedReminders.length > 0 ? selectedReminders : undefined,
     });
     onDismiss();
@@ -314,6 +330,27 @@ export default function ScheduleBlockModal({
               )}
             />
             {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
+
+            {/* Optional multi-day end date — leave equal to the start for a
+                single-day block; pick a later date to span a range. */}
+            <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
+              <Text style={MS.sectionLabel}>{t("eventModal.endDate")}</Text>
+              <Text style={MS.sectionIcon}>📆</Text>
+            </View>
+            <Controller
+              control={control}
+              name="endDate"
+              render={({ field: { onChange, value } }) => (
+                <DateTimeField
+                  mode="date"
+                  value={value || startDate || toYMD(new Date())}
+                  onChange={onChange}
+                  title={t("eventModal.endDate")}
+                  error={!!errors.endDate}
+                />
+              )}
+            />
+            {errors.endDate && <Text style={MS.error}>{errors.endDate.message}</Text>}
           </>
         )}
       </View>

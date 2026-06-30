@@ -23,6 +23,7 @@ import {
 import {
   useAllKidRecurringByDay,
   useAllKidOneTimeBlocks,
+  oneTimeBlockOnDate,
 } from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C } from "@src/ui/tokens";
@@ -309,9 +310,9 @@ export default function WeekCalendar({
           source: "block", icon: kid?.emoji ?? "👶",
         });
       }
-      // Kid blocks – one-time
+      // Kid blocks – one-time (multi-day blocks span their whole [date…endDate])
       for (const b of kidOneTimeBlocks.filter(keepBlock)) {
-        if (b.date === dateStr) {
+        if (oneTimeBlockOnDate(b, dateStr)) {
           const kid = kids.find((k) => k.id === b.kidId);
           items.push({
             id: b.id, title: b.title, color: b.color ?? kid?.color ?? KID_COLOR,

@@ -304,6 +304,7 @@ export const scheduleBlocks = pgTable(
     location: text("location"),
     color: text("color"),
     date: text("date"), // "YYYY-MM-DD" for one-time events, null for recurring
+    endDate: text("end_date"), // inclusive end for multi-day one-time blocks (NULL = single day)
     isRecurring: boolean("is_recurring").default(true).notNull(),
     reminders: text("reminders"), // JSON array of integers e.g. "[1440,60,5]"
     ...timestamps,

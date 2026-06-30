@@ -44,6 +44,7 @@ const baseScheduleBlock = z
     color: z.string().max(20).nullable().optional(),
     isRecurring: z.boolean(),
     date: ymdDate.nullable().optional(),
+    endDate: ymdDate.nullable().optional(),
     reminders: remindersJson,
   })
   .refine((d) => d.endMinutes > d.startMinutes, {
@@ -75,5 +76,6 @@ export const patchScheduleBlockSchema = z.object({
   color: z.string().max(20).nullable().optional(),
   isRecurring: z.boolean().optional(),
   date: ymdDate.nullable().optional(),
+  endDate: ymdDate.nullable().optional(),
   reminders: remindersJson,
 });

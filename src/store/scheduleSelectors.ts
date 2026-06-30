@@ -18,6 +18,12 @@ function getDays(b: ScheduleBlock): number[] {
   return [];
 }
 
+/** Whether a one-time block falls on `dateStr`, spanning [date..endDate] inclusive. */
+export function oneTimeBlockOnDate(b: ScheduleBlock, dateStr: string): boolean {
+  if (b.isRecurring || !b.date) return false;
+  return dateStr >= b.date && dateStr <= (b.endDate || b.date);
+}
+
 /** All recurring blocks for a specific kid, sorted by first day then startMinutes. */
 export function useKidBlocks(kidId: string): ScheduleBlock[] {
   const blocks = useFamilyStore((s) => s.scheduleBlocks);
@@ -65,7 +71,7 @@ export function useKidBlocksForDate(
           (b) =>
             b.kidId === kidId &&
             ((b.isRecurring && getDays(b).includes(dayOfWeek)) ||
-              (!b.isRecurring && b.date === dateStr)),
+              oneTimeBlockOnDate(b, dateStr)),
         )
         .sort((a, b) => a.startMinutes - b.startMinutes),
     [blocks, kidId, dateStr, dayOfWeek],
@@ -100,7 +106,7 @@ export function useAllKidBlocksForDate(
         .filter(
           (b) =>
             (b.isRecurring && getDays(b).includes(dayOfWeek)) ||
-            (!b.isRecurring && b.date === dateStr),
+            oneTimeBlockOnDate(b, dateStr),
         )
         .sort((a, b) => a.startMinutes - b.startMinutes),
     [blocks, dateStr, dayOfWeek],

@@ -218,6 +218,13 @@
       "when": 1782300000000,
       "tag": "0030_chores_kid_id",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1782400000000,
+      "tag": "0031_schedule_blocks_end_date",
+      "breakpoints": true
     }
   ]
 }

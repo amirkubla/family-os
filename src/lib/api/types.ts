@@ -100,6 +100,7 @@ export interface ApiScheduleBlock {
   location: string | null;
   color: string | null;
   date: string | null;
+  endDate: string | null;
   isRecurring: boolean;
   reminders: string | null; // JSON string e.g. "[1440,60,5]"
   createdAt: string;
