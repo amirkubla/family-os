@@ -51,9 +51,9 @@ const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; labelKey
   { route: "projects", icon: "rocket",        labelKey: "home.projects" },
 ];
 
-// Routes shown directly in the main menu (today/calendar/home); everything else
-// lives in OPS_ITEMS, also rendered inline.
-const MAIN_ROUTES = ["today", "calendar", "home"];
+// Routes shown directly in the main menu, in display order (top → bottom).
+// Everything else lives in OPS_ITEMS, also rendered inline.
+const MAIN_ROUTES = ["home", "today", "calendar"];
 
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
@@ -143,7 +143,10 @@ export default function CustomTabBar({
 
   // Main-row tabs only (today/calendar/home). Grocery + budget live under the
   // ops layer; href:null screens (kid/customization) are excluded.
-  const navRoutes = state.routes.filter((r) => MAIN_ROUTES.includes(r.name));
+  // Ordered by MAIN_ROUTES (display order), not the tab-registration order.
+  const navRoutes = MAIN_ROUTES
+    .map((name) => state.routes.find((r) => r.name === name))
+    .filter((r): r is (typeof state.routes)[number] => !!r);
   // Currently focused route name — drives the "selected" inversion for every
   // item (main tabs + ops actions are all registered tab screens).
   const activeName = state.routes[state.index]?.name;
