@@ -341,7 +341,7 @@ export default function FamilyEventModal({
               <Text style={MS.sectionLabel}>{t("eventModal.day")}</Text>
               <Text style={MS.sectionIcon}>📆</Text>
             </View>
-            <View style={[MS.chipRow, { gap: S.md }]}>
+            <View style={[MS.chipRow, { gap: S.xs, flexWrap: "nowrap" }]}>
               {Array.from({ length: 7 }, (_, idx) => {
                 const sel = selectedDays.includes(idx);
                 return (
@@ -363,7 +363,7 @@ export default function FamilyEventModal({
                         setValue("daysOfWeek", [...cur, idx], { shouldValidate: true });
                       }
                     }}
-                    style={MS.chip}
+                    style={[MS.chip, { flex: 1, minWidth: 0 }]}
                     labelStyle={MS.chipLabel}
                     buttonColor={sel ? theme + "20" : undefined}
                     textColor={sel ? theme : C.textSecondary}
