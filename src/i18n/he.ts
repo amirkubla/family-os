@@ -83,6 +83,7 @@ const he = {
     viewSchedule: "צפייה במערכת",
     // Dashboard launcher tiles
     quickAccess: "גישה מהירה",
+    familyStats: "סטטיסטיקות משפחה",
     tileEventsWeek: "{{count}} אירועים השבוע",
     tileEventsWeekZero: "אין אירועים השבוע",
     tileGrocery: "{{count}} פריטים לקנייה",
