@@ -149,10 +149,10 @@ export default function CustomTabBar({
   const activeName = state.routes[state.index]?.name;
 
   // Circle colours driven by the family theme. Default: themed fill + white
-  // ring/icon; the focused item inverts to a white fill + themed ring/icon.
+  // icon; the focused item inverts to a white fill + themed icon. No border.
   const circleStyle = (focused: boolean) =>
     focused
-      ? { backgroundColor: "#FFFFFF", borderColor: theme }
+      ? { backgroundColor: "#FFFFFF" }
       : { backgroundColor: theme };
   const iconColor = (focused: boolean) => (focused ? theme : "#FFFFFF");
 
@@ -330,16 +330,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   // Icon-only circular menu button (no text labels — icons are intuitive).
-  // Layout only — fill + ring colour are applied inline from the family theme
-  // (see circleStyle); default is themed fill + white ring, focused inverts.
+  // Layout only — fill colour is applied inline from the family theme
+  // (see circleStyle); default is a themed fill, the focused item inverts.
   circle: {
     width: 48,
     height: 48,
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#FFFFFF",
   },
   kidEmoji: {
     fontSize: 26,
