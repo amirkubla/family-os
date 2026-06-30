@@ -526,7 +526,7 @@ export default function CalendarScreen() {
       <FAB
         customSize={50}
         icon="plus"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 25 }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 26 }]}
         color="#FFF"
         onPress={openAdd}
         // a11y + automation hooks (QA Pass 2 BUG #8 — FAB had zero a11y props,

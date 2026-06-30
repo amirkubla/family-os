@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   circle: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   fab: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#1E293B",

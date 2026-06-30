@@ -335,7 +335,7 @@ export default function GroceryScreen() {
       <FAB
         customSize={50}
         icon="plus"
-        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 25 }]}
+        style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 26 }]}
         color="#FFF"
         onPress={() => setModalOpen(true)}
         accessibilityRole="button"

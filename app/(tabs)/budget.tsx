@@ -791,7 +791,7 @@ export default function BudgetScreen() {
         icon="plus"
         style={[
           styles.fab,
-          { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 25 },
+          { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 26 },
           Platform.OS === "web" && ({ position: "fixed" } as any),
         ]}
         onPress={() => {
