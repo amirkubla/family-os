@@ -23,8 +23,8 @@ import { RTL_ROW } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
 import ModalWrapper from "./ModalWrapper";
 import SelectChip from "./SelectChip";
-import WheelTimePicker from "./WheelTimePicker";
-import DatePicker, { formatDateHe } from "./DatePicker";
+import DateTimeField from "./DateTimeField";
+import { formatDateHe } from "./DatePicker";
 
 const timeRegex = /^\d{1,2}:\d{2}$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -391,7 +391,13 @@ export default function FamilyEventModal({
               control={control}
               name="date"
               render={({ field: { onChange, value } }) => (
-                <DatePicker value={value ?? toYMD(new Date())} onChange={onChange} />
+                <DateTimeField
+                  mode="date"
+                  value={value ?? toYMD(new Date())}
+                  onChange={onChange}
+                  title={t("eventModal.date")}
+                  error={!!errors.date}
+                />
               )}
             />
             {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
@@ -406,9 +412,11 @@ export default function FamilyEventModal({
               control={control}
               name="endDate"
               render={({ field: { onChange, value } }) => (
-                <DatePicker
+                <DateTimeField
+                  mode="date"
                   value={value || startDate || toYMD(new Date())}
                   onChange={onChange}
+                  title={t("eventModal.endDate")}
                 />
               )}
             />
@@ -442,7 +450,7 @@ export default function FamilyEventModal({
                   control={control}
                   name="startTime"
                   render={({ field: { onChange, value } }) => (
-                    <WheelTimePicker value={value} onChange={onChange} />
+                    <DateTimeField mode="time" value={value} onChange={onChange} title={t("eventModal.startTime")} />
                   )}
                 />
               </View>
@@ -452,7 +460,7 @@ export default function FamilyEventModal({
                   control={control}
                   name="endTime"
                   render={({ field: { onChange, value } }) => (
-                    <WheelTimePicker value={value} onChange={onChange} />
+                    <DateTimeField mode="time" value={value} onChange={onChange} title={t("eventModal.endTime")} error={!!errors.endTime} />
                   )}
                 />
               </View>

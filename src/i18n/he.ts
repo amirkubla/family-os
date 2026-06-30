@@ -11,6 +11,7 @@ const he = {
   add: "הוסף",
   save: "שמור",
   ok: "אישור",
+  done: "סיום",
   delete: "מחק",
   edit: "ערוך",
 

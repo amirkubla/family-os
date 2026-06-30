@@ -22,8 +22,7 @@ import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
 import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
-import WheelTimePicker from "./WheelTimePicker";
-import DatePicker from "./DatePicker";
+import DateTimeField from "./DateTimeField";
 
 // ---------------------------------------------------------------------------
 // Zod schema
@@ -305,7 +304,13 @@ export default function ScheduleBlockModal({
               control={control}
               name="date"
               render={({ field: { onChange, value } }) => (
-                <DatePicker value={value ?? toYMD(new Date())} onChange={onChange} />
+                <DateTimeField
+                  mode="date"
+                  value={value ?? toYMD(new Date())}
+                  onChange={onChange}
+                  title={t("blockModal.date")}
+                  error={!!errors.date}
+                />
               )}
             />
             {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
@@ -326,7 +331,7 @@ export default function ScheduleBlockModal({
               control={control}
               name="startTime"
               render={({ field: { onChange, value } }) => (
-                <WheelTimePicker value={value} onChange={onChange} />
+                <DateTimeField mode="time" value={value} onChange={onChange} title={t("blockModal.startTime")} />
               )}
             />
           </View>
@@ -336,7 +341,7 @@ export default function ScheduleBlockModal({
               control={control}
               name="endTime"
               render={({ field: { onChange, value } }) => (
-                <WheelTimePicker value={value} onChange={onChange} />
+                <DateTimeField mode="time" value={value} onChange={onChange} title={t("blockModal.endTime")} error={!!errors.endTime} />
               )}
             />
           </View>

@@ -15,7 +15,7 @@
 
 import React, { useRef, useCallback, useEffect } from "react";
 import { View, ScrollView, Text, StyleSheet, Platform } from "react-native";
-import { dayName } from "@src/i18n";
+import { dayName, dayNameShort } from "@src/i18n";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -76,6 +76,13 @@ export function formatDateHe(ymd: string): string {
   const date = new Date(year, month, day);
   const dow   = dayName(date.getDay());
   return `${dow}, ${day} ${MONTHS_HE_SENTENCE[month]} ${year}`;
+}
+
+/** Compact form for a field pill — "ג׳ · 30 ביוני". */
+export function formatDateShortHe(ymd: string): string {
+  const { day, month, year } = parseYMD(ymd);
+  const date = new Date(year, month, day);
+  return `${dayNameShort(date.getDay())} · ${day} ${MONTHS_HE_SENTENCE[month]}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -261,7 +268,7 @@ const styles = StyleSheet.create({
     height: PICKER_HEIGHT,
     overflow: "hidden",
     borderRadius: 12,
-    backgroundColor: "#F5F3FF",
+    backgroundColor: "transparent",
     marginBottom: 8,
   },
   highlight: {
@@ -270,14 +277,14 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     height: ITEM_HEIGHT,
-    backgroundColor: "#E8E6FF",
+    backgroundColor: "#F0F0F5",
     borderRadius: 10,
     zIndex: 0,
   },
   sep: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#6C63FF",
+    color: "#9AA0B5",
     marginHorizontal: 6,
     zIndex: 2,
   },
