@@ -13,6 +13,7 @@ import { Text } from "react-native-paper";
 
 import { C } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { useThemeColor } from "@src/ui/useThemeColor";
 
 export interface SegmentOption {
   value: string;
@@ -31,14 +32,14 @@ interface Props {
   testIDPrefix?: string;
 }
 
-const DEFAULT_COLOR = C.selectText;
-
 export default function SegmentedPills({ value, onChange, options, testIDPrefix }: Props) {
+  // Active accent defaults to the family theme; an option may override per-item.
+  const theme = useThemeColor();
   return (
     <View style={styles.row}>
       {options.map((opt) => {
         const active = opt.value === value;
-        const accent = opt.color ?? DEFAULT_COLOR;
+        const accent = opt.color ?? theme;
         return (
           <Pressable
             key={opt.value}

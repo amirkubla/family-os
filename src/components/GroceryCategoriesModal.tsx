@@ -10,7 +10,8 @@
 
 import React, { useState, useEffect } from "react";
 import { View, Pressable, StyleSheet } from "react-native";
-import { Text, TextInput, IconButton } from "react-native-paper";
+import { Text, IconButton } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 
 import ModalWrapper from "./ModalWrapper";
 import PaginatedPicker from "./PaginatedPicker";
@@ -106,7 +107,7 @@ export default function GroceryCategoriesModal({ visible, onDismiss, category, l
         {isForm ? (
           <>
             <Text style={MS.label}>{t("customization.subcategoryName")}</Text>
-            <TextInput
+            <ModalTextInput
               placeholder={t("customization.subcategoryPlaceholder")}
               value={name}
               onChangeText={(v) => { setName(v); setNameError(""); }}

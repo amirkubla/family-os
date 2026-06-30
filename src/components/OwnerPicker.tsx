@@ -10,13 +10,14 @@
  */
 
 import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
-import { C, R, S } from "@src/ui/tokens";
+import { C, S } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { t } from "@src/i18n";
+import SelectChip from "./SelectChip";
 
 interface Props {
   /** Currently-owning kid id (if any). */
@@ -41,25 +42,14 @@ export default function OwnerPicker({ kidId, ownerMemberId, onChange, label }: P
     name: string,
     onPress: () => void,
   ) => (
-    <Pressable
+    <SelectChip
       key={key}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={name}
+      label={name}
+      emoji={emoji}
+      color={color}
+      selected={selected}
       onPress={onPress}
-      style={[
-        styles.chip,
-        {
-          backgroundColor: selected ? color + "20" : C.surface,
-          borderColor: selected ? color : C.border,
-          borderWidth: selected ? 2 : 1,
-        },
-      ]}
-    >
-      <Text style={styles.chipEmoji}>{emoji}</Text>
-      <Text style={[styles.chipName, selected && { color, fontWeight: "800" }]}>{name}</Text>
-      {selected ? <Text style={styles.chipCheck}>✓</Text> : null}
-    </Pressable>
+    />
   );
 
   return (
@@ -129,20 +119,4 @@ const styles = StyleSheet.create({
     minWidth: 42,
   },
   row: { flex: 1, flexDirection: RTL_ROW, flexWrap: "wrap", gap: S.sm },
-  chip: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    gap: S.xs,
-    paddingVertical: S.xs + 2,
-    paddingHorizontal: S.sm + 2,
-    borderRadius: R.lg,
-  },
-  chipEmoji: { fontSize: 18 },
-  chipName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: C.textPrimary,
-    writingDirection: "rtl",
-  },
-  chipCheck: { fontSize: 12, marginStart: 2 },
 });

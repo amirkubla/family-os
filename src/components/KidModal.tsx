@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Text, TextInput } from "react-native-paper";
+import { Text } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 import { addKidRemote, updateKidRemote } from "@src/lib/sync/remoteCrud";
 import type { Kid } from "@src/models/kid";
 import { t } from "@src/i18n";
@@ -61,7 +62,7 @@ export default function KidModal({ visible, onDismiss, editKid }: Props) {
       title={isEditing ? t("settings.editKid") : t("settings.addKid")}
       onSave={handleSubmit}
     >
-      <TextInput
+      <ModalTextInput
         placeholder={t("settings.kidName")}
         value={name}
         onChangeText={(v) => { setName(v); if (nameError) setNameError(""); }}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Text, TextInput } from "react-native-paper";
+import { Text } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
 import DatePicker from "./DatePicker";
 import WheelPicker from "./WheelPicker";
@@ -159,7 +160,7 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
     >
       {/* Name */}
       <Text style={MS.label}>{t("payment.name")}</Text>
-      <TextInput
+      <ModalTextInput
         value={name}
         onChangeText={(v) => { setName(v); setNameError(""); }}
         placeholder={t("payment.namePlaceholder")}
@@ -172,7 +173,7 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
 
       {/* Amount */}
       <Text style={MS.label}>{t("payment.amount")}</Text>
-      <TextInput
+      <ModalTextInput
         value={amountText}
         onChangeText={(v) => { setAmountText(v); setAmountError(""); }}
         placeholder={t("payment.amountPlaceholder")}

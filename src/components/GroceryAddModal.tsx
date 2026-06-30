@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { View } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, Button } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 import type { ShoppingCategory, GroceryItem } from "@src/models/grocery";
 import { addGroceryRemote, updateGroceryRemote } from "@src/lib/sync/remoteCrud";
 import { inferGrocerySubcategory } from "@src/lib/groceryCategoryInfer";
@@ -131,7 +132,7 @@ export default function GroceryAddModal({
           <Text style={MS.sectionIcon}>✏️</Text>
           <Text style={MS.sectionLabel}>{t("groceryModal.itemName")}</Text>
         </View>
-        <TextInput
+        <ModalTextInput
           testID="input-grocery-name"
           placeholder={t("groceryModal.itemName")}
           value={title}
@@ -148,7 +149,7 @@ export default function GroceryAddModal({
           <Text style={MS.sectionIcon}>📦</Text>
           <Text style={MS.sectionLabel}>{t("groceryModal.qty")}</Text>
         </View>
-        <TextInput
+        <ModalTextInput
           testID="input-grocery-qty"
           placeholder={t("groceryModal.qty")}
           value={qty}

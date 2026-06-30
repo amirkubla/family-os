@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { TextInput } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 import type { Note } from "@src/models/note";
 import { addNoteRemote, updateNoteRemote } from "@src/lib/sync/remoteCrud";
 import { t } from "@src/i18n";
@@ -92,7 +92,7 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
       saveDisabled={!body.trim() || submitting}
       saveLoading={submitting}
     >
-      <TextInput
+      <ModalTextInput
         testID="input-note-title"
         placeholder={t("noteModal.titleLabel")}
         value={title}
@@ -104,7 +104,7 @@ export default function NoteModal({ visible, onDismiss, editNote, defaultKidId, 
         contentStyle={MS.inputContent}
       />
 
-      <TextInput
+      <ModalTextInput
         testID="input-note-body"
         placeholder={t("noteModal.bodyLabel")}
         value={body}

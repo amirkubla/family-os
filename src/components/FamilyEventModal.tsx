@@ -5,7 +5,8 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { View } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, Button } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 import SegmentedPills from "@src/components/SegmentedPills";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -259,7 +260,7 @@ export default function FamilyEventModal({
           control={control}
           name="title"
           render={({ field: { onChange, value } }) => (
-            <TextInput
+            <ModalTextInput
               placeholder={t("eventModal.titleLabel")}
               value={value}
               onChangeText={onChange}
@@ -491,7 +492,7 @@ export default function FamilyEventModal({
           control={control}
           name="location"
           render={({ field: { onChange, value } }) => (
-            <TextInput
+            <ModalTextInput
               placeholder={t("eventModal.location")}
               value={value}
               onChangeText={onChange}

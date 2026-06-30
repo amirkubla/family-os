@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text } from "react-native-paper";
 import { addChoreRemote, updateChoreRemote } from "@src/lib/sync/remoteCrud";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { t } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
 import { S } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import type { Chore } from "@src/models/chore";
 import ModalWrapper from "./ModalWrapper";
+import ModalTextInput from "./ModalTextInput";
+import SelectChip from "./SelectChip";
 
 interface Props {
   visible: boolean;
@@ -16,6 +19,7 @@ interface Props {
 }
 
 export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) {
+  const theme = useThemeColor();
   const familyMembers = useFamilyStore((s) => s.familyMembers);
   const activeMembers = familyMembers.filter((m) => m.isActive);
   const [title, setTitle] = useState("");
@@ -76,16 +80,15 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
           <Text style={MS.sectionLabel}>{t("choreModal.whatNeedsDoing")}</Text>
           <Text style={MS.sectionIcon}>✅</Text>
         </View>
-        <TextInput
+        <ModalTextInput
           testID="input-chore-title"
           placeholder={t("choreModal.whatNeedsDoing")}
           value={title}
           onChangeText={setTitle}
-          mode="outlined"
           multiline
           numberOfLines={5}
-          style={[MS.input, styles.tallInput]}
-          contentStyle={[MS.inputContent, styles.tallContent]}
+          style={styles.tallInput}
+          contentStyle={styles.tallContent}
           autoFocus
         />
 
@@ -96,26 +99,21 @@ export default function ChoreAddModal({ visible, onDismiss, editChore }: Props) 
               <Text style={MS.sectionIcon}>👥</Text>
             </View>
             <View style={MS.chipRow}>
-              <Button
-                mode={!assignedToMemberId ? "contained" : "outlined"}
-                compact
+              <SelectChip
+                label={t("choreModal.noAssignment")}
+                color={theme}
+                selected={!assignedToMemberId}
                 onPress={() => setAssignedToMemberId(undefined)}
-                style={MS.chip}
-                labelStyle={MS.chipLabel}
-              >
-                {t("choreModal.noAssignment")}
-              </Button>
+              />
               {activeMembers.map((member) => (
-                <Button
+                <SelectChip
                   key={member.id}
-                  mode={assignedToMemberId === member.id ? "contained" : "outlined"}
-                  compact
+                  label={member.name}
+                  emoji={member.avatarEmoji ?? "👤"}
+                  color={member.color ?? theme}
+                  selected={assignedToMemberId === member.id}
                   onPress={() => setAssignedToMemberId(member.id)}
-                  style={MS.chip}
-                  labelStyle={MS.chipLabel}
-                >
-                  {member.avatarEmoji ?? ""} {member.name}
-                </Button>
+                />
               ))}
             </View>
           </>

@@ -10,7 +10,8 @@
 
 import React, { useState, useEffect } from "react";
 import { View, Pressable, StyleSheet } from "react-native";
-import { Text, TextInput, IconButton } from "react-native-paper";
+import { Text, IconButton } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 
 import ModalWrapper from "./ModalWrapper";
 import PaginatedPicker from "./PaginatedPicker";
@@ -115,7 +116,7 @@ export default function BudgetCategoriesModal({ visible, onDismiss }: Props) {
         {isForm ? (
           <>
             <Text style={MS.label}>{t("budget.categoryName")}</Text>
-            <TextInput
+            <ModalTextInput
               placeholder={t("budget.categoryNamePlaceholder")}
               value={name}
               onChangeText={(v) => { setName(v); setNameError(""); }}
@@ -148,7 +149,7 @@ export default function BudgetCategoriesModal({ visible, onDismiss }: Props) {
             />
 
             <Text style={MS.label}>{t("budget.monthlyCap")}</Text>
-            <TextInput
+            <ModalTextInput
               placeholder={t("budget.monthlyCapPlaceholder")}
               value={capText}
               onChangeText={setCapText}

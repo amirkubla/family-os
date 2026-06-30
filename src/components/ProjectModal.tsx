@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet, PanResponder, LayoutChangeEvent, Platform } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, Button } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 import type { Project, ProjectStatus } from "@src/models/project";
 import { addProjectRemote, updateProjectRemote } from "@src/lib/sync/remoteCrud";
 import { t, statusLabel } from "@src/i18n";
@@ -251,7 +252,7 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       saveDisabled={!title.trim() || submitting}
       saveLoading={submitting}
     >
-      <TextInput
+      <ModalTextInput
         testID="input-project-title"
         placeholder={t("projectModal.projectTitle")}
         value={title}
@@ -263,7 +264,7 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
         contentStyle={MS.inputContent}
       />
 
-      <TextInput
+      <ModalTextInput
         placeholder={t("projectModal.description")}
         value={description}
         onChangeText={setDescription}

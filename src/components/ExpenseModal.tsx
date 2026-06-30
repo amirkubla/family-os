@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, TextInput, Button } from "react-native-paper";
+import { Text, Button } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 import ModalWrapper from "./ModalWrapper";
 import WheelPicker from "./WheelPicker";
 import SegmentedPills from "./SegmentedPills";
@@ -182,7 +183,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           <Text style={MS.sectionLabel}>{t("budget.paymentTitle")}</Text>
           <Text style={MS.sectionIcon}>✏️</Text>
         </View>
-        <TextInput
+        <ModalTextInput
           placeholder={t("budget.paymentTitlePlaceholder")}
           value={form.note}
           onChangeText={(v) => { patch({ note: v }); setTitleError(""); }}
@@ -198,7 +199,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           <Text style={MS.sectionLabel}>{t("budget.amount")}</Text>
           <Text style={MS.sectionIcon}>💰</Text>
         </View>
-        <TextInput
+        <ModalTextInput
           placeholder={t("budget.amountPlaceholder")}
           value={form.amountText}
           onChangeText={(v) => { patch({ amountText: v }); setAmountError(""); }}

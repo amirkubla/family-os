@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View } from "react-native";
-import { Text, TextInput } from "react-native-paper";
+import { Text } from "react-native-paper";
+import ModalTextInput from "./ModalTextInput";
 import {
   addFamilyMemberRemote,
   updateFamilyMemberRemote,
@@ -72,7 +73,7 @@ export default function FamilyMemberModal({ visible, onDismiss, editMember }: Pr
       title={isEditing ? t("settings.editMember") : t("settings.addMember")}
       onSave={handleSubmit}
     >
-      <TextInput
+      <ModalTextInput
         placeholder={t("settings.memberName")}
         value={name}
         onChangeText={(v) => { setName(v); if (nameError) setNameError(""); }}
