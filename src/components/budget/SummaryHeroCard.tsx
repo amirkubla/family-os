@@ -19,23 +19,32 @@ import Svg, { Defs, LinearGradient, Stop, Rect } from "react-native-svg";
 
 import { S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { useThemeColor } from "@src/ui/useThemeColor";
 
 interface Props {
   label: string;
   amount: string;
 }
 
-// Diagonal gradient — violet → orchid-pink, spanning the budget accent.
-const GRAD_FROM = "#6D49D6";
-const GRAD_TO = "#C25CA0";
+/** Lighten a hex colour toward white by `amount` (0–1) — used for the second
+ *  gradient stop so the hero is a single-hue wash of the family theme. */
+function lighten(hex: string, amount: number): string {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const hx = (c: number) => Math.round(c + (255 - c) * amount).toString(16).padStart(2, "0");
+  return `#${hx(r)}${hx(g)}${hx(b)}`;
+}
 
 export default function SummaryHeroCard({ label, amount }: Props) {
+  const theme = useThemeColor();
+  const gradFrom = theme;
+  const gradTo = lighten(theme, 0.45);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
   return (
-    <View style={styles.shadow}>
+    <View style={[styles.shadow, { shadowColor: gradFrom }]}>
       <View
-        style={styles.card}
+        style={[styles.card, { backgroundColor: gradFrom }]}
         onLayout={(e) =>
           setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })
         }
@@ -44,8 +53,8 @@ export default function SummaryHeroCard({ label, amount }: Props) {
           <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill}>
             <Defs>
               <LinearGradient id="budgetHero" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor={GRAD_FROM} />
-                <Stop offset="1" stopColor={GRAD_TO} />
+                <Stop offset="0" stopColor={gradFrom} />
+                <Stop offset="1" stopColor={gradTo} />
               </LinearGradient>
             </Defs>
             <Rect x="0" y="0" width={size.w} height={size.h} fill="url(#budgetHero)" />
@@ -69,7 +78,6 @@ const styles = StyleSheet.create({
     borderRadius: R.xl,
     marginBottom: S.lg,
     ...SHADOW.md,
-    shadowColor: GRAD_FROM,
     shadowOpacity: 0.4,
     shadowRadius: 14,
   },
@@ -81,7 +89,7 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: GRAD_FROM, // fallback for the first frame before measure
+    // backgroundColor applied inline (theme) as the first-frame fallback.
   },
   textWrap: { flex: 1 },
   subtitle: {
