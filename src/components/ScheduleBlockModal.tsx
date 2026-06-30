@@ -36,6 +36,8 @@ const REMINDER_PRESETS = [
   { minutes: 15, label: "15 דק׳" },
   { minutes: 30, label: "30 דק׳" },
   { minutes: 60, label: "שעה" },
+  { minutes: 360, label: "6 שעות" },
+  { minutes: 720, label: "12 שעות" },
   { minutes: 1440, label: "יום" },
 ];
 
