@@ -255,10 +255,6 @@ export default function FamilyEventModal({
     >
       {/* ── Title & Assignee section ── */}
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionLabel}>{t("eventModal.titleLabel")}</Text>
-          <Text style={MS.sectionIcon}>✏️</Text>
-        </View>
         <Controller
           control={control}
           name="title"
@@ -328,10 +324,6 @@ export default function FamilyEventModal({
 
       {/* ── Schedule section ── */}
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionLabel}>{t("eventModal.schedule")}</Text>
-          <Text style={MS.sectionIcon}>{isRecurring ? "🔄" : "1️⃣"}</Text>
-        </View>
         <View style={MS.segmented}>
           <SegmentedPills
             value={isRecurring ? "recurring" : "oneTime"}
@@ -349,7 +341,7 @@ export default function FamilyEventModal({
               <Text style={MS.sectionLabel}>{t("eventModal.day")}</Text>
               <Text style={MS.sectionIcon}>📆</Text>
             </View>
-            <View style={MS.chipRow}>
+            <View style={[MS.chipRow, { gap: S.md }]}>
               {Array.from({ length: 7 }, (_, idx) => {
                 const sel = selectedDays.includes(idx);
                 return (
@@ -472,10 +464,6 @@ export default function FamilyEventModal({
 
       {/* ── Location section ── */}
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionLabel}>{t("eventModal.location")}</Text>
-          <Text style={MS.sectionIcon}>📍</Text>
-        </View>
         <Controller
           control={control}
           name="location"
