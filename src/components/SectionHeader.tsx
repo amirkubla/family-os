@@ -33,6 +33,9 @@ interface Props {
   expanded?: boolean;
   /** Called when the header is tapped in collapsible mode. */
   onToggle?: () => void;
+  /** Optional element pinned to the opposite (RTL: left) edge of the label,
+   *  e.g. a "manage" action button. Ignored in collapsible mode. */
+  action?: React.ReactNode;
   /** Stable testID for automation (suffix `-header` is appended). */
   testID?: string;
 }
@@ -42,9 +45,18 @@ export default function SectionHeader({
   collapsible,
   expanded = true,
   onToggle,
+  action,
   testID,
 }: Props) {
   if (!collapsible) {
+    if (action) {
+      return (
+        <View style={styles.containerAction}>
+          <Text style={styles.label}>{label}</Text>
+          {action}
+        </View>
+      );
+    }
     return (
       <View style={styles.container}>
         <Text style={styles.label}>{label}</Text>
@@ -78,6 +90,15 @@ export default function SectionHeader({
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: S.xl,
+    marginBottom: S.md,
+  },
+  containerAction: {
+    // RTL_ROW = "row" — the engine mirrors when RTL, so the label sits at the
+    // RIGHT and the action pins to the opposite (LEFT) edge.
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: S.xl,
     marginBottom: S.md,
   },

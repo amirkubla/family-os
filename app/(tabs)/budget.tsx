@@ -6,7 +6,7 @@ import {
   Pressable,
   Platform,
 } from "react-native";
-import { Text, FAB, IconButton } from "react-native-paper";
+import { Text, FAB, IconButton, Button } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -27,6 +27,7 @@ import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget"
 import { toYMD } from "@src/utils/date";
 import type { Expense } from "@src/models/budget";
 import ExpenseModal from "@src/components/ExpenseModal";
+import BudgetCategoriesModal from "@src/components/BudgetCategoriesModal";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import SectionHeader from "@src/components/SectionHeader";
@@ -94,6 +95,7 @@ export default function BudgetScreen() {
   const [selectedYM, setSelectedYM] = useState(currentYM);
   const [expenseModalVisible, setExpenseModalVisible] = useState(false);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [catModalVisible, setCatModalVisible] = useState(false);
 
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -603,8 +605,21 @@ export default function BudgetScreen() {
         )}
 
         {/* Categories — tap a category to expand its payments for the selected
-            month. Management lives in Settings → התאמה אישית. */}
-        <SectionHeader label={t("budget.categories")} />
+            month. "ניהול קטגוריות" opens the add/edit/delete manager. */}
+        <SectionHeader
+          label={t("budget.categories")}
+          action={
+            <Button
+              compact
+              icon="pricetags-outline"
+              onPress={() => setCatModalVisible(true)}
+              textColor={theme}
+              testID="btn-manage-budget-categories"
+            >
+              {t("budget.manageCategories")}
+            </Button>
+          }
+        />
 
         {categoryRows.length === 0 ? (
           <Text style={styles.empty}>{t("budget.noExpenses")}</Text>
@@ -809,6 +824,11 @@ export default function BudgetScreen() {
         }}
         editExpense={editExpense}
         onSave={handleSaveExpense}
+      />
+
+      <BudgetCategoriesModal
+        visible={catModalVisible}
+        onDismiss={() => setCatModalVisible(false)}
       />
 
       <ConfirmDeleteModal
