@@ -46,7 +46,6 @@ export default function FamilyScreen() {
                 title={m.name}
                 emoji={m.avatarEmoji ?? "👤"}
                 accent={m.color ?? PARENT_FALLBACK}
-                subtitle={t("family.openProfile")}
                 onPress={() => router.push(`/parent/${m.id}`)}
                 testID={`tile-parent-${m.id}`}
               />
@@ -66,7 +65,6 @@ export default function FamilyScreen() {
                 title={kid.name}
                 emoji={kid.emoji ?? "🧒"}
                 accent={kid.color ?? KID_FALLBACK}
-                subtitle={t("family.viewSchedule")}
                 onPress={() => router.push(`/kid/${kid.id}`)}
                 testID={`tile-kid-${kid.id}`}
               />

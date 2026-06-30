@@ -106,6 +106,8 @@ interface Props {
   onDelete?: () => void;
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
   carousel?: ModalCarousel;
+  /** Person this is being added for — appended to the add title ("…ל<name>"). */
+  lockedKidName?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -123,6 +125,7 @@ export default function ScheduleBlockModal({
   onSubmit,
   onDelete,
   carousel,
+  lockedKidName,
 }: Props) {
   const theme = useThemeColor();
   const kids = useFamilyStore((s) => s.kids);
@@ -203,8 +206,11 @@ export default function ScheduleBlockModal({
       visible={visible}
       onDismiss={onDismiss}
       carousel={carousel}
-      icon="time-outline"
-      title={editBlock ? t("blockModal.editTitle") : t("blockModal.addTitle")}
+      icon="calendar-outline"
+      title={
+        (editBlock ? t("blockModal.editTitle") : t("blockModal.addTitle")) +
+        (!editBlock && lockedKidName ? ` ל${lockedKidName}` : "")
+      }
       onSave={handleSubmit(doSubmit)}
     >
       {editKid && (

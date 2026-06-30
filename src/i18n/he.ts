@@ -249,8 +249,8 @@ const he = {
 
   // ── Schedule Block Modal ──
   blockModal: {
-    addTitle: "הוספת בלוק",
-    editTitle: "עריכת בלוק",
+    addTitle: "הוספת אירוע",
+    editTitle: "עריכת אירוע",
     titleLabel: "כותרת",
     type: "סוג",
     day: "יום",

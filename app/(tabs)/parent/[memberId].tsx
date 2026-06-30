@@ -19,17 +19,9 @@ import PageHeader from "@src/components/PageHeader";
 import { t, statusLabel } from "@src/i18n";
 import { formatILS } from "@src/models/budget";
 import { minutesToHHMM } from "@src/utils/time";
+import PersonStats from "@src/components/person/PersonStats";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-
-function StatCard({ value, label, accent }: { value: string; label: string; accent: string }) {
-  return (
-    <View style={[styles.statCard, { borderColor: accent + "33" }]}>
-      <Text style={[styles.statValue, { color: accent }]} numberOfLines={1}>{value}</Text>
-      <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
-    </View>
-  );
-}
 
 function Section({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
   if (count === 0) return null;
@@ -88,13 +80,16 @@ export default function ParentScreen() {
       />
       <ScrollView contentContainerStyle={styles.container}>
         {/* ── Stats strip ── */}
-        <View style={styles.statsRow}>
-          <StatCard value={`${choresDone}/${chores.length}`} label={t("parent.statChores")} accent={accent} />
-          <StatCard value={String(events.length)} label={t("parent.statEvents")} accent={accent} />
-          <StatCard value={String(notes.length)} label={t("parent.statNotes")} accent={accent} />
-          <StatCard value={String(projects.length)} label={t("parent.statProjects")} accent={accent} />
-          <StatCard value={formatILS(paidTotal)} label={t("parent.statPaid")} accent={accent} />
-        </View>
+        <PersonStats
+          accent={accent}
+          stats={[
+            { value: `${choresDone}/${chores.length}`, label: t("parent.statChores") },
+            { value: String(events.length), label: t("parent.statEvents") },
+            { value: String(notes.length), label: t("parent.statNotes") },
+            { value: String(projects.length), label: t("parent.statProjects") },
+            { value: formatILS(paidTotal), label: t("parent.statPaid") },
+          ]}
+        />
 
         {totalItems === 0 && (
           <Text style={styles.empty}>{t("parent.noItems", { name: member?.name ?? "" })}</Text>
@@ -164,21 +159,6 @@ export default function ParentScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
-
-  statsRow: { flexDirection: RTL_ROW, flexWrap: "wrap", gap: S.sm, marginBottom: S.md },
-  statCard: {
-    flexGrow: 1,
-    minWidth: 88,
-    alignItems: "center",
-    paddingVertical: S.md,
-    paddingHorizontal: S.sm,
-    borderRadius: R.lg,
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    ...SHADOW.sm,
-  },
-  statValue: { fontSize: 20, fontWeight: "800" },
-  statLabel: { fontSize: 11, color: C.textSecondary, marginTop: 2, writingDirection: "rtl" },
 
   empty: {
     fontSize: 14,

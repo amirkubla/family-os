@@ -15,6 +15,7 @@ import {
 } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import SegmentedPills from "@src/components/SegmentedPills";
+import PersonStats from "@src/components/person/PersonStats";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 
@@ -381,6 +382,19 @@ export default function KidScheduleScreen() {
     [allExpenses, kidId],
   );
 
+  // ── Stats strip (shared shape with the parent page) ──
+  const allChores = useFamilyStore((s) => s.chores);
+  const allFamilyEvents = useFamilyStore((s) => s.familyEvents);
+  const kidChores = useMemo(() => allChores.filter((c) => c.kidId === kidId), [allChores, kidId]);
+  const kidEventCount = useMemo(
+    () => allFamilyEvents.filter((e) => e.assigneeType === "kid" && e.assigneeId === kidId).length,
+    [allFamilyEvents, kidId],
+  );
+  const kidPaidTotal = useMemo(
+    () => settledPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0),
+    [settledPayments],
+  );
+
   // Up/down reorder for the kid's notes/projects. (Drag isn't used here —
   // these lists are nested in the calendar scroll, where nested drag is
   // unreliable; arrows work regardless of layout.)
@@ -545,6 +559,18 @@ export default function KidScheduleScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
         <ScrollView contentContainerStyle={styles.container}>
+          {/* Stats strip (shared with the parent page) */}
+          <PersonStats
+            accent={kidColor}
+            stats={[
+              { value: `${kidChores.filter((c) => c.done).length}/${kidChores.length}`, label: t("parent.statChores") },
+              { value: String(kidEventCount), label: t("parent.statEvents") },
+              { value: String(kidNotes.length), label: t("parent.statNotes") },
+              { value: String(kidProjects.length), label: t("parent.statProjects") },
+              { value: formatILS(kidPaidTotal), label: t("parent.statPaid") },
+            ]}
+          />
+
           {/* Tabs */}
           <View style={styles.tabs}>
             <SegmentedPills
@@ -1046,6 +1072,7 @@ export default function KidScheduleScreen() {
             setAddType(null);
           }}
           editBlock={editingBlock}
+          lockedKidName={kid?.name}
           defaultDaysOfWeek={[modalDay]}
           defaultDate={tab === "calendar" ? selectedDate : undefined}
           defaultStartTime={slotStart}
