@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import {
   Card,
   Text,
@@ -434,7 +435,7 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         {/* Month / Week / Day toggle */}
         <View style={styles.viewToggle}>
           <SegmentedPills
@@ -524,7 +525,7 @@ export default function CalendarScreen() {
             </Card.Content>
           </Card>
         )}
-      </ScrollView>
+      </ScreenScrollView>
 
       {/* Voice → event: record, transcribe + parse via the Assistant, then
           review. Stacked above the "+" add FAB. */}

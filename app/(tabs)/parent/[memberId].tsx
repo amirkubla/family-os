@@ -10,7 +10,8 @@
  */
 
 import React, { useMemo, useState, useCallback } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text, IconButton, Card } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -195,7 +196,7 @@ export default function ParentScreen() {
         title={`${member.avatarEmoji ?? "👤"}  ${member.name}`}
         onBack={() => router.replace("/family")}
       />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         {/* ── Stats strip ── */}
         <PersonStats
           accent={accent}
@@ -316,7 +317,7 @@ export default function ParentScreen() {
             </View>
           ))}
         </SectionShell>
-      </ScrollView>
+      </ScreenScrollView>
 
       {/* ── Modals ── */}
       <ChoreAddModal

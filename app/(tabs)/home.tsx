@@ -8,7 +8,8 @@
  */
 
 import React, { useMemo } from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text, IconButton } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -80,7 +81,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         {/* ── Header: family name · settings (spacer balances the cog) ── */}
         <View style={styles.headerRow}>
           {/* Settings cog on the RIGHT (leading in RTL); spacer balances it. */}
@@ -145,7 +146,7 @@ export default function HomeScreen() {
           />
         </View>
 
-      </ScrollView>
+      </ScreenScrollView>
     </SafeAreaView>
   );
 }

@@ -7,7 +7,8 @@
  */
 
 import React, { useMemo } from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -33,7 +34,7 @@ export default function FamilyScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("family.title")} onBack={() => router.replace("/home")} />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         {/* ── Parents ── */}
         <Text style={styles.gridLabel}>{t("family.parents")}</Text>
         {activeMembers.length === 0 ? (
@@ -71,7 +72,7 @@ export default function FamilyScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+      </ScreenScrollView>
     </SafeAreaView>
   );
 }

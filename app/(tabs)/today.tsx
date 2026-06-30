@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import { useAuthStore } from "@src/auth/useAuthStore";
 import {
   Card,
@@ -210,7 +211,7 @@ export default function TodayScreen() {
       {/* Inner View carries testID — SafeAreaView from react-native-safe-area-context
           does not expose testID to UIAutomator on Android */}
       <View testID="roster-screen" style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         {/* Hidden node for QA hierarchy assertions — not rendered visually */}
         {session?.user.username ? (
           <View testID="user-header-name" accessibilityLabel={session.user.username} style={{ height: 0, overflow: "hidden" }} />
@@ -566,7 +567,7 @@ export default function TodayScreen() {
             </Button>
           )}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
 
       <NoteModal
         visible={noteModalOpen}

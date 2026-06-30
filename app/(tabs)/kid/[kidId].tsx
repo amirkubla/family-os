@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useMemo, useLayoutEffect, useCallback } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import {
   Text,
   Card,
@@ -558,7 +559,7 @@ export default function KidScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScreenScrollView contentContainerStyle={styles.container}>
           {/* Stats strip (shared with the parent page) */}
           <PersonStats
             accent={kidColor}
@@ -1053,7 +1054,7 @@ export default function KidScheduleScreen() {
               ))}
             </>
           )}
-        </ScrollView>
+        </ScreenScrollView>
 
         {/* FAB */}
         <FAB

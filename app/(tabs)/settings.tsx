@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Linking, Alert, Share, Platform, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, Linking, Alert, Share, Platform, ActivityIndicator } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Card, Text, IconButton, Divider, TextInput } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -337,7 +338,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <PageHeader title={t("settings.title")} />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
 
         {/* ── Family Name card ── */}
         <SectionHeader label={t("settings.familyName")} />
@@ -600,7 +601,7 @@ export default function SettingsScreen() {
             />
           </Card.Content>
         </Card>
-      </ScrollView>
+      </ScreenScrollView>
 
       <FamilyMemberModal
         visible={modalOpen}

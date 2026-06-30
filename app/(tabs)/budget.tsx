@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
 import {
   View,
-  ScrollView,
   StyleSheet,
   Pressable,
   Platform,
 } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text, FAB, IconButton, Button } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -483,7 +483,7 @@ export default function BudgetScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <ScrollView
+      <ScreenScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -789,7 +789,7 @@ export default function BudgetScreen() {
         {renderPayerBreakdown()}
 
         <View style={{ height: 100 }} />
-      </ScrollView>
+      </ScreenScrollView>
 
       {/* Voice → payment: record, transcribe + parse via the Assistant, then
           review. Stacked above the "+" add FAB. */}

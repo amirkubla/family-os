@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform, ScrollView, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Platform, Alert } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
@@ -184,7 +185,7 @@ export default function ProjectsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("home.projects")} />
-      <ScrollView style={styles.list} contentContainerStyle={styles.container}>
+      <ScreenScrollView style={styles.list} contentContainerStyle={styles.container}>
         {projects.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 32 }}>🚀</Text>
@@ -216,7 +217,7 @@ export default function ProjectsScreen() {
             ))}
           </>
         )}
-      </ScrollView>
+      </ScreenScrollView>
 
       {/* Voice → project: record, transcribe via the Assistant, then open the
           editor pre-filled for review. Stacked above the "+" add FAB. */}

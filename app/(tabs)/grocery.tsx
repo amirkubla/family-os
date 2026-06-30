@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import {
   Card,
   Text,
@@ -173,7 +174,7 @@ export default function GroceryScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         {/* Category tabs */}
         <View style={styles.segments}>
           <SegmentedPills
@@ -325,7 +326,7 @@ export default function GroceryScreen() {
           </Card.Content>
         </Card>
 
-      </ScrollView>
+      </ScreenScrollView>
 
       {/* Floating action button — consistent with /calendar and /kid/*.
           The previous design was a wide purple bar scrolling with the

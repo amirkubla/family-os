@@ -13,7 +13,8 @@
  */
 
 import React from "react";
-import { StyleSheet, ScrollView } from "react-native";
+import { StyleSheet } from "react-native";
+import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Card, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -92,13 +93,13 @@ export default function CustomizationScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <PageHeader title={t("customization.title")} onBack={() => router.replace("/settings")} />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         <Text style={styles.subtitle}>{t("customization.subtitle")}</Text>
 
         <FamilyIconSection />
 
         <ThemeColorSection />
-      </ScrollView>
+      </ScreenScrollView>
     </SafeAreaView>
   );
 }
