@@ -284,8 +284,9 @@ export default function DayCalendar({
         </View>
       )}
 
-      {/* Time grid */}
-      <ScrollView style={styles.gridScroll} nestedScrollEnabled>
+      {/* Time grid. Hide the scroll indicator so the column lines up with the
+          all-day band above (which sits outside the ScrollView). */}
+      <ScrollView style={styles.gridScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
         <View style={styles.gridContainer}>
           {/* Hour rows */}
           {hours.map((hour) => {

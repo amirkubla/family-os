@@ -418,8 +418,11 @@ export default function WeekCalendar({
         </View>
       )}
 
-      {/* Time grid (scrollable) */}
-      <ScrollView style={styles.gridScroll} nestedScrollEnabled>
+      {/* Time grid (scrollable). Hide the scroll indicator so the columns use
+          the full width and line up with the day headers + all-day band (which
+          sit outside the ScrollView — on web RTL the scrollbar otherwise insets
+          the columns and shifts them right of the band). */}
+      <ScrollView style={styles.gridScroll} nestedScrollEnabled showsVerticalScrollIndicator={false}>
         <View style={styles.gridContainer}>
           {/* Hour rows — gridlines + labels */}
           {hours.map((hour) => {
