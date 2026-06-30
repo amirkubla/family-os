@@ -20,7 +20,9 @@ import { t, dayNameShort, assigneeTypeLabel } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
 import { C, S } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import ModalWrapper from "./ModalWrapper";
+import SelectChip from "./SelectChip";
 import WheelTimePicker from "./WheelTimePicker";
 import DatePicker, { formatDateHe } from "./DatePicker";
 
@@ -122,6 +124,7 @@ export default function FamilyEventModal({
   onSubmit,
   onDelete,
 }: Props) {
+  const theme = useThemeColor();
   const familyMembers = useFamilyStore((s) => s.familyMembers);
   const kids = useFamilyStore((s) => s.kids);
   const activeMembers = familyMembers.filter((m) => m.isActive);
@@ -294,46 +297,31 @@ export default function FamilyEventModal({
 
         {assigneeType === "member" && activeMembers.length > 0 && (
           <View style={MS.chipRow}>
-            {activeMembers.map((member) => {
-              const sel = assigneeId === member.id;
-              const mc = member.color || C.selectText;
-              return (
-                <Button
-                  key={member.id}
-                  mode={sel ? "contained" : "outlined"}
-                  compact
-                  onPress={() => setValue("assigneeId", member.id)}
-                  style={[MS.chip, sel && { borderColor: mc }]}
-                  labelStyle={MS.chipLabel}
-                  buttonColor={sel ? mc + "20" : undefined}
-                  textColor={sel ? C.textPrimary : C.textSecondary}
-                >
-                  {member.avatarEmoji ?? ""} {member.name}
-                </Button>
-              );
-            })}
+            {activeMembers.map((member) => (
+              <SelectChip
+                key={member.id}
+                label={member.name}
+                emoji={member.avatarEmoji ?? "👤"}
+                color={member.color || theme}
+                selected={assigneeId === member.id}
+                onPress={() => setValue("assigneeId", member.id)}
+              />
+            ))}
           </View>
         )}
 
         {assigneeType === "kid" && activeKids.length > 0 && (
           <View style={MS.chipRow}>
-            {activeKids.map((kid) => {
-              const sel = assigneeId === kid.id;
-              return (
-                <Button
-                  key={kid.id}
-                  mode={sel ? "contained" : "outlined"}
-                  compact
-                  onPress={() => setValue("assigneeId", kid.id)}
-                  style={[MS.chip, sel && { borderColor: kid.color }]}
-                  labelStyle={MS.chipLabel}
-                  buttonColor={sel ? kid.color + "20" : undefined}
-                  textColor={sel ? C.textPrimary : C.textSecondary}
-                >
-                  {kid.emoji}{"  "}{kid.name}
-                </Button>
-              );
-            })}
+            {activeKids.map((kid) => (
+              <SelectChip
+                key={kid.id}
+                label={kid.name}
+                emoji={kid.emoji ?? "👶"}
+                color={kid.color || theme}
+                selected={assigneeId === kid.id}
+                onPress={() => setValue("assigneeId", kid.id)}
+              />
+            ))}
           </View>
         )}
       </View>
@@ -385,8 +373,8 @@ export default function FamilyEventModal({
                     }}
                     style={MS.chip}
                     labelStyle={MS.chipLabel}
-                    buttonColor={sel ? C.selectBg : undefined}
-                    textColor={sel ? C.selectText : C.textSecondary}
+                    buttonColor={sel ? theme + "20" : undefined}
+                    textColor={sel ? theme : C.textSecondary}
                   >
                     {dayNameShort(idx)}
                   </Button>
@@ -532,8 +520,8 @@ export default function FamilyEventModal({
                 }}
                 style={MS.chip}
                 labelStyle={MS.chipLabel}
-                buttonColor={selected ? C.selectBg : undefined}
-                textColor={selected ? C.selectText : C.textSecondary}
+                buttonColor={selected ? theme + "20" : undefined}
+                textColor={selected ? theme : C.textSecondary}
               >
                 {label}
               </Button>

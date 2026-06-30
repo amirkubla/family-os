@@ -16,6 +16,7 @@ import type { ScheduleBlock } from "@src/models/schedule";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S } from "@src/ui/tokens";
 import { RTL_ROW } from "@src/ui/rtl";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { hhmmToMinutes, minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort } from "@src/i18n";
@@ -123,6 +124,7 @@ export default function ScheduleBlockModal({
   onDelete,
   carousel,
 }: Props) {
+  const theme = useThemeColor();
   const kids = useFamilyStore((s) => s.kids);
   const editKid = editBlock ? kids.find((k) => k.id === editBlock.kidId) : undefined;
   const [selectedReminders, setSelectedReminders] = useState<number[]>([]);
@@ -279,8 +281,8 @@ export default function ScheduleBlockModal({
                     }}
                     style={MS.chip}
                     labelStyle={MS.chipLabel}
-                    buttonColor={sel ? C.selectBg : undefined}
-                    textColor={sel ? C.selectText : C.textSecondary}
+                    buttonColor={sel ? theme + "20" : undefined}
+                    textColor={sel ? theme : C.textSecondary}
                   >
                     {dayNameShort(idx)}
                   </Button>
@@ -394,8 +396,8 @@ export default function ScheduleBlockModal({
                 }}
                 style={MS.chip}
                 labelStyle={MS.chipLabel}
-                buttonColor={selected ? C.selectBg : undefined}
-                textColor={selected ? C.selectText : C.textSecondary}
+                buttonColor={selected ? theme + "20" : undefined}
+                textColor={selected ? theme : C.textSecondary}
               >
                 {label}
               </Button>

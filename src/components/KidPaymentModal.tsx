@@ -9,6 +9,7 @@ import PillToggle from "./PillToggle";
 import { MS } from "@src/ui/modalStyles";
 import { C, S, R } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
 import { toYMD } from "@src/utils/date";
 import { addExpenseRemote, updateExpenseRemote } from "@src/lib/sync/remoteCrud";
@@ -71,6 +72,7 @@ interface Props {
 }
 
 export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense, lockedKidName, carousel }: Props) {
+  const theme = useThemeColor();
   const [name, setName] = useState("");
   const [amountText, setAmountText] = useState("");
   const [dueDate, setDueDate] = useState(toYMD(new Date()));
@@ -205,7 +207,7 @@ export default function KidPaymentModal({ visible, onDismiss, kidId, editExpense
               <Pressable
                 key={rt.key}
                 onPress={() => changeType(rt.key)}
-                style={[styles.typeChip, recurrenceType === rt.key && styles.typeChipActive]}
+                style={[styles.typeChip, recurrenceType === rt.key && { backgroundColor: theme, borderColor: theme }]}
               >
                 <Text style={[styles.typeChipText, recurrenceType === rt.key && styles.typeChipTextActive]}>
                   {rt.label}
@@ -276,7 +278,6 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
     alignItems: "center",
   },
-  typeChipActive: { backgroundColor: C.purple, borderColor: C.purple },
   typeChipText: { fontSize: 13, color: C.textSecondary, fontWeight: "600" },
   typeChipTextActive: { color: "#fff" },
   pickerRow: {

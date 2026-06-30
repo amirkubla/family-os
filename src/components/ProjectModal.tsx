@@ -7,6 +7,7 @@ import { addProjectRemote, updateProjectRemote } from "@src/lib/sync/remoteCrud"
 import { t, statusLabel } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
 import { C } from "@src/ui/tokens";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { RTL_ROW } from "@src/ui/rtl";
 import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
 import OwnerPicker from "./OwnerPicker";
@@ -25,6 +26,7 @@ const THUMB_SIZE = 24;
 const TRACK_HEIGHT = 6;
 
 function ProgressSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const theme = useThemeColor();
   const clamp = (v: number) => Math.round(Math.min(100, Math.max(0, v)));
   const pct = Math.min(100, Math.max(0, value));
 
@@ -93,15 +95,15 @@ function ProgressSlider({ value, onChange }: { value: number; onChange: (v: numb
     <View style={sliderStyles.container}>
       <View style={sliderStyles.labels}>
         <Text style={sliderStyles.edge}>0</Text>
-        <Text style={[sliderStyles.value, { color: C.purple }]}>{Math.round(pct)}%</Text>
+        <Text style={[sliderStyles.value, { color: theme }]}>{Math.round(pct)}%</Text>
         <Text style={sliderStyles.edge}>100</Text>
       </View>
       <View style={sliderStyles.trackWrap} onLayout={onTrackLayout} {...trackProps}>
-        <View style={sliderStyles.track} pointerEvents="none">
-          <View style={[sliderStyles.fill, { width: `${pct}%` }]} />
+        <View style={[sliderStyles.track, { backgroundColor: theme + "22" }]} pointerEvents="none">
+          <View style={[sliderStyles.fill, { width: `${pct}%`, backgroundColor: theme }]} />
         </View>
         {wrapperW > 0 && (
-          <View pointerEvents="none" style={[sliderStyles.thumb, { left: thumbLeft }]} />
+          <View pointerEvents="none" style={[sliderStyles.thumb, { left: thumbLeft, borderColor: theme }]} />
         )}
       </View>
     </View>
@@ -125,16 +127,16 @@ const sliderStyles = StyleSheet.create({
     ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
   },
   track: {
+    // backgroundColor applied inline from the family theme (theme + "22").
     height: TRACK_HEIGHT,
     borderRadius: TRACK_HEIGHT / 2,
-    backgroundColor: C.purple + "22",
     overflow: "hidden",
     marginHorizontal: THUMB_SIZE / 2,
   },
   fill: {
+    // backgroundColor applied inline from the family theme.
     height: TRACK_HEIGHT,
     borderRadius: TRACK_HEIGHT / 2,
-    backgroundColor: C.purple,
   },
   thumb: {
     position: "absolute",
@@ -143,7 +145,7 @@ const sliderStyles = StyleSheet.create({
     borderRadius: THUMB_SIZE / 2,
     backgroundColor: C.surface,
     borderWidth: 3,
-    borderColor: C.purple,
+    // borderColor applied inline from the family theme.
     top: (THUMB_SIZE + 8 - THUMB_SIZE) / 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
