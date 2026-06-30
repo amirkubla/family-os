@@ -213,6 +213,7 @@ export default function NotesScreen() {
       />
 
       <FAB
+        customSize={50}
         icon="plus"
         testID="btn-add-note"
         style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}

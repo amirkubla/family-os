@@ -30,6 +30,7 @@ export default function VoiceFab({ status, onPress, bottom, testID, webFixed }: 
   const theme = useThemeColor();
   return (
     <FAB
+      customSize={50}
       icon={status === "recording" ? "stop" : "microphone"}
       loading={status === "processing"}
       style={[

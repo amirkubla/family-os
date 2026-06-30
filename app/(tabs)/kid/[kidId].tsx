@@ -1031,6 +1031,7 @@ export default function KidScheduleScreen() {
 
         {/* FAB */}
         <FAB
+          customSize={50}
           icon="plus"
           style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
           color="#FFF"

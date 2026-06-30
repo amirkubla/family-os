@@ -228,6 +228,7 @@ export default function ProjectsScreen() {
       />
 
       <FAB
+        customSize={50}
         icon="plus"
         testID="btn-add-project"
         accessibilityLabel="btn-add-project"

@@ -333,6 +333,7 @@ export default function GroceryScreen() {
           The previous design was a wide purple bar scrolling with the
           list, which disappeared on long lists; a FAB stays visible. */}
       <FAB
+        customSize={50}
         icon="plus"
         style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme }]}
         color="#FFF"

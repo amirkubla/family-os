@@ -180,7 +180,7 @@ export default function CustomTabBar({
           >
             <Ionicons
               name={TAB_ICONS[route.name] ?? "ellipse"}
-              size={32}
+              size={28}
               color={iconColor(isFocused)}
             />
           </Pressable>
@@ -200,7 +200,7 @@ export default function CustomTabBar({
             accessibilityState={{ selected: isFocused }}
             testID={`nav-op-${op.route}`}
           >
-            <Ionicons name={op.icon} size={32} color={iconColor(isFocused)} />
+            <Ionicons name={op.icon} size={28} color={iconColor(isFocused)} />
           </Pressable>
         ),
       };
@@ -217,7 +217,7 @@ export default function CustomTabBar({
                 accessibilityLabel={t("home.kids")}
                 testID="nav-kids"
               >
-                <Ionicons name="happy" size={32} color="#FFFFFF" />
+                <Ionicons name="happy" size={28} color="#FFFFFF" />
               </Pressable>
             ),
           },
@@ -250,7 +250,7 @@ export default function CustomTabBar({
           accessibilityLabel={t("nav.back")}
           testID="nav-kids-back"
         >
-          <Ionicons name="chevron-forward" size={32} color="#FFFFFF" />
+          <Ionicons name="chevron-forward" size={28} color="#FFFFFF" />
         </Pressable>
       ),
     },
@@ -303,7 +303,7 @@ export default function CustomTabBar({
           accessibilityState={{ expanded }}
           testID="nav-fab"
         >
-          <Ionicons name={expanded ? "close" : "list"} size={26} color="#FFFFFF" />
+          <Ionicons name={expanded ? "close" : "list"} size={24} color="#FFFFFF" />
         </Pressable>
       </View>
     </View>
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     // bottom set inline from safe-area inset
   },
   menu: {
-    width: 56, // match the FAB width so the circles centre over it
+    width: 50, // match the FAB width so the circles centre over it
     alignItems: "center",
     gap: 12,
     marginBottom: 14,
@@ -333,23 +333,23 @@ const styles = StyleSheet.create({
   // Layout only — fill + ring colour are applied inline from the family theme
   // (see circleStyle); default is themed fill + white ring, focused inverts.
   circle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
     borderColor: "#FFFFFF",
   },
   kidEmoji: {
-    fontSize: 30,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 30,
     textAlign: "center",
   },
   fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#1E293B",

@@ -236,6 +236,7 @@ export default function ChoresScreen() {
       />
 
       <FAB
+        customSize={50}
         icon="plus"
         testID="btn-add-chore"
         accessibilityLabel="btn-add-chore"
