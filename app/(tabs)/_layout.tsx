@@ -31,6 +31,11 @@ export default function TabLayout() {
           headerShown: false,
         }}
       />
+      <Tabs.Screen name="family" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen
+        name="parent/[memberId]"
+        options={{ href: null, headerShown: false }}
+      />
       <Tabs.Screen name="budget" options={{ title: t("tabs.budget") }} />
     </Tabs>
   );

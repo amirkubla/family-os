@@ -29,7 +29,6 @@ const TILE = {
   chores: "#0D9488",
   projects: "#6C63FF",
   budget: "#9B59B6",
-  kids: "#E0699B",
 };
 
 export default function HomeScreen() {
@@ -42,11 +41,8 @@ export default function HomeScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
   const familyEvents = useFamilyStore((s) => s.familyEvents);
   const allExpenses = useFamilyStore((s) => s.expenses);
-  const kids = useFamilyStore((s) => s.kids);
   const familyName = useFamilyStore((s) => s.familyName);
   const familyEmoji = useFamilyStore((s) => s.customizations.familyEmoji) || DEFAULT_FAMILY_EMOJI;
-
-  const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
 
   // ── Live counts for the launcher tiles ──
   const counts = useMemo(() => {
@@ -149,25 +145,6 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* ── Kids — each opens their schedule. Add/edit lives in Settings. ── */}
-        {activeKids.length > 0 && (
-          <>
-            <Text style={styles.gridLabel}>{t("home.kids")}</Text>
-            <View style={styles.grid}>
-              {activeKids.map((kid) => (
-                <FeatureTile
-                  key={kid.id}
-                  title={kid.name}
-                  emoji={kid.emoji ?? "🧒"}
-                  accent={kid.color ?? TILE.kids}
-                  subtitle={t("home.viewSchedule")}
-                  onPress={() => router.push(`/kid/${kid.id}`)}
-                  testID={`tile-kid-${kid.id}`}
-                />
-              ))}
-            </View>
-          </>
-        )}
       </ScrollView>
     </SafeAreaView>
   );

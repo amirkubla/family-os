@@ -176,6 +176,35 @@ const he = {
     noPayments: "אין תשלומים",
   },
 
+  // ── Family page ──
+  family: {
+    title: "משפחה",
+    parents: "הורים",
+    kids: "ילדים",
+    noParents: "אין בני משפחה עדיין",
+    noKids: "אין ילדים עדיין",
+    openProfile: "צפייה בפרופיל",
+    viewSchedule: "צפייה במערכת",
+  },
+
+  // ── Parent (member) page ──
+  parent: {
+    chores: "מטלות",
+    events: "אירועים",
+    notes: "פתקים",
+    projects: "פרויקטים",
+    payments: "תשלומים",
+    statChores: "מטלות",
+    statEvents: "אירועים",
+    statNotes: "פתקים",
+    statProjects: "פרויקטים",
+    statPaid: "שולם",
+    noItems: "אין פריטים משויכים ל{{name}}",
+    recurring: "קבוע",
+    oneTime: "חד פעמי",
+    done: "בוצע",
+  },
+
   // ── Grocery Add Modal ──
   groceryModal: {
     title: "הוספת פריט",

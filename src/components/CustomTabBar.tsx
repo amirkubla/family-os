@@ -17,13 +17,11 @@ import {
   Platform,
   Animated,
 } from "react-native";
-import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useRouter } from "expo-router";
 
-import { useFamilyStore } from "@src/store/useFamilyStore";
 import { FAB_RIGHT } from "@src/ui/fabAnchor";
 import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
@@ -71,14 +69,9 @@ export default function CustomTabBar({
   const bottomPad = insets.bottom + 16;
   const router = useRouter();
 
-  // Active kids drive the nested "ילדים" layer.
-  const kids = useFamilyStore((s) => s.kids);
-  const activeKids = kids.filter((k) => k.isActive);
   const theme = useThemeColor();
 
   const [expanded, setExpanded] = useState(false);
-  // Which menu layer is showing: the flat main menu, or the nested kid list.
-  const [view, setView] = useState<"main" | "kids">("main");
   const anim = useRef(new Animated.Value(0)).current;
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -88,7 +81,6 @@ export default function CustomTabBar({
 
   const expand = useCallback(() => {
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
-    setView("main"); // always open on the main layer
     setExpanded(true);
     Animated.spring(anim, { toValue: 1, ...SPRING }).start();
   }, [anim]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -101,7 +93,6 @@ export default function CustomTabBar({
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
     collapseTimer.current = setTimeout(() => {
       setExpanded(false);
-      setView("main"); // reset so the next open starts on the main layer
     }, 240);
   }, [anim]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -109,14 +100,6 @@ export default function CustomTabBar({
     if (expanded) collapse();
     else expand();
   }, [expanded, expand, collapse]);
-
-  const handleKidSelect = useCallback(
-    (kidId: string) => {
-      router.push(`/kid/${kidId}`);
-      collapse();
-    },
-    [router, collapse],
-  );
 
   const handleOpSelect = useCallback(
     (route: string) => {
@@ -208,58 +191,23 @@ export default function CustomTabBar({
         ),
       };
     }),
-    ...(activeKids.length > 0
-      ? [
-          {
-            key: "kids-trigger",
-            node: (
-              <Pressable
-                onPress={() => setView("kids")}
-                style={[styles.circle, webCursor, circleStyle(false)]}
-                accessibilityRole="button"
-                accessibilityLabel={t("home.kids")}
-                testID="nav-kids"
-              >
-                <Ionicons name="happy" size={28} color="#FFFFFF" />
-              </Pressable>
-            ),
-          },
-        ]
-      : []),
-  ];
-
-  const kidsItems: { key: string; node: React.ReactNode }[] = [
-    ...activeKids.map((kid) => ({
-      key: kid.id,
-      node: (
-        <Pressable
-          onPress={() => handleKidSelect(kid.id)}
-          style={[styles.circle, webCursor, circleStyle(false)]}
-          accessibilityRole="button"
-          accessibilityLabel={kid.name}
-          testID={`nav-kid-${kid.id}`}
-        >
-          <Text style={styles.kidEmoji}>{kid.emoji ?? "🧒"}</Text>
-        </Pressable>
-      ),
-    })),
     {
-      key: "kids-back",
+      key: "family",
       node: (
         <Pressable
-          onPress={() => setView("main")}
-          style={[styles.circle, webCursor, circleStyle(false)]}
+          onPress={() => { router.push("/family"); collapse(); }}
+          style={[styles.circle, webCursor, circleStyle(activeName === "family")]}
           accessibilityRole="button"
-          accessibilityLabel={t("nav.back")}
-          testID="nav-kids-back"
+          accessibilityLabel={t("family.title")}
+          testID="nav-family"
         >
-          <Ionicons name="chevron-forward" size={28} color="#FFFFFF" />
+          <Ionicons name="people" size={28} color={iconColor(activeName === "family")} />
         </Pressable>
       ),
     },
   ];
 
-  const items = view === "kids" ? kidsItems : mainItems;
+  const items = mainItems;
 
   return (
     <View
@@ -341,11 +289,6 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
-  },
-  kidEmoji: {
-    fontSize: 26,
-    lineHeight: 30,
-    textAlign: "center",
   },
   fab: {
     width: 50,
