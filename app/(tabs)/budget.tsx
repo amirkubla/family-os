@@ -611,7 +611,7 @@ export default function BudgetScreen() {
           action={
             <Button
               compact
-              icon="pricetags-outline"
+              icon="tag-multiple-outline"
               onPress={() => setCatModalVisible(true)}
               textColor={theme}
               testID="btn-manage-budget-categories"
