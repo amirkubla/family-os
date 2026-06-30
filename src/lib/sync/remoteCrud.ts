@@ -273,6 +273,7 @@ export function addChoreRemote(input: {
   title: string;
   assignedTo?: string;
   assignedToMemberId?: string;
+  kidId?: string;
 }) {
   const item = useFamilyStore.getState().addChore(input);
   fireAndForget(
@@ -285,14 +286,21 @@ export function addChoreRemote(input: {
 
 export function updateChoreRemote(
   id: string,
-  patch: Partial<Pick<Chore, "title" | "assignedToMemberId">>,
+  patch: Partial<Pick<Chore, "title" | "assignedToMemberId" | "kidId">>,
 ) {
   useFamilyStore.getState().updateChore(id, patch);
   // PATCH with only changed fields — see BUG-N1 note in module header.
-  const apiPatch: Partial<{ title: string; assignedToMemberId: string | null }> = {};
+  // Use "key in patch" (not `!== undefined`) for the assignee fields so an
+  // explicit un-assign (value undefined) is sent as null — the assignee is a
+  // member XOR a kid, so saving always clears whichever isn't chosen.
+  const apiPatch: Partial<{
+    title: string;
+    assignedToMemberId: string | null;
+    kidId: string | null;
+  }> = {};
   if (patch.title !== undefined) apiPatch.title = patch.title;
-  if (patch.assignedToMemberId !== undefined)
-    apiPatch.assignedToMemberId = patch.assignedToMemberId ?? null;
+  if ("assignedToMemberId" in patch) apiPatch.assignedToMemberId = patch.assignedToMemberId ?? null;
+  if ("kidId" in patch) apiPatch.kidId = patch.kidId ?? null;
   fireAndForget(
     getFamilyId().then((fid) => choresApi.update(fid, id, apiPatch)),
     "Update chore",

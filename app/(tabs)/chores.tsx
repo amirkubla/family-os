@@ -69,9 +69,14 @@ function ChoreRow({
       ? s.familyMembers.find((m) => m.id === chore.assignedToMemberId)
       : undefined,
   );
-  const assigneeDisplay = assignedMember
-    ? `${assignedMember.avatarEmoji ?? ""} ${assignedMember.name}`
-    : chore.assignedTo;
+  const assignedKid = useFamilyStore((s) =>
+    chore.kidId ? s.kids.find((k) => k.id === chore.kidId) : undefined,
+  );
+  const assigneeDisplay = assignedKid
+    ? `${assignedKid.emoji ?? "👶"} ${assignedKid.name}`
+    : assignedMember
+      ? `${assignedMember.avatarEmoji ?? ""} ${assignedMember.name}`
+      : chore.assignedTo;
 
   return (
     <Pressable

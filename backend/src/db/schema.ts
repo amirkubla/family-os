@@ -218,6 +218,8 @@ export const chores = pgTable(
     title: text("title").notNull(),
     assignedTo: text("assigned_to"),
     assignedToMemberId: uuid("assigned_to_member_id"),
+    // Assignee can be a kid instead of a member (mutually exclusive).
+    kidId: uuid("kid_id").references(() => kids.id, { onDelete: "set null" }),
     done: boolean("done").default(false).notNull(),
     selectedForToday: boolean("selected_for_today").default(false).notNull(),
     // Manual sort position within the list (drag-to-reorder). Lower = first.

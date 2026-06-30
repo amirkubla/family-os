@@ -339,9 +339,14 @@ export default function TodayScreen() {
                       (m) => m.id === chore.assignedToMemberId,
                     )
                   : undefined;
-                const assigneeDisplay = member
-                  ? `${member.avatarEmoji ?? ""} ${member.name}`
-                  : chore.assignedTo;
+                const assignedKid = chore.kidId
+                  ? kids.find((k) => k.id === chore.kidId)
+                  : undefined;
+                const assigneeDisplay = assignedKid
+                  ? `${assignedKid.emoji ?? "👶"} ${assignedKid.name}`
+                  : member
+                    ? `${member.avatarEmoji ?? ""} ${member.name}`
+                    : chore.assignedTo;
                 return (
                   <View
                     key={`chore-${chore.id}`}

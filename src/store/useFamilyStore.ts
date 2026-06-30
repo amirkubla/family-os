@@ -141,10 +141,10 @@ interface FamilyState {
   deleteNote: (id: string) => void;
 
   // Chores actions
-  addChore: (input: { title: string; assignedTo?: string; assignedToMemberId?: string }) => Chore;
+  addChore: (input: { title: string; assignedTo?: string; assignedToMemberId?: string; kidId?: string }) => Chore;
   updateChore: (
     id: string,
-    patch: Partial<Pick<Chore, "title" | "assignedToMemberId">>
+    patch: Partial<Pick<Chore, "title" | "assignedToMemberId" | "kidId">>
   ) => void;
   toggleChoreDone: (id: string) => void;
   toggleChoreSelectedForToday: (id: string) => void;
@@ -425,7 +425,7 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Chores ── */
 
-      addChore: ({ title, assignedTo, assignedToMemberId }) => {
+      addChore: ({ title, assignedTo, assignedToMemberId, kidId }) => {
         const now = Date.now();
         const minOrder = get().chores.reduce((m, c) => Math.min(m, c.sortOrder ?? 0), 0);
         const item: Chore = {
@@ -433,6 +433,7 @@ export const useFamilyStore = create<FamilyState>()(
           title,
           assignedTo,
           assignedToMemberId,
+          kidId,
           done: false,
           selectedForToday: false,
           sortOrder: minOrder - 1, // prepend → sorts first
@@ -715,7 +716,7 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 15,
+      version: 16,
       storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => (_state, error) => {
         // Last-line-of-defense: if anything else in the rehydrate path throws
@@ -850,6 +851,13 @@ export const useFamilyStore = create<FamilyState>()(
         if (version < 15) {
           persisted.expenses = persisted.expenses ?? [];
           persisted.budgetCategories = persisted.budgetCategories ?? [];
+        }
+        if (version < 16) {
+          // Chores can now be assigned to a kid (not just a member).
+          persisted.chores = (persisted.chores ?? []).map((c: any) => ({
+            ...c,
+            kidId: c.kidId ?? undefined,
+          }));
         }
         return persisted;
       },

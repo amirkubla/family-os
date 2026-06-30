@@ -54,6 +54,7 @@ export interface ApiChore {
   title: string;
   assignedTo: string | null;
   assignedToMemberId: string | null;
+  kidId: string | null;
   done: boolean;
   selectedForToday: boolean;
   sortOrder: number;

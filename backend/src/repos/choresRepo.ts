@@ -44,6 +44,7 @@ export const choresRepo = {
           title: sql`excluded.title`,
           assignedTo: sql`excluded.assigned_to`,
           assignedToMemberId: sql`excluded.assigned_to_member_id`,
+          kidId: sql`excluded.kid_id`,
           done: sql`excluded.done`,
           selectedForToday: sql`excluded.selected_for_today`,
           sortOrder: sql`excluded.sort_order`,
