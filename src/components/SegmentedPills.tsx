@@ -57,7 +57,7 @@ export default function SegmentedPills({ value, onChange, options, testIDPrefix 
     for (const o of options) {
       Animated.timing(progress[o.value], {
         toValue: o.value === value ? 1 : 0,
-        duration: 1500,
+        duration: 900,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: Platform.OS !== "web",
       }).start();
