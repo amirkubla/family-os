@@ -14,6 +14,7 @@ import { Text, IconButton } from "react-native-paper";
 import { minutesToHHMM } from "@src/utils/time";
 import { dayOfWeekFromYMD } from "@src/utils/date";
 import { formatDateHe } from "@src/components/DatePicker";
+import { t } from "@src/i18n";
 import { useFamilyEventsForDate } from "@src/store/familyEventSelectors";
 import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
@@ -43,6 +44,7 @@ interface EventItem {
   source: "event" | "block";
   icon: string;
   location?: string;
+  allDay?: boolean;
 }
 
 interface LayoutedEvent extends EventItem {
@@ -189,7 +191,7 @@ export default function DayCalendar({
     [selectedDate, onSelectDate],
   );
 
-  const dayItems = useMemo<LayoutedEvent[]>(() => {
+  const { allDayItems, timedItems } = useMemo(() => {
     const items: EventItem[] = [];
 
     // Colour an event by its assignee — the specific person's colour (so all of
@@ -221,6 +223,7 @@ export default function DayCalendar({
         source: "event",
         icon,
         location: e.location,
+        allDay: e.allDay,
       });
     }
 
@@ -238,7 +241,10 @@ export default function DayCalendar({
       });
     }
 
-    return layoutEvents(items);
+    return {
+      allDayItems: items.filter((i) => i.allDay),
+      timedItems: layoutEvents(items.filter((i) => !i.allDay)),
+    };
   }, [familyEvents, kidBlocks, kids, familyMembers]);
 
   const hours = useMemo(() => {
@@ -257,6 +263,26 @@ export default function DayCalendar({
         </Text>
         <IconButton icon="chevron-left" size={22} onPress={goForward} />
       </View>
+
+      {/* All-day band — pinned above the timed grid (not wrapped to 00:00) */}
+      {allDayItems.length > 0 && (
+        <View style={styles.allDayBand}>
+          <Text style={styles.allDayLabel}>{t("eventModal.allDay")}</Text>
+          <View style={styles.allDayChips}>
+            {allDayItems.map((ev) => (
+              <Pressable
+                key={ev.id}
+                onPress={() => onEventPress?.(ev.id, ev.source)}
+                style={[styles.allDayChip, { backgroundColor: ev.color + "22", borderStartColor: ev.color }]}
+              >
+                <Text style={[styles.allDayChipText, { color: ev.color }]} numberOfLines={1}>
+                  {ev.icon} {ev.title}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* Time grid */}
       <ScrollView style={styles.gridScroll} nestedScrollEnabled>
@@ -293,7 +319,7 @@ export default function DayCalendar({
                   />
                 );
               })}
-              {dayItems.map((ev) => {
+              {timedItems.map((ev) => {
                 const gridStart = toGridMin(ev.startMinutes);
                 const gridEnd = toGridMin(ev.endMinutes);
                 const clampedStart = Math.max(gridStart, GRID_START_HOUR * 60);
@@ -371,6 +397,44 @@ const styles = StyleSheet.create({
     color: C.textPrimary,
     textAlign: "center",
     flex: 1,
+  },
+
+  // All-day band — a row above the timed grid.
+  allDayBand: {
+    flexDirection: RTL_ROW,
+    alignItems: "flex-start",
+    gap: S.sm,
+    paddingVertical: S.xs,
+    marginBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.border,
+  },
+  allDayLabel: {
+    width: TIME_LABEL_WIDTH,
+    fontSize: 10,
+    color: C.textMuted,
+    textAlign: "center",
+    marginTop: 4,
+    writingDirection: "rtl",
+  },
+  allDayChips: {
+    flex: 1,
+    flexDirection: RTL_ROW,
+    flexWrap: "wrap",
+    gap: S.xs,
+  },
+  allDayChip: {
+    borderStartWidth: 4,
+    borderRadius: R.sm,
+    paddingHorizontal: S.sm,
+    paddingVertical: S.xs,
+    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+  },
+  allDayChipText: {
+    fontSize: 12,
+    fontWeight: "700",
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
   },
 
   gridScroll: {

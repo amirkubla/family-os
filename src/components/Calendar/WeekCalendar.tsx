@@ -63,6 +63,7 @@ interface EventItem {
   endMinutes: number;
   source: "event" | "block";
   icon: string; // kid emoji or "👨‍👩‍👧‍👦" for family
+  allDay?: boolean;
 }
 
 // Overlap layout info
@@ -249,7 +250,7 @@ export default function WeekCalendar({
   const kids = useFamilyStore((s) => s.kids);
   const familyMembers = useFamilyStore((s) => s.familyMembers);
 
-  const weekEvents = useMemo<Record<string, LayoutedEvent[]>>(() => {
+  const weekEvents = useMemo(() => {
     // Kid scope: keep only this kid's family events / blocks. Unset = all.
     const keepEvent = (e: { assigneeType: string; assigneeId?: string }) =>
       !kidId || (e.assigneeType === "kid" && e.assigneeId === kidId);
@@ -267,8 +268,15 @@ export default function WeekCalendar({
         return kids.find((k) => k.id === e.assigneeId)?.color ?? e.color ?? KID_COLOR;
       return e.color ?? FAMILY_COLOR;
     };
+    const eventIcon = (e: { assigneeType: string; assigneeId?: string }) =>
+      e.assigneeType === "kid" && e.assigneeId
+        ? (kids.find((k) => k.id === e.assigneeId)?.emoji ?? "👨‍👩‍👧‍👦")
+        : e.assigneeType === "member" && e.assigneeId
+          ? (familyMembers.find((m) => m.id === e.assigneeId)?.avatarEmoji ?? "👤")
+          : "👨‍👩‍👧‍👦";
 
-    const result: Record<string, LayoutedEvent[]> = {};
+    const timed: Record<string, LayoutedEvent[]> = {};
+    const allDay: Record<string, EventItem[]> = {};
     for (const day of days) {
       const dow = day.getDay();
       const dateStr = ymd(day);
@@ -276,51 +284,29 @@ export default function WeekCalendar({
 
       // Family – recurring
       for (const e of (familyRecurringByDow[dow] ?? []).filter(keepEvent)) {
-        const icon = e.assigneeType === "kid" && e.assigneeId
-          ? (kids.find((k) => k.id === e.assigneeId)?.emoji ?? "👨‍👩‍👧‍👦")
-          : e.assigneeType === "member" && e.assigneeId
-            ? (familyMembers.find((m) => m.id === e.assigneeId)?.avatarEmoji ?? "👤")
-            : "👨‍👩‍👧‍👦";
         items.push({
-          id: e.id,
-          title: e.title,
-          color: eventColor(e),
-          startMinutes: e.startMinutes,
-          endMinutes: e.endMinutes,
-          source: "event",
-          icon,
+          id: e.id, title: e.title, color: eventColor(e),
+          startMinutes: e.startMinutes, endMinutes: e.endMinutes,
+          source: "event", icon: eventIcon(e), allDay: e.allDay,
         });
       }
       // Family – one-time (multi-day events span their whole [date…endDate])
       for (const e of familyOneTimeEvents.filter(keepEvent)) {
         if (oneTimeEventOnDate(e, dateStr)) {
-          const icon = e.assigneeType === "kid" && e.assigneeId
-            ? (kids.find((k) => k.id === e.assigneeId)?.emoji ?? "👨‍👩‍👧‍👦")
-            : e.assigneeType === "member" && e.assigneeId
-              ? (familyMembers.find((m) => m.id === e.assigneeId)?.avatarEmoji ?? "👤")
-              : "👨‍👩‍👧‍👦";
           items.push({
-            id: e.id,
-            title: e.title,
-            color: eventColor(e),
-            startMinutes: e.startMinutes,
-            endMinutes: e.endMinutes,
-            source: "event",
-            icon,
+            id: e.id, title: e.title, color: eventColor(e),
+            startMinutes: e.startMinutes, endMinutes: e.endMinutes,
+            source: "event", icon: eventIcon(e), allDay: e.allDay,
           });
         }
       }
-      // Kid blocks – recurring
+      // Kid blocks – recurring (always timed)
       for (const b of (kidRecurringByDow[dow] ?? []).filter(keepBlock)) {
         const kid = kids.find((k) => k.id === b.kidId);
         items.push({
-          id: b.id,
-          title: b.title,
-          color: b.color ?? kid?.color ?? KID_COLOR,
-          startMinutes: b.startMinutes,
-          endMinutes: b.endMinutes,
-          source: "block",
-          icon: kid?.emoji ?? "👶",
+          id: b.id, title: b.title, color: b.color ?? kid?.color ?? KID_COLOR,
+          startMinutes: b.startMinutes, endMinutes: b.endMinutes,
+          source: "block", icon: kid?.emoji ?? "👶",
         });
       }
       // Kid blocks – one-time
@@ -328,21 +314,24 @@ export default function WeekCalendar({
         if (b.date === dateStr) {
           const kid = kids.find((k) => k.id === b.kidId);
           items.push({
-            id: b.id,
-            title: b.title,
-            color: b.color ?? kid?.color ?? KID_COLOR,
-            startMinutes: b.startMinutes,
-            endMinutes: b.endMinutes,
-            source: "block",
-            icon: kid?.emoji ?? "👶",
+            id: b.id, title: b.title, color: b.color ?? kid?.color ?? KID_COLOR,
+            startMinutes: b.startMinutes, endMinutes: b.endMinutes,
+            source: "block", icon: kid?.emoji ?? "👶",
           });
         }
       }
 
-      result[dateStr] = layoutEvents(items);
+      // All-day events live in the band at the top; only timed go in the grid.
+      allDay[dateStr] = items.filter((i) => i.allDay);
+      timed[dateStr] = layoutEvents(items.filter((i) => !i.allDay));
     }
-    return result;
+    return { timed, allDay };
   }, [days, familyRecurringByDow, familyOneTimeEvents, kidRecurringByDow, kidOneTimeBlocks, kids, familyMembers, kidId]);
+
+  const hasAllDay = useMemo(
+    () => days.some((d) => (weekEvents.allDay[ymd(d)] ?? []).length > 0),
+    [days, weekEvents],
+  );
 
   // ── Hour labels ──
   const hours = useMemo(() => {
@@ -403,6 +392,32 @@ export default function WeekCalendar({
         })}
       </View>
 
+      {/* All-day band — a row above the timed grid, aligned with the day
+          columns; all-day events live here instead of wrapping to 00:00. */}
+      {hasAllDay && (
+        <View style={styles.allDayRow}>
+          <View style={styles.timeLabelSpacer} />
+          {days.map((day, i) => {
+            const items = weekEvents.allDay[ymd(day)] ?? [];
+            return (
+              <View key={i} style={[styles.allDayCell, i > 0 && styles.dayColumnBorder]}>
+                {items.map((ev) => (
+                  <Pressable
+                    key={ev.id}
+                    style={[styles.allDayChip, { backgroundColor: ev.color + "28", borderStartColor: ev.color }]}
+                    onPress={() => onEventPress?.(ev.id, ev.source)}
+                  >
+                    <Text style={[styles.eventTitle, { color: ev.color }]} numberOfLines={1}>
+                      {ev.icon} {ev.title}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            );
+          })}
+        </View>
+      )}
+
       {/* Time grid (scrollable) */}
       <ScrollView style={styles.gridScroll} nestedScrollEnabled>
         <View style={styles.gridContainer}>
@@ -426,7 +441,7 @@ export default function WeekCalendar({
             {days.map((day, i) => {
               const dateStr = ymd(day);
               const isSelected = dateStr === selectedDate;
-              const events = weekEvents[dateStr] ?? [];
+              const events = weekEvents.timed[dateStr] ?? [];
               const totalSlots = (GRID_END_HOUR - GRID_START_HOUR) * 2;
               return (
                 <View
@@ -620,6 +635,29 @@ const styles = StyleSheet.create({
   dayColumnBorder: {
     borderStartWidth: StyleSheet.hairlineWidth,
     borderStartColor: C.border,
+  },
+
+  // All-day band (above the scrollable grid), aligned with the day columns.
+  allDayRow: {
+    flexDirection: RTL_ROW,
+    marginBottom: 4,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.border,
+  },
+  allDayCell: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 1,
+  },
+  allDayChip: {
+    borderStartWidth: 3,
+    borderRadius: 4,
+    paddingHorizontal: 3,
+    paddingVertical: 2,
+    marginBottom: 2,
+    marginEnd: 1,
+    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
   },
 
   // Time slots (clickable half-hour areas)
