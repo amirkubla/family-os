@@ -11,6 +11,7 @@ import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { FamilyCustomizations } from "@src/models/customization";
 import type { BudgetCategory, Expense } from "@src/models/budget";
+import type { Folder, FamilyDocument } from "@src/models/document";
 import { makeId } from "@src/utils/id";
 
 /**
@@ -77,6 +78,10 @@ interface FamilyState {
   budgetCategories: BudgetCategory[];
   expenses: Expense[];
 
+  // Family documents — folder tree + file metadata (bytes live in GCS).
+  folders: Folder[];
+  documents: FamilyDocument[];
+
   // Onboarding
   onboardingComplete: boolean;
 
@@ -116,6 +121,16 @@ interface FamilyState {
   setFamilyEvents: (items: FamilyEvent[]) => void;
   setBudgetCategories: (items: BudgetCategory[]) => void;
   setExpenses: (items: Expense[]) => void;
+  setFolders: (items: Folder[]) => void;
+  setDocuments: (items: FamilyDocument[]) => void;
+
+  // Folder actions (documents feature). Creation is server-first (the row is
+  // built from the server response, so ids match), then added here.
+  addFolder: (folder: Folder) => void;
+  updateFolder: (id: string, patch: { name?: string; parentId?: string | null }) => void;
+  /** Delete a folder + its whole subtree; its documents fall back to root
+   *  (folderId → undefined), mirroring the server's cascade / set-null. */
+  deleteFolder: (id: string) => void;
   setSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setLastSyncedAt: (ts: number) => void;
 
@@ -265,6 +280,8 @@ export const useFamilyStore = create<FamilyState>()(
       familyEvents: [],
       budgetCategories: [],
       expenses: [],
+      folders: [],
+      documents: [],
 
       onboardingComplete: false,
 
@@ -312,6 +329,48 @@ export const useFamilyStore = create<FamilyState>()(
       setFamilyEvents: (items) => set({ familyEvents: items }),
       setBudgetCategories: (items) => set({ budgetCategories: items }),
       setExpenses: (items) => set({ expenses: items }),
+      setFolders: (items) => set({ folders: items }),
+      setDocuments: (items) => set({ documents: items }),
+
+      addFolder: (folder) => set((s) => ({ folders: [folder, ...s.folders] })),
+
+      updateFolder: (id, patch) =>
+        set((s) => ({
+          folders: s.folders.map((f) =>
+            f.id === id
+              ? {
+                  ...f,
+                  ...(patch.name !== undefined ? { name: patch.name } : {}),
+                  ...("parentId" in patch ? { parentId: patch.parentId ?? undefined } : {}),
+                  updatedAt: Date.now(),
+                }
+              : f,
+          ),
+        })),
+
+      deleteFolder: (id) =>
+        set((s) => {
+          // Gather the folder + all descendants (server cascades subfolders).
+          const toRemove = new Set<string>([id]);
+          let changed = true;
+          while (changed) {
+            changed = false;
+            for (const f of s.folders) {
+              if (f.parentId && toRemove.has(f.parentId) && !toRemove.has(f.id)) {
+                toRemove.add(f.id);
+                changed = true;
+              }
+            }
+          }
+          return {
+            folders: s.folders.filter((f) => !toRemove.has(f.id)),
+            // Documents in the removed subtree detach to root (server: SET NULL).
+            documents: s.documents.map((d) =>
+              d.folderId && toRemove.has(d.folderId) ? { ...d, folderId: undefined } : d,
+            ),
+          };
+        }),
+
       setSyncStatus: (status, error = null) =>
         set({ syncStatus: status, syncError: error }),
       setLastSyncedAt: (ts) => set({ lastSyncedAt: ts }),
@@ -726,7 +785,7 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 17,
+      version: 18,
       storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => (_state, error) => {
         // Last-line-of-defense: if anything else in the rehydrate path throws
@@ -755,6 +814,8 @@ export const useFamilyStore = create<FamilyState>()(
         customizations: state.customizations,
         budgetCategories: state.budgetCategories,
         expenses: state.expenses,
+        folders: state.folders,
+        documents: state.documents,
       }),
       migrate: (persisted: any, version: number) => {
         if (version < 2) {
@@ -875,6 +936,11 @@ export const useFamilyStore = create<FamilyState>()(
             ...b,
             endDate: b.endDate ?? undefined,
           }));
+        }
+        if (version < 18) {
+          // Add the family-documents slices (folder tree + file metadata).
+          persisted.folders = persisted.folders ?? [];
+          persisted.documents = persisted.documents ?? [];
         }
         return persisted;
       },

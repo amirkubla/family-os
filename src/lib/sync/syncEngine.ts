@@ -21,6 +21,8 @@ import {
   customizationsApi,
   budgetCategoriesApi,
   expensesApi,
+  foldersApi,
+  documentsApi,
 } from "../api/endpoints";
 import {
   apiToLocalGrocery,
@@ -33,6 +35,8 @@ import {
   apiToLocalFamilyEvent,
   apiToLocalBudgetCategory,
   apiToLocalExpense,
+  apiToLocalFolder,
+  apiToLocalDocument,
   localToApiGrocery,
   localToApiNote,
   localToApiChore,
@@ -70,6 +74,8 @@ export async function pullAll(familyIdOverride?: string): Promise<void> {
       customizationsApi.get(fid),
       budgetCategoriesApi.list(fid),
       expensesApi.list(fid),
+      foldersApi.list(fid),
+      documentsApi.list(fid),
     ]);
 
     // Log any failures and figure out which endpoints succeeded.
@@ -78,7 +84,7 @@ export async function pullAll(familyIdOverride?: string): Promise<void> {
     // which silently *wiped* the local cache for any failed resource — a flaky
     // network hop would erase your grocery list / events / etc. instead of
     // showing the previous data with a sync-error banner.
-    const names = ["families", "grocery", "notes", "chores", "projects", "kids", "scheduleBlocks", "members", "events", "customizations", "budgetCategories", "expenses"];
+    const names = ["families", "grocery", "notes", "chores", "projects", "kids", "scheduleBlocks", "members", "events", "customizations", "budgetCategories", "expenses", "folders", "documents"];
     const failures = results
       .map((r, i) => (r.status === "rejected" ? i : null))
       .filter((i): i is number => i !== null);
@@ -127,6 +133,8 @@ export async function pullAll(familyIdOverride?: string): Promise<void> {
     }
     applyIfOk(10, apiToLocalBudgetCategory, store.setBudgetCategories);
     applyIfOk(11, apiToLocalExpense, store.setExpenses);
+    applyIfOk(12, apiToLocalFolder, store.setFolders);
+    applyIfOk(13, apiToLocalDocument, store.setDocuments);
     store.setLastSyncedAt(Date.now());
     store.setSyncStatus(failures.length > 0 ? "error" : "idle",
       failures.length > 0 ? "Partial sync" : undefined);

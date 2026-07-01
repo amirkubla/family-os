@@ -16,6 +16,8 @@ import type {
   ApiFamilyEvent,
   ApiBudgetCategory,
   ApiExpense,
+  ApiFolder,
+  ApiDocument,
 } from "./types";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
@@ -26,6 +28,7 @@ import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { BudgetCategory, Expense } from "@src/models/budget";
+import type { Folder, FamilyDocument, DocumentStatus } from "@src/models/document";
 
 const toMs = (iso: string) => new Date(iso).getTime();
 
@@ -377,5 +380,36 @@ export function localToApiFamilyEvent(item: FamilyEvent) {
       item.reminders && item.reminders.length > 0
         ? JSON.stringify(item.reminders)
         : null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Documents (folders + files). Metadata only — bytes stay in GCS. Creation
+// goes through dedicated endpoints, so only API→Local mappers are needed here.
+// ---------------------------------------------------------------------------
+
+export function apiToLocalFolder(a: ApiFolder): Folder {
+  return {
+    id: a.id,
+    parentId: a.parentId ?? undefined,
+    name: a.name,
+    createdByMemberId: a.createdByMemberId ?? undefined,
+    createdAt: toMs(a.createdAt),
+    updatedAt: toMs(a.updatedAt),
+  };
+}
+
+export function apiToLocalDocument(a: ApiDocument): FamilyDocument {
+  return {
+    id: a.id,
+    folderId: a.folderId ?? undefined,
+    name: a.name,
+    contentType: a.contentType,
+    sizeBytes: a.sizeBytes ?? 0,
+    pageCount: a.pageCount ?? undefined,
+    status: (a.status === "ready" ? "ready" : "pending") as DocumentStatus,
+    uploadedByMemberId: a.uploadedByMemberId ?? undefined,
+    createdAt: toMs(a.createdAt),
+    updatedAt: toMs(a.updatedAt),
   };
 }

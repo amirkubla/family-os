@@ -30,6 +30,7 @@ const TILE = {
   chores: "#0D9488",
   projects: "#6C63FF",
   budget: "#9B59B6",
+  documents: "#0891B2",
 };
 
 export default function HomeScreen() {
@@ -42,6 +43,7 @@ export default function HomeScreen() {
   const grocery = useFamilyStore((s) => s.grocery);
   const familyEvents = useFamilyStore((s) => s.familyEvents);
   const allExpenses = useFamilyStore((s) => s.expenses);
+  const allDocuments = useFamilyStore((s) => s.documents);
   const familyName = useFamilyStore((s) => s.familyName);
   const familyEmoji = useFamilyStore((s) => s.customizations.familyEmoji) || DEFAULT_FAMILY_EMOJI;
 
@@ -76,8 +78,9 @@ export default function HomeScreen() {
       chores: chores.filter((c) => !c.done).length,
       projects: projects.filter((p) => p.status !== "done").length,
       budgetExpenses: allExpenses.filter((e) => e.date.startsWith(currentYM)).length,
+      documents: allDocuments.filter((d) => d.status === "ready").length,
     };
-  }, [allNotes, allProjects, chores, grocery, familyEvents, allExpenses]);
+  }, [allNotes, allProjects, chores, grocery, familyEvents, allExpenses, allDocuments]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -143,6 +146,11 @@ export default function HomeScreen() {
             title={t("tabs.budget")} icon="wallet-outline" accent={TILE.budget}
             count={counts.budgetExpenses}
             onPress={() => router.push("/budget" as any)} testID="tile-budget"
+          />
+          <FeatureTile
+            title={t("tabs.documents")} icon="folder-outline" accent={TILE.documents}
+            count={counts.documents}
+            onPress={() => router.push("/documents" as any)} testID="tile-documents"
           />
         </View>
 

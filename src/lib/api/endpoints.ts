@@ -17,6 +17,8 @@ import type {
   ApiFamilyEvent,
   ApiBudgetCategory,
   ApiExpense,
+  ApiFolder,
+  ApiDocument,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -450,4 +452,63 @@ export const familyEventsApi = {
 
   delete: (fid: string, id: string) =>
     http.delete<{ deleted: boolean }>(`${fam(fid)}/family-events/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Folders  (document tree — metadata)
+// ---------------------------------------------------------------------------
+
+export const foldersApi = {
+  list: (fid: string) => http.get<ApiFolder[]>(`${fam(fid)}/folders`),
+
+  create: (
+    fid: string,
+    data: { name: string; parentId?: string | null; createdByMemberId?: string | null },
+  ) => http.post<ApiFolder>(`${fam(fid)}/folders`, data),
+
+  update: (fid: string, id: string, data: { name?: string; parentId?: string | null }) =>
+    http.patch<ApiFolder>(`${fam(fid)}/folders/${id}`, data),
+
+  delete: (fid: string, id: string) =>
+    http.delete<{ deleted: boolean }>(`${fam(fid)}/folders/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Documents  (file metadata; bytes go straight to/from GCS via signed URLs)
+// ---------------------------------------------------------------------------
+
+export const documentsApi = {
+  list: (fid: string) => http.get<ApiDocument[]>(`${fam(fid)}/documents`),
+
+  /** Step 1: create a pending row + get a V4 signed PUT URL. */
+  initUpload: (
+    fid: string,
+    data: {
+      name: string;
+      contentType: string;
+      folderId?: string | null;
+      sizeBytes?: number;
+      uploadedByMemberId?: string | null;
+    },
+  ) =>
+    http.post<{ document: ApiDocument; upload: { url: string; expiresAt: number } }>(
+      `${fam(fid)}/documents/init-upload`,
+      data,
+    ),
+
+  /** Step 3 (after PUTting bytes to GCS): mark ready + record real size. */
+  confirm: (fid: string, id: string, data?: { pageCount?: number }) =>
+    http.post<ApiDocument>(`${fam(fid)}/documents/${id}/confirm`, data ?? {}),
+
+  /** Short-TTL signed GET URL for viewing/downloading. */
+  downloadUrl: (fid: string, id: string) =>
+    http.get<{ url: string; expiresAt: number; name: string; contentType: string }>(
+      `${fam(fid)}/documents/${id}/download-url`,
+    ),
+
+  update: (fid: string, id: string, data: { name?: string; folderId?: string | null }) =>
+    http.patch<ApiDocument>(`${fam(fid)}/documents/${id}`, data),
+
+  delete: (fid: string, id: string) =>
+    http.delete<{ deleted: boolean }>(`${fam(fid)}/documents/${id}`),
 };

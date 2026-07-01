@@ -54,6 +54,7 @@ const MENU_ITEMS: MenuItem[] = [
   { name: "chores",        icon: "checkbox",      labelKey: "home.chores",           color: "#E67E22" },
   { name: "notes",         icon: "document-text", labelKey: "home.notes",            color: "#CA8A04" },
   { name: "projects",      icon: "rocket",        labelKey: "home.projects",         color: "#6C63FF" },
+  { name: "documents",     icon: "folder",        labelKey: "tabs.documents",        color: "#0891B2" },
   { name: "family",        icon: "people",        labelKey: "family.title",          color: "#E5534B" },
   { name: "customization", icon: "color-palette", labelKey: "settings.customization", color: "#9B51E0" },
   { name: "settings",      icon: "settings",      labelKey: "tabs.settings",         color: "#64748B" },

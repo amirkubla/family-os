@@ -33,6 +33,7 @@ import {
   customizationsApi,
   budgetCategoriesApi,
   expensesApi,
+  foldersApi,
 } from "../api/endpoints";
 import {
   localToApiGrocery,
@@ -46,6 +47,7 @@ import {
   apiToLocalFamilyMember,
   localToApiBudgetCategory,
   localToApiExpense,
+  apiToLocalFolder,
 } from "../api/mappers";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
@@ -55,6 +57,7 @@ import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { BudgetCategory, Expense } from "@src/models/budget";
+import type { Folder } from "@src/models/document";
 
 // ---------------------------------------------------------------------------
 // Error handler — set by UI (Snackbar)
@@ -860,4 +863,58 @@ export function markKidPaymentUnpaidRemote(payment: Expense) {
   } else {
     updateExpenseRemote(payment.id, { paid: false });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Folders (documents feature)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a folder. Server-first (the backend generates the id), then add the
+ * returned row to the store so ids stay consistent. Returns the new folder, or
+ * null on failure.
+ */
+export async function addFolderRemote(input: {
+  name: string;
+  parentId?: string;
+  createdByMemberId?: string;
+}): Promise<Folder | null> {
+  try {
+    const fid = await getFamilyId();
+    const row = await foldersApi.create(fid, {
+      name: input.name,
+      parentId: input.parentId ?? null,
+      createdByMemberId: input.createdByMemberId ?? null,
+    });
+    const folder = apiToLocalFolder(row);
+    useFamilyStore.getState().addFolder(folder);
+    useFamilyStore.getState().setLastSyncedAt(Date.now());
+    return folder;
+  } catch (err) {
+    const msg = `Create folder: ${err instanceof Error ? err.message : "unknown error"}`;
+    console.warn("[sync]", msg);
+    _onSyncError?.(msg);
+    return null;
+  }
+}
+
+/** Rename / move a folder (optimistic). */
+export function updateFolderRemote(
+  id: string,
+  patch: { name?: string; parentId?: string | null },
+) {
+  useFamilyStore.getState().updateFolder(id, patch);
+  fireAndForget(
+    getFamilyId().then((fid) => foldersApi.update(fid, id, patch)),
+    "Update folder",
+  );
+}
+
+/** Delete a folder + its subtree (optimistic); docs fall back to root. */
+export function deleteFolderRemote(id: string) {
+  useFamilyStore.getState().deleteFolder(id);
+  fireAndForget(
+    getFamilyId().then((fid) => foldersApi.delete(fid, id)),
+    "Delete folder",
+  );
 }

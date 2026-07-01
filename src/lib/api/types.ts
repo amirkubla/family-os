@@ -155,3 +155,28 @@ export interface ApiFamilyEvent {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ApiFolder {
+  id: string;
+  familyId: string;
+  parentId: string | null;
+  name: string;
+  createdByMemberId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiDocument {
+  id: string;
+  familyId: string;
+  folderId: string | null;
+  name: string;
+  contentType: string;
+  sizeBytes: number;
+  pageCount: number | null;
+  gcsObject: string;
+  status: string; // 'pending' | 'ready'
+  uploadedByMemberId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

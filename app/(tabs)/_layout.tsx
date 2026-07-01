@@ -32,6 +32,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen name="family" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="documents" options={{ href: null, headerShown: false }} />
       <Tabs.Screen
         name="parent/[memberId]"
         options={{ href: null, headerShown: false }}
