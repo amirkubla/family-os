@@ -84,7 +84,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Drawer width — capped so it never swallows the whole screen on tablets/web.
-  const panelWidth = Math.min(340, Math.round(width * 0.84));
+  const panelWidth = Math.min(300, Math.round(width * 0.76));
 
   // Native driver is unsupported on web (react-native-web warns + no-ops);
   // fall back to JS-driven animation there.
