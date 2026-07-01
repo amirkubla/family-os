@@ -241,9 +241,15 @@ export default function GroceryScreen() {
                       onPointerLeave: () => setHoveredItemId(null),
                     } : {} as any)}
                   >
-                    <Checkbox
+                    {/* Force the Android-style checkbox on all platforms:
+                        Paper's default <Checkbox> uses Checkbox.IOS on iOS,
+                        which draws nothing when unchecked (no outlined square),
+                        making the tap target invisible. Checkbox.Android always
+                        renders the square. */}
+                    <Checkbox.Android
                       testID={"grocery-check-" + item.title}
                       status="unchecked"
+                      uncheckedColor={C.textSecondary}
                       onPress={() => toggleGroceryBoughtRemote(item.id)}
                     />
                     <View style={styles.rowText}>
@@ -298,8 +304,9 @@ export default function GroceryScreen() {
                       onPointerLeave: () => setHoveredItemId(null),
                     } : {} as any)}
                   >
-                    <Checkbox
+                    <Checkbox.Android
                       status="checked"
+                      color={theme}
                       onPress={() => toggleGroceryBoughtRemote(item.id)}
                     />
                     <View style={styles.rowText}>
