@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
-import { Text, IconButton, FAB } from "react-native-paper";
+import { Text, IconButton, FAB, Button } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 
@@ -20,6 +20,7 @@ import {
   toggleChoreSelectedForTodayRemote,
   deleteChoreRemote,
   reorderChoresRemote,
+  markAllChoresDoneRemote,
 } from "@src/lib/sync/remoteCrud";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import VoiceReviewModal from "@src/components/VoiceReviewModal";
@@ -158,6 +159,7 @@ export default function ChoresScreen() {
     () => [...allChores].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [allChores],
   );
+  const allDone = chores.length > 0 && chores.every((c) => c.done);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
@@ -212,6 +214,15 @@ export default function ChoresScreen() {
                   {chores.filter((c) => c.done).length}/{chores.length} ✓
                 </Text>
               </View>
+              <Button
+                compact
+                icon={allDone ? "checkbox-multiple-blank-outline" : "check-all"}
+                onPress={() => markAllChoresDoneRemote(!allDone)}
+                textColor={theme}
+                testID="btn-mark-all-chores"
+              >
+                {allDone ? t("home.unmarkAll") : t("home.markAll")}
+              </Button>
             </View>
             {chores.map((item, index) => (
               <ChoreRow
@@ -277,7 +288,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   list: { flex: 1 },
   container: { padding: S.lg, paddingBottom: S.xxl + S.xxl, gap: S.xs },
-  statsRow: { flexDirection: RTL_ROW, alignItems: "center", marginBottom: S.sm },
+  statsRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: S.sm,
+  },
   statsPill: {
     backgroundColor: CHORE_COLORS.accent + "14",
     paddingHorizontal: S.md,

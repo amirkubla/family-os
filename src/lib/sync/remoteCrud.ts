@@ -319,6 +319,22 @@ export function toggleChoreDoneRemote(id: string) {
   );
 }
 
+/** Mark every chore done (or undone). Optimistic; PATCHes only the ones that changed. */
+export function markAllChoresDoneRemote(done: boolean) {
+  const changed = useFamilyStore
+    .getState()
+    .chores.filter((c) => c.done !== done)
+    .map((c) => c.id);
+  if (changed.length === 0) return;
+  useFamilyStore.getState().setAllChoresDone(done);
+  fireAndForget(
+    getFamilyId().then((fid) =>
+      Promise.all(changed.map((id) => choresApi.update(fid, id, { done }))),
+    ),
+    "Mark all chores",
+  );
+}
+
 export function toggleChoreSelectedForTodayRemote(id: string) {
   useFamilyStore.getState().toggleChoreSelectedForToday(id);
   const item = useFamilyStore.getState().chores.find((c) => c.id === id);

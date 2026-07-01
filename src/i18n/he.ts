@@ -76,6 +76,8 @@ const he = {
     selectedForToday: "נבחרו להיום",
     backlog: "רשימת מטלות",
     allClear: "הכל בסדר — אין מה לעשות כרגע",
+    markAll: "סמן הכל",
+    unmarkAll: "בטל הכל",
     projects: "פרויקטים",
     noProjects: "אין עדיין פרויקטים — חלמו בגדול",
     kids: "ילדים",

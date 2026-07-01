@@ -147,6 +147,8 @@ interface FamilyState {
     patch: Partial<Pick<Chore, "title" | "assignedToMemberId" | "kidId">>
   ) => void;
   toggleChoreDone: (id: string) => void;
+  /** Mark every chore done (or undone) at once. */
+  setAllChoresDone: (done: boolean) => void;
   toggleChoreSelectedForToday: (id: string) => void;
   deleteChore: (id: string) => void;
   /** Reassign chore sortOrder from the given top-to-bottom id order. */
@@ -458,6 +460,13 @@ export const useFamilyStore = create<FamilyState>()(
             c.id === id
               ? { ...c, done: !c.done, updatedAt: Date.now() }
               : c
+          ),
+        })),
+
+      setAllChoresDone: (done) =>
+        set((s) => ({
+          chores: s.chores.map((c) =>
+            c.done === done ? c : { ...c, done, updatedAt: Date.now() }
           ),
         })),
 
