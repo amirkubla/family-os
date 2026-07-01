@@ -57,15 +57,15 @@ const MAIN_ROUTES = ["home", "today", "calendar"];
 // own colour, while the icon stays the family theme colour on top. Keyed by
 // route (or "family"); falls back to the theme tint if a key is missing.
 const MENU_BG: Record<string, string> = {
-  home:     "#E4F6F7", // mint
-  today:    "#FBF0DA", // warm cream
-  calendar: "#E6EEFB", // periwinkle
-  grocery:  "#E4F6EC", // soft green
-  budget:   "#F1EAFB", // lavender
-  chores:   "#E0F5F1", // aqua
-  notes:    "#FBF3DC", // butter
-  projects: "#ECEAFE", // soft indigo
-  family:   "#FBE7F0", // pink
+  home:     "#E6EBEA", // muted sage-gray
+  today:    "#EFEAE0", // warm sand
+  calendar: "#E4E9F0", // slate blue
+  grocery:  "#E7EDE6", // soft moss
+  budget:   "#EAE8EF", // muted slate-lilac
+  chores:   "#E3ECE9", // muted teal-gray
+  notes:    "#EEEAE1", // greige
+  projects: "#E6E8EF", // cool gray-blue
+  family:   "#ECE8E4", // warm stone
 };
 
 const isWeb = Platform.OS === "web";
