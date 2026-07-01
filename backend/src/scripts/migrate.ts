@@ -54,6 +54,8 @@ async function main() {
     "push_tokens",
     "users",
     "invites",
+    "folders",
+    "documents",
   ];
 
   for (const table of tables) {

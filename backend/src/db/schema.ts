@@ -9,6 +9,7 @@ import {
   index,
   check,
   uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -648,5 +649,93 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
   family: one(families, {
     fields: [expenses.familyId],
     references: [families.id],
+  }),
+}));
+
+// ---------------------------------------------------------------------------
+// folders — a per-family tree for organising documents (adjacency list)
+// ---------------------------------------------------------------------------
+
+/**
+ * A folder in the family's document tree. `parentId` null = a root folder.
+ * The tree is a plain adjacency list: the client fetches all of a family's
+ * folders and builds the hierarchy in memory (families have few folders).
+ * Deleting a folder cascades to its subfolders; its documents fall back to
+ * the root (see documents.folderId onDelete: "set null") so no file is ever
+ * silently destroyed by a folder delete.
+ */
+export const folders = pgTable(
+  "folders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    parentId: uuid("parent_id").references((): AnyPgColumn => folders.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name").notNull(),
+    createdByMemberId: uuid("created_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    index("folders_family_id_idx").on(t.familyId),
+    index("folders_family_parent_idx").on(t.familyId, t.parentId),
+  ],
+);
+
+export const foldersRelations = relations(folders, ({ one }) => ({
+  family: one(families, {
+    fields: [folders.familyId],
+    references: [families.id],
+  }),
+}));
+
+// ---------------------------------------------------------------------------
+// documents — file metadata; the bytes live in GCS at families/{fid}/{docId}
+// ---------------------------------------------------------------------------
+
+/**
+ * Metadata for a family document. The file bytes are NOT stored here — they
+ * live in the private GCS bucket under `families/{familyId}/{id}`; this row
+ * only records where + what. `status` is 'pending' between issuing an upload
+ * URL and the client confirming the bytes landed, then 'ready'.
+ */
+export const documents = pgTable(
+  "documents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    // null = lives at the root of the family's document tree.
+    folderId: uuid("folder_id").references(() => folders.id, {
+      onDelete: "set null",
+    }),
+    name: text("name").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").default(0).notNull(),
+    pageCount: integer("page_count"),
+    // GCS object key: families/{familyId}/{id}
+    gcsObject: text("gcs_object").notNull(),
+    // 'pending' | 'ready'
+    status: text("status").default("pending").notNull(),
+    uploadedByMemberId: uuid("uploaded_by_member_id"),
+    ...timestamps,
+  },
+  (t) => [
+    index("documents_family_id_idx").on(t.familyId),
+    index("documents_family_folder_idx").on(t.familyId, t.folderId),
+  ],
+);
+
+export const documentsRelations = relations(documents, ({ one }) => ({
+  family: one(families, {
+    fields: [documents.familyId],
+    references: [families.id],
+  }),
+  folder: one(folders, {
+    fields: [documents.folderId],
+    references: [folders.id],
   }),
 }));

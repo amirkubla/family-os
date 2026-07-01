@@ -16,6 +16,8 @@ import type {
   invites,
   budgetCategories,
   expenses,
+  folders,
+  documents,
 } from "../db/schema.js";
 
 // ---------------------------------------------------------------------------
@@ -28,6 +30,8 @@ export type Kid = InferSelectModel<typeof kids>;
 export type GroceryItem = InferSelectModel<typeof groceryItems>;
 export type Note = InferSelectModel<typeof notes>;
 export type Chore = InferSelectModel<typeof chores>;
+export type Folder = InferSelectModel<typeof folders>;
+export type Document = InferSelectModel<typeof documents>;
 export type Project = InferSelectModel<typeof projects>;
 export type ScheduleBlock = InferSelectModel<typeof scheduleBlocks>;
 export type FamilyEvent = InferSelectModel<typeof familyEvents>;
@@ -47,6 +51,8 @@ export type NewKid = InferInsertModel<typeof kids>;
 export type NewGroceryItem = InferInsertModel<typeof groceryItems>;
 export type NewNote = InferInsertModel<typeof notes>;
 export type NewChore = InferInsertModel<typeof chores>;
+export type NewFolder = InferInsertModel<typeof folders>;
+export type NewDocument = InferInsertModel<typeof documents>;
 export type NewProject = InferInsertModel<typeof projects>;
 export type NewScheduleBlock = InferInsertModel<typeof scheduleBlocks>;
 export type NewFamilyEvent = InferInsertModel<typeof familyEvents>;
@@ -65,6 +71,8 @@ export type UpdateKid = Partial<Omit<NewKid, "id">>;
 export type UpdateGroceryItem = Partial<Omit<NewGroceryItem, "id">>;
 export type UpdateNote = Partial<Omit<NewNote, "id">>;
 export type UpdateChore = Partial<Omit<NewChore, "id">>;
+export type UpdateFolder = Partial<Omit<NewFolder, "id">>;
+export type UpdateDocument = Partial<Omit<NewDocument, "id">>;
 export type UpdateProject = Partial<Omit<NewProject, "id">>;
 export type UpdateScheduleBlock = Partial<Omit<NewScheduleBlock, "id">>;
 export type UpdateFamilyEvent = Partial<Omit<NewFamilyEvent, "id">>;
