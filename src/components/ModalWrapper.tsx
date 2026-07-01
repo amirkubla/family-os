@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Portal } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { C, S, R } from "@src/ui/tokens";
+import { C, S } from "@src/ui/tokens";
 import { FAB_LEFT, FAB_RIGHT } from "@src/ui/fabAnchor";
 import { RTL_ROW } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
@@ -133,6 +133,9 @@ export default function ModalWrapper({
           </Pressable>
 
           {onSave ? (
+            /* Icon-only ✓ — a themed circle mirroring the ✕ so a long title can
+               never overlap it (both buttons fit inside the header clearance).
+               The action's text still rides on accessibilityLabel. */
             <Pressable
               onPress={onSave}
               disabled={saveDisabled || saveLoading}
@@ -142,12 +145,9 @@ export default function ModalWrapper({
               testID="btn-save"
             >
               {saveLoading ? (
-                <ActivityIndicator size={16} color="#FFFFFF" />
+                <ActivityIndicator size={18} color="#FFFFFF" />
               ) : (
-                <>
-                  <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-                  <Text style={styles.saveLabel}>{saveLabel ?? t("save")}</Text>
-                </>
+                <Ionicons name="checkmark" size={24} color="#FFFFFF" />
               )}
             </Pressable>
           ) : null}
@@ -241,17 +241,15 @@ const styles = StyleSheet.create({
   saveBtn: {
     position: "absolute",
     ...FAB_RIGHT,
-    flexDirection: RTL_ROW,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    height: 40,
-    paddingHorizontal: S.lg,
-    borderRadius: R.xl,
     backgroundColor: C.primary,
   },
   saveBtnDisabled: { opacity: 0.45 },
-  saveLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "700", writingDirection: "rtl" },
   flex: { flex: 1 },
   content: {
     paddingHorizontal: S.lg,
