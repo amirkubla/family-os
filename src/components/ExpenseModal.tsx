@@ -10,7 +10,7 @@ import { MS } from "@src/ui/modalStyles";
 import { C, S } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
-import { t } from "@src/i18n";
+import { t, dayNameShort } from "@src/i18n";
 import { toYMD } from "@src/utils/date";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Expense } from "@src/models/budget";
@@ -21,7 +21,6 @@ import { parseILS } from "@src/models/budget";
 // ---------------------------------------------------------------------------
 
 const DAYS_OF_MONTH = Array.from({ length: 31 }, (_, i) => i + 1);
-const DAYS_OF_WEEK = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
 type RecurrenceType = "weekly" | "monthly";
 
@@ -177,12 +176,27 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       title={editExpense ? t("budget.editExpense") : t("budget.addExpense")}
       onSave={handleSave}
     >
-      {/* ── Details section ── */}
-      <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionLabel}>{t("budget.paymentTitle")}</Text>
-          <Text style={MS.sectionIcon}>✏️</Text>
+      {/* ── Payment status — paid vs. pending; one-time only, pinned to top ── */}
+      {paymentType === "single" && (
+        <View style={MS.section}>
+          <View style={MS.sectionHeader}>
+            <Text style={MS.sectionLabel}>{t("budget.paymentStatus")}</Text>
+            <Text style={MS.sectionIcon}>💳</Text>
+          </View>
+          <PillToggle
+            value={paidNow}
+            onChange={setPaidNow}
+            onLabel={t("payment.paid")}
+            offLabel={t("payment.toPay")}
+            activeColor={theme}
+            testID="expense-paid-toggle"
+          />
+          {!paidNow ? <Text style={styles.paidHint}>{t("budget.pendingHint")}</Text> : null}
         </View>
+      )}
+
+      {/* ── Title + amount — labels omitted; the placeholders carry them ── */}
+      <View style={MS.section}>
         <ModalTextInput
           placeholder={t("budget.paymentTitlePlaceholder")}
           value={form.note}
@@ -195,17 +209,13 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         />
         {titleError ? <Text style={MS.error}>{titleError}</Text> : null}
 
-        <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-          <Text style={MS.sectionLabel}>{t("budget.amount")}</Text>
-          <Text style={MS.sectionIcon}>💰</Text>
-        </View>
         <ModalTextInput
           placeholder={t("budget.amountPlaceholder")}
           value={form.amountText}
           onChangeText={(v) => { patch({ amountText: v }); setAmountError(""); }}
           keyboardType="numeric"
           mode="outlined"
-          style={MS.input}
+          style={[MS.input, { marginTop: S.sm }]}
           contentStyle={MS.inputContentNumeric}
           activeOutlineColor={theme}
           error={!!amountError}
@@ -213,12 +223,8 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         {amountError ? <Text style={MS.error}>{amountError}</Text> : null}
       </View>
 
-      {/* ── Type / schedule section ── */}
+      {/* ── Type + schedule (no "payment type" label) ── */}
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionLabel}>{t("budget.paymentType")}</Text>
-          <Text style={MS.sectionIcon}>{paymentType === "recurring" ? "🔄" : "1️⃣"}</Text>
-        </View>
         <View style={MS.segmented}>
           <SegmentedPills
             value={paymentType}
@@ -235,7 +241,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
           <>
             <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
               <Text style={MS.sectionLabel}>{t("budget.frequency")}</Text>
-              <Text style={MS.sectionIcon}>📆</Text>
+              <Text style={MS.sectionIcon}>🔁</Text>
             </View>
             <View style={MS.chipRow}>
               {RECURRENCE_TYPES.map((rt) => {
@@ -257,28 +263,43 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
               })}
             </View>
 
+            {/* Day selector — day-of-week chips, styled like the events modal. */}
+            <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
+              <Text style={MS.sectionLabel}>{t("payment.onDay")}</Text>
+              <Text style={MS.sectionIcon}>📆</Text>
+            </View>
+
             {form.recurrenceType === "weekly" && (
-              <View style={styles.pickerRow}>
-                <Text style={styles.pickerLabel}>ביום</Text>
-                <WheelPicker
-                  data={DAYS_OF_WEEK}
-                  selectedIndex={form.recurrenceDay}
-                  onChange={(i) => patch({ recurrenceDay: i })}
-                  width={110}
-                />
+              <View style={[MS.chipRow, { gap: S.xs, flexWrap: "nowrap" }]}>
+                {Array.from({ length: 7 }, (_, idx) => {
+                  const sel = form.recurrenceDay === idx;
+                  return (
+                    <Button
+                      key={idx}
+                      mode={sel ? "contained" : "outlined"}
+                      compact
+                      onPress={() => patch({ recurrenceDay: idx })}
+                      style={[MS.chip, { flex: 1, minWidth: 0 }]}
+                      labelStyle={MS.chipLabel}
+                      buttonColor={sel ? theme + "20" : undefined}
+                      textColor={sel ? theme : C.textSecondary}
+                    >
+                      {dayNameShort(idx)}
+                    </Button>
+                  );
+                })}
               </View>
             )}
 
             {form.recurrenceType === "monthly" && (
               <View style={styles.pickerRow}>
-                <Text style={styles.pickerLabel}>ביום</Text>
                 <WheelPicker
                   data={DAYS_OF_MONTH.map(String)}
                   selectedIndex={form.recurrenceDay - 1}
                   onChange={(i) => patch({ recurrenceDay: i + 1 })}
                   width={72}
                 />
-                <Text style={styles.pickerLabel}>בחודש</Text>
+                <Text style={styles.pickerLabel}>{t("payment.inMonth")}</Text>
               </View>
             )}
           </>
@@ -313,62 +334,44 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         {categoryError ? <Text style={MS.error}>{categoryError}</Text> : null}
       </View>
 
-      {/* ── Payer + status — one-time payments only ── */}
-      {paymentType === "single" && (
+      {/* ── Payer — one-time payments only ── */}
+      {paymentType === "single" && familyMembers.length > 0 && (
         <View style={MS.section}>
-          {familyMembers.length > 0 && (
-            <>
-              <View style={MS.sectionHeader}>
-                <Text style={MS.sectionLabel}>{t("budget.payer")}</Text>
-                <Text style={MS.sectionIcon}>👤</Text>
-              </View>
-              <View style={MS.chipRow}>
-                <Button
-                  mode={!form.payerMemberId ? "contained" : "outlined"}
-                  compact
-                  onPress={() => patch({ payerMemberId: undefined })}
-                  style={[MS.chip, !form.payerMemberId && { borderColor: theme }]}
-                  labelStyle={MS.chipLabel}
-                  buttonColor={!form.payerMemberId ? theme + "20" : undefined}
-                  textColor={!form.payerMemberId ? theme : C.textSecondary}
-                >
-                  {t("budget.anyone")}
-                </Button>
-                {familyMembers.map((m) => {
-                  const sel = form.payerMemberId === m.id;
-                  const mc = m.color ?? theme;
-                  return (
-                    <Button
-                      key={m.id}
-                      mode={sel ? "contained" : "outlined"}
-                      compact
-                      onPress={() => patch({ payerMemberId: m.id })}
-                      style={[MS.chip, sel && { borderColor: mc }]}
-                      labelStyle={MS.chipLabel}
-                      buttonColor={sel ? mc + "20" : undefined}
-                      textColor={sel ? C.textPrimary : C.textSecondary}
-                    >
-                      {m.avatarEmoji ?? "👤"} {m.name}
-                    </Button>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          <View style={[MS.sectionHeader, familyMembers.length > 0 && { marginTop: S.sm }]}>
-            <Text style={MS.sectionLabel}>{t("budget.paymentStatus")}</Text>
-            <Text style={MS.sectionIcon}>💳</Text>
+          <View style={MS.sectionHeader}>
+            <Text style={MS.sectionLabel}>{t("budget.payer")}</Text>
+            <Text style={MS.sectionIcon}>👤</Text>
           </View>
-          <PillToggle
-            value={paidNow}
-            onChange={setPaidNow}
-            onLabel={t("payment.paid")}
-            offLabel={t("payment.toPay")}
-            activeColor={theme}
-            testID="expense-paid-toggle"
-          />
-          {!paidNow ? <Text style={styles.paidHint}>{t("budget.pendingHint")}</Text> : null}
+          <View style={MS.chipRow}>
+            <Button
+              mode={!form.payerMemberId ? "contained" : "outlined"}
+              compact
+              onPress={() => patch({ payerMemberId: undefined })}
+              style={[MS.chip, !form.payerMemberId && { borderColor: theme }]}
+              labelStyle={MS.chipLabel}
+              buttonColor={!form.payerMemberId ? theme + "20" : undefined}
+              textColor={!form.payerMemberId ? theme : C.textSecondary}
+            >
+              {t("budget.anyone")}
+            </Button>
+            {familyMembers.map((m) => {
+              const sel = form.payerMemberId === m.id;
+              const mc = m.color ?? theme;
+              return (
+                <Button
+                  key={m.id}
+                  mode={sel ? "contained" : "outlined"}
+                  compact
+                  onPress={() => patch({ payerMemberId: m.id })}
+                  style={[MS.chip, sel && { borderColor: mc }]}
+                  labelStyle={MS.chipLabel}
+                  buttonColor={sel ? mc + "20" : undefined}
+                  textColor={sel ? C.textPrimary : C.textSecondary}
+                >
+                  {m.avatarEmoji ?? "👤"} {m.name}
+                </Button>
+              );
+            })}
+          </View>
         </View>
       )}
 

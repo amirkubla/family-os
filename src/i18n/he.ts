@@ -31,6 +31,26 @@ const he = {
     home: "בית",
     budget: "תקציב",
     settings: "הגדרות",
+    documents: "מסמכים",
+  },
+
+  // ── Documents ──
+  documents: {
+    title: "מסמכים",
+    root: "מסמכים",
+    empty: "אין עדיין תיקיות או מסמכים",
+    emptyFolder: "התיקייה ריקה",
+    newFolder: "תיקייה חדשה",
+    folderName: "שם התיקייה",
+    addFolder: "הוספת תיקייה",
+    renameFolder: "שינוי שם",
+    deleteFolder: "מחיקת תיקייה",
+    deleteFolderConfirm:
+      "למחוק את התיקייה? תיקיות המשנה יימחקו והמסמכים יעברו לתיקייה הראשית.",
+    folders: "תיקיות",
+    files: "קבצים",
+    itemsCount: "{{count}} פריטים",
+    pending: "בהעלאה…",
   },
 
   // ── Floating nav ──
@@ -594,7 +614,7 @@ const he = {
     paymentType: "סוג תשלום",
     frequency: "תדירות",
     paymentTitle: "כותרת",
-    paymentTitlePlaceholder: "לדוגמה: חוג ציור",
+    paymentTitlePlaceholder: "כותרת",
     amount: "סכום (₪)",
     amountPlaceholder: "0",
     category: "קטגוריה",
