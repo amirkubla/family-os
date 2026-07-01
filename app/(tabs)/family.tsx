@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
 import PageHeader from "@src/components/PageHeader";
 import FeatureTile from "@src/components/FeatureTile";
 import { t } from "@src/i18n";
@@ -27,13 +28,22 @@ export default function FamilyScreen() {
   const router = useRouter();
   const members = useFamilyStore((s) => s.familyMembers);
   const kids = useFamilyStore((s) => s.kids);
+  const familyName = useFamilyStore((s) => s.familyName);
+  const familyEmoji = useFamilyStore((s) => s.customizations.familyEmoji) || DEFAULT_FAMILY_EMOJI;
 
   const activeMembers = useMemo(() => members.filter((m) => m.isActive), [members]);
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
 
+  // Emoji + "משפחת <name>" (matches the home header + the parent-page title
+  // convention of embedding the icon in the title string). Falls back to the
+  // generic "משפחה" while a new family has no name yet.
+  const headerTitle = familyName
+    ? `${familyEmoji}  ${t("familyBadge.prefix")} ${familyName}`
+    : `${familyEmoji}  ${t("family.title")}`;
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <PageHeader title={t("family.title")} onBack={() => router.replace("/home")} />
+      <PageHeader title={headerTitle} onBack={() => router.replace("/home")} />
       <ScreenScrollView contentContainerStyle={styles.container}>
         {/* ── Parents ── */}
         <Text style={styles.gridLabel}>{t("family.parents")}</Text>
