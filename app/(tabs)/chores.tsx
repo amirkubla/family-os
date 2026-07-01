@@ -46,8 +46,6 @@ const CHORE_COLORS = {
   hover: "#E0FAF5",
   checkBg: "#0D948818",
   checkBgDone: "#0D948830",
-  todayBadge: "#FEF3C7",
-  todayBadgeText: "#B45309",
 } as const;
 
 function ChoreRow({
@@ -100,16 +98,14 @@ function ChoreRow({
 
       <View style={styles.choreContent}>
         <View style={styles.choreTopLine}>
+          {/* Owner label leads the top line → sits top-right in RTL. */}
+          {assigneeDisplay ? (
+            <Text style={styles.choreAssignee} numberOfLines={1}>{assigneeDisplay}</Text>
+          ) : null}
           <Text style={[styles.choreTitle, chore.done && styles.choreTitleDone]} numberOfLines={1}>
             {chore.title}
           </Text>
-          {chore.selectedForToday && !chore.done && (
-            <View style={styles.choreTodayBadge}>
-              <Text style={styles.choreTodayBadgeText}>⭐ היום</Text>
-            </View>
-          )}
         </View>
-        {assigneeDisplay ? <Text style={styles.choreAssignee}>{assigneeDisplay}</Text> : null}
       </View>
 
       <View style={styles.choreActions}>
@@ -362,14 +358,7 @@ const styles = StyleSheet.create({
     color: C.textMuted,
     fontWeight: "400",
   },
-  choreTodayBadge: {
-    backgroundColor: CHORE_COLORS.todayBadge,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  choreTodayBadgeText: { fontSize: 11, fontWeight: "700", color: CHORE_COLORS.todayBadgeText },
-  choreAssignee: { fontSize: 12, color: C.textSecondary, textAlign: TEXT_RIGHT, marginTop: 1 },
+  choreAssignee: { fontSize: 12, color: C.textSecondary, textAlign: TEXT_RIGHT },
   choreActions: { flexDirection: RTL_ROW, alignItems: "center" },
   choreActionBtn: { margin: 0, width: 28, height: 28 },
   fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
