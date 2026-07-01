@@ -67,6 +67,8 @@ function NoteCard({
       ]}
     >
       <View style={styles.noteTopRow}>
+        {/* Owner badge leads the top row → sits top-right in RTL. */}
+        <OwnerBadge kidId={note.kidId} ownerMemberId={note.ownerMemberId} />
         <View style={{ flex: 1 }} />
         <IconButton
           icon="chevron-up"
@@ -111,8 +113,6 @@ function NoteCard({
           {note.body}
         </Text>
       ) : null}
-
-      <OwnerBadge kidId={note.kidId} ownerMemberId={note.ownerMemberId} style={{ marginTop: S.xs }} />
 
       <View style={[styles.noteAccentBar, note.pinned && { backgroundColor: NOTE_COLORS.accent }]} />
     </Pressable>
