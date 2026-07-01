@@ -115,7 +115,10 @@ export default function ModalWrapper({
             {title ? (
               <View style={styles.titleRow}>
                 {icon ? <Ionicons name={icon} size={20} color={theme} /> : null}
-                <Text style={[styles.title, { color: theme }]} numberOfLines={1}>{title}</Text>
+                {/* Bounded to the header clearance + wraps to a 2nd line: a very
+                    long title (e.g. "הוספת אירוע ל<long name>") can never spill
+                    sideways under the ✕/✓ circles — it flows downward instead. */}
+                <Text style={[styles.title, { color: theme }]} numberOfLines={2}>{title}</Text>
               </View>
             ) : null}
             {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
@@ -214,11 +217,14 @@ const styles = StyleSheet.create({
     ...(Platform.OS === "web" ? ({ zIndex: 2 } as any) : {}),
   },
   headerCenter: { alignItems: "center", justifyContent: "center", minHeight: 40 },
-  titleRow: { flexDirection: RTL_ROW, alignItems: "center", gap: 6 },
+  titleRow: { flexDirection: RTL_ROW, alignItems: "center", gap: 6, maxWidth: "100%" },
   title: {
+    flexShrink: 1,
+    minWidth: 0, // let the text shrink below its content width so it wraps/ellipsizes instead of overflowing
     fontSize: 18,
     fontWeight: "800",
     color: C.primary,
+    textAlign: "center",
     writingDirection: "rtl",
   },
   subtitle: {
