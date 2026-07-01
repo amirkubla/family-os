@@ -131,6 +131,11 @@ interface FamilyState {
   /** Delete a folder + its whole subtree; its documents fall back to root
    *  (folderId → undefined), mirroring the server's cascade / set-null. */
   deleteFolder: (id: string) => void;
+
+  // Document actions (documents feature).
+  addDocument: (doc: FamilyDocument) => void;
+  updateDocument: (id: string, patch: Partial<FamilyDocument>) => void;
+  deleteDocument: (id: string) => void;
   setSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setLastSyncedAt: (ts: number) => void;
 
@@ -347,6 +352,18 @@ export const useFamilyStore = create<FamilyState>()(
               : f,
           ),
         })),
+
+      addDocument: (doc) => set((s) => ({ documents: [doc, ...s.documents] })),
+
+      updateDocument: (id, patch) =>
+        set((s) => ({
+          documents: s.documents.map((d) =>
+            d.id === id ? { ...d, ...patch, updatedAt: Date.now() } : d,
+          ),
+        })),
+
+      deleteDocument: (id) =>
+        set((s) => ({ documents: s.documents.filter((d) => d.id !== id) })),
 
       deleteFolder: (id) =>
         set((s) => {

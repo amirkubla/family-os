@@ -51,6 +51,14 @@ const he = {
     files: "קבצים",
     itemsCount: "{{count}} פריטים",
     pending: "בהעלאה…",
+    addDocument: "הוספת מסמך",
+    scan: "צילום מסמך",
+    pickImage: "בחירת תמונה",
+    pickFile: "בחירת קובץ",
+    deleteDoc: "מחיקת מסמך",
+    deleteDocConfirm: "למחוק את המסמך לצמיתות?",
+    uploadError: "ההעלאה נכשלה — נסו שוב",
+    viewError: "פתיחת המסמך נכשלה — נסו שוב",
   },
 
   // ── Floating nav ──

@@ -34,6 +34,7 @@ import {
   budgetCategoriesApi,
   expensesApi,
   foldersApi,
+  documentsApi,
 } from "../api/endpoints";
 import {
   localToApiGrocery,
@@ -916,5 +917,18 @@ export function deleteFolderRemote(id: string) {
   fireAndForget(
     getFamilyId().then((fid) => foldersApi.delete(fid, id)),
     "Delete folder",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Documents (upload lives in lib/documents/upload.ts; view in view.ts)
+// ---------------------------------------------------------------------------
+
+/** Delete a document (optimistic); the backend removes the GCS object too. */
+export function deleteDocumentRemote(id: string) {
+  useFamilyStore.getState().deleteDocument(id);
+  fireAndForget(
+    getFamilyId().then((fid) => documentsApi.delete(fid, id)),
+    "Delete document",
   );
 }

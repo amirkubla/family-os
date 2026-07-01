@@ -8,17 +8,21 @@
  */
 
 import React, { useState, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Alert } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
-import { Text, IconButton, FAB } from "react-native-paper";
+import { Text, IconButton, FAB, ActivityIndicator } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Folder } from "@src/models/document";
-import { deleteFolderRemote } from "@src/lib/sync/remoteCrud";
+import { deleteFolderRemote, deleteDocumentRemote } from "@src/lib/sync/remoteCrud";
+import { pickFromCamera, pickFromLibrary, pickDocument, type PickedFile } from "@src/lib/documents/capture";
+import { uploadDocument } from "@src/lib/documents/upload";
+import { openDocument } from "@src/lib/documents/view";
 import FolderModal from "@src/components/FolderModal";
+import DocumentAddSheet from "@src/components/DocumentAddSheet";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
@@ -51,6 +55,35 @@ export default function DocumentsScreen() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folderModal, setFolderModal] = useState(false);
   const [editFolder, setEditFolder] = useState<Folder | null>(null);
+  const [addSheet, setAddSheet] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  // Message for the shared confirm dialog (folders and documents differ).
+  const [deleteMsg, setDeleteMsg] = useState(t("documents.deleteFolderConfirm"));
+
+  // Pick a file (camera / library / document) then run the 3-step upload.
+  const handlePick = useCallback(
+    async (picker: () => Promise<PickedFile | null>) => {
+      try {
+        const file = await picker();
+        if (!file) return; // cancelled / permission denied
+        setUploading(true);
+        await uploadDocument(file, currentFolderId ?? undefined);
+      } catch {
+        Alert.alert(t("documents.uploadError"));
+      } finally {
+        setUploading(false);
+      }
+    },
+    [currentFolderId],
+  );
+
+  const handleView = useCallback(async (id: string) => {
+    try {
+      await openDocument(id);
+    } catch {
+      Alert.alert(t("documents.viewError"));
+    }
+  }, []);
 
   // Return to root when leaving the screen — avoids landing inside a folder
   // that was deleted (e.g. by the other parent) on the next visit.
@@ -150,45 +183,85 @@ export default function DocumentsScreen() {
                   icon="trash-can-outline"
                   size={18}
                   iconColor={C.textMuted}
-                  onPress={() => requestDelete(() => deleteFolderRemote(f.id))}
+                  onPress={() => {
+                    setDeleteMsg(t("documents.deleteFolderConfirm"));
+                    requestDelete(() => deleteFolderRemote(f.id));
+                  }}
                   testID={`folder-delete-${f.name}`}
                 />
               </View>
             ))}
 
-            {files.map((d) => (
-              <View key={d.id} style={styles.row}>
-                <View style={styles.rowMain}>
-                  <View style={styles.iconWrap}>
-                    <Ionicons name={fileIcon(d.contentType)} size={20} color={C.textSecondary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.rowName} numberOfLines={1}>
-                      {d.name}
-                    </Text>
-                    <Text style={styles.rowMeta} numberOfLines={1}>
-                      {d.status === "pending" ? t("documents.pending") : formatSize(d.sizeBytes)}
-                    </Text>
-                  </View>
+            {files.map((d) => {
+              const isPending = d.status === "pending";
+              return (
+                <View key={d.id} style={styles.row}>
+                  <Pressable
+                    style={styles.rowMain}
+                    disabled={isPending}
+                    onPress={() => handleView(d.id)}
+                    testID={`doc-${d.name}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={d.name}
+                  >
+                    <View style={styles.iconWrap}>
+                      {isPending ? (
+                        <ActivityIndicator size={16} color={C.textSecondary} />
+                      ) : (
+                        <Ionicons name={fileIcon(d.contentType)} size={20} color={C.textSecondary} />
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowName} numberOfLines={1}>
+                        {d.name}
+                      </Text>
+                      <Text style={styles.rowMeta} numberOfLines={1}>
+                        {isPending ? t("documents.pending") : formatSize(d.sizeBytes)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                  {!isPending && (
+                    <IconButton
+                      icon="trash-can-outline"
+                      size={18}
+                      iconColor={C.textMuted}
+                      onPress={() => {
+                        setDeleteMsg(t("documents.deleteDocConfirm"));
+                        requestDelete(() => deleteDocumentRemote(d.id));
+                      }}
+                      testID={`doc-delete-${d.name}`}
+                    />
+                  )}
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </>
         )}
       </ScreenScrollView>
 
       <FAB
         customSize={50}
-        icon="folder-plus"
-        testID="btn-add-folder"
+        icon={uploading ? "progress-upload" : "plus"}
+        loading={uploading}
+        disabled={uploading}
+        testID="btn-doc-add"
         style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 26 }]}
         color="#FFF"
-        onPress={() => {
+        onPress={() => setAddSheet(true)}
+        accessibilityRole="button"
+        accessibilityLabel={t("documents.addDocument")}
+      />
+
+      <DocumentAddSheet
+        visible={addSheet}
+        onDismiss={() => setAddSheet(false)}
+        onCamera={() => handlePick(pickFromCamera)}
+        onLibrary={() => handlePick(pickFromLibrary)}
+        onFile={() => handlePick(pickDocument)}
+        onNewFolder={() => {
           setEditFolder(null);
           setFolderModal(true);
         }}
-        accessibilityRole="button"
-        accessibilityLabel={t("documents.newFolder")}
       />
 
       <FolderModal
@@ -204,7 +277,7 @@ export default function DocumentsScreen() {
         visible={confirmVisible}
         onConfirm={confirmDelete}
         onDismiss={dismissConfirm}
-        message={t("documents.deleteFolderConfirm")}
+        message={deleteMsg}
       />
     </SafeAreaView>
   );
