@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   brandText: {
     flex: 1,
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "700",
     color: C.textPrimary,
     writingDirection: "rtl",
     textAlign: TEXT_RIGHT,
@@ -295,7 +295,8 @@ const styles = StyleSheet.create({
   rowLabel: {
     flex: 1,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
+    letterSpacing: 0.2,
     writingDirection: "rtl",
     textAlign: TEXT_RIGHT,
   },
