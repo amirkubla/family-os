@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet } from "react-native";
-import { Text } from "react-native-paper";
 import { addChoreRemote, updateChoreRemote } from "@src/lib/sync/remoteCrud";
 import { t } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
@@ -75,10 +74,8 @@ export default function ChoreAddModal({ visible, onDismiss, editChore, defaultMe
       saveLoading={submitting}
     >
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionLabel}>{t("choreModal.whatNeedsDoing")}</Text>
-          <Text style={MS.sectionIcon}>✅</Text>
-        </View>
+        {/* No section header — the input's placeholder ("מה צריך לעשות?") is
+            self-explanatory, matching the event modal's label cleanup. */}
         <ModalTextInput
           testID="input-chore-title"
           placeholder={t("choreModal.whatNeedsDoing")}
