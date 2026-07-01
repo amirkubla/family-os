@@ -147,7 +147,7 @@ export default function FamilyEventModal({
       title: "",
       assigneeType: "family",
       assigneeId: undefined,
-      isRecurring: true,
+      isRecurring: false,
       allDay: false,
       daysOfWeek: defaultDaysOfWeek,
       date: defaultDate ?? toYMD(new Date()),
@@ -175,12 +175,11 @@ export default function FamilyEventModal({
       });
       setSelectedReminders(editEvent.reminders ?? []);
     } else if (visible) {
-      const hasSlotTime = !!defaultStartTime;
       reset({
         title: "",
         assigneeType: "family",
         assigneeId: undefined,
-        isRecurring: hasSlotTime ? false : true,
+        isRecurring: false, // new events default to one-time
         allDay: false,
         daysOfWeek: defaultDaysOfWeek,
         date: defaultDate ?? toYMD(new Date()),
