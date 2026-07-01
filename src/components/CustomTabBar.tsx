@@ -53,6 +53,21 @@ const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; labelKey
 // Everything else lives in OPS_ITEMS, also rendered inline.
 const MAIN_ROUTES = ["home", "today", "calendar"];
 
+// Per-item circle background — a soft pastel palette so each menu item has its
+// own colour, while the icon stays the family theme colour on top. Keyed by
+// route (or "family"); falls back to the theme tint if a key is missing.
+const MENU_BG: Record<string, string> = {
+  home:     "#E4F6F7", // mint
+  today:    "#FBF0DA", // warm cream
+  calendar: "#E6EEFB", // periwinkle
+  grocery:  "#E4F6EC", // soft green
+  budget:   "#F1EAFB", // lavender
+  chores:   "#E0F5F1", // aqua
+  notes:    "#FBF3DC", // butter
+  projects: "#ECEAFE", // soft indigo
+  family:   "#FBE7F0", // pink
+};
+
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
 
@@ -134,13 +149,13 @@ export default function CustomTabBar({
   // item (main tabs + ops actions are all registered tab screens).
   const activeName = state.routes[state.index]?.name;
 
-  // Circle colours driven by the family theme. Default: themed fill + white
-  // icon; the focused item inverts to a white fill + themed icon. No border.
-  const circleStyle = (focused: boolean) =>
-    focused
-      ? { backgroundColor: "#FFFFFF" }
-      : { backgroundColor: theme };
-  const iconColor = (focused: boolean) => (focused ? theme : "#FFFFFF");
+  // Each circle gets its own pastel background (MENU_BG); the icon stays the
+  // family theme colour on top. The focused item gets a thin theme ring as the
+  // "you are here" cue.
+  const circleBg = (key: string, focused: boolean) => [
+    { backgroundColor: MENU_BG[key] ?? theme },
+    focused ? { borderWidth: 2, borderColor: theme } : null,
+  ];
 
   const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
   const menuOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.4, 1] });
@@ -158,7 +173,7 @@ export default function CustomTabBar({
         node: (
           <Pressable
             onPress={() => handleSelect(route.name, route.key, isFocused)}
-            style={[styles.circle, webCursor, circleStyle(isFocused)]}
+            style={[styles.circle, webCursor, circleBg(route.name, isFocused)]}
             accessibilityRole="button"
             accessibilityLabel={label}
             accessibilityState={{ selected: isFocused }}
@@ -167,7 +182,7 @@ export default function CustomTabBar({
             <Ionicons
               name={TAB_ICONS[route.name] ?? "ellipse"}
               size={28}
-              color={iconColor(isFocused)}
+              color={theme}
             />
           </Pressable>
         ),
@@ -180,13 +195,13 @@ export default function CustomTabBar({
         node: (
           <Pressable
             onPress={() => handleOpSelect(op.route)}
-            style={[styles.circle, webCursor, circleStyle(isFocused)]}
+            style={[styles.circle, webCursor, circleBg(op.route, isFocused)]}
             accessibilityRole="button"
             accessibilityLabel={t(op.labelKey)}
             accessibilityState={{ selected: isFocused }}
             testID={`nav-op-${op.route}`}
           >
-            <Ionicons name={op.icon} size={28} color={iconColor(isFocused)} />
+            <Ionicons name={op.icon} size={28} color={theme} />
           </Pressable>
         ),
       };
@@ -196,12 +211,12 @@ export default function CustomTabBar({
       node: (
         <Pressable
           onPress={() => { router.push("/family"); collapse(); }}
-          style={[styles.circle, webCursor, circleStyle(activeName === "family")]}
+          style={[styles.circle, webCursor, circleBg("family", activeName === "family")]}
           accessibilityRole="button"
           accessibilityLabel={t("family.title")}
           testID="nav-family"
         >
-          <Ionicons name="people" size={28} color={iconColor(activeName === "family")} />
+          <Ionicons name="people" size={28} color={theme} />
         </Pressable>
       ),
     },
@@ -281,8 +296,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   // Icon-only circular menu button (no text labels — icons are intuitive).
-  // Layout only — fill colour is applied inline from the family theme
-  // (see circleStyle); default is a themed fill, the focused item inverts.
+  // Layout only — each item's pastel background (MENU_BG) + the theme-coloured
+  // icon are applied inline (see circleBg); the focused item gets a theme ring.
   circle: {
     width: 48,
     height: 48,
