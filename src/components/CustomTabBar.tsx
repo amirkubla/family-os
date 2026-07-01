@@ -2,97 +2,93 @@
  * CustomTabBar — space-saving navigation, all platforms.
  *
  * A small circular FAB floats in the bottom-RIGHT corner (screen FABs live
- * bottom-left, so no collision). Tapping it fans a vertical speed-dial menu
- * UP over the content; a dimmed backdrop + the FAB (now an ✕) both collapse
- * it. The bar's root is `position: absolute`, so it is removed from the flex
- * flow and screens fill the whole height — nothing is permanently reserved
- * at the bottom.
+ * bottom-left, so no collision). Tapping it slides a full-height **drawer** in
+ * from the RIGHT edge (RTL) over a dimmed backdrop, listing every menu action
+ * as a coloured icon + label row. Tapping the FAB again (now an ✕) or the
+ * backdrop closes it. The bar's root is `position: absolute`, so it is removed
+ * from the flex flow and screens fill the whole height — nothing is permanently
+ * reserved at the bottom.
  */
 
 import React, { useState, useRef, useCallback } from "react";
 import {
   View,
+  Text,
   Pressable,
   StyleSheet,
   Platform,
   Animated,
+  ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useRouter } from "expo-router";
 
-import { FAB_RIGHT } from "@src/ui/fabAnchor";
+import { useFamilyStore } from "@src/store/useFamilyStore";
+import { C, S, SHADOW } from "@src/ui/tokens";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
 
-// ── Nav icons ────────────────────────────────────────────────────────────────
-// Filled (heavy brush) glyphs, rendered white on the themed circle.
-
-// Settings is intentionally absent — it's reached via the gear on the home
-// dashboard, so it doesn't need a slot in the floating nav.
-const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  today:    "sunny",
-  calendar: "calendar",
-  grocery:  "cart",
-  home:     "home",
-  budget:   "wallet",
+// ── Menu items ────────────────────────────────────────────────────────────────
+// Every navigable destination, in display order (top → bottom). Each row gets
+// its own accent colour (icon + label), matching the colourful drawer design.
+// `name` is the registered (tabs) route name; all of these are Tab.Screen
+// entries (some with href:null), so navigation.navigate reaches them and the
+// focused one lights up.
+type MenuItem = {
+  name: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  labelKey: string;
+  color: string;
 };
 
-// Management actions — rendered inline in the main menu (no nested layer).
-// Grocery + budget live here too, alongside chores/notes/projects.
-const OPS_ITEMS: { route: string; icon: keyof typeof Ionicons.glyphMap; labelKey: string }[] = [
-  { route: "grocery",  icon: "cart",          labelKey: "tabs.grocery" },
-  { route: "budget",   icon: "wallet",        labelKey: "tabs.budget" },
-  { route: "chores",   icon: "checkbox",      labelKey: "home.chores" },
-  { route: "notes",    icon: "document-text", labelKey: "home.notes" },
-  { route: "projects", icon: "rocket",        labelKey: "home.projects" },
+const MENU_ITEMS: MenuItem[] = [
+  { name: "home",          icon: "home",          labelKey: "tabs.home",             color: "#2BA896" },
+  { name: "today",         icon: "sunny",         labelKey: "tabs.today",            color: "#E08600" },
+  { name: "calendar",      icon: "calendar",      labelKey: "tabs.calendar",         color: "#2F80ED" },
+  { name: "grocery",       icon: "cart",          labelKey: "tabs.grocery",          color: "#1FA45B" },
+  { name: "budget",        icon: "wallet",        labelKey: "tabs.budget",           color: "#0E9AA5" },
+  { name: "chores",        icon: "checkbox",      labelKey: "home.chores",           color: "#E67E22" },
+  { name: "notes",         icon: "document-text", labelKey: "home.notes",            color: "#CA8A04" },
+  { name: "projects",      icon: "rocket",        labelKey: "home.projects",         color: "#6C63FF" },
+  { name: "family",        icon: "people",        labelKey: "family.title",          color: "#E5534B" },
+  { name: "customization", icon: "color-palette", labelKey: "settings.customization", color: "#9B51E0" },
+  { name: "settings",      icon: "settings",      labelKey: "tabs.settings",         color: "#64748B" },
 ];
-
-// Routes shown directly in the main menu, in display order (top → bottom).
-// Everything else lives in OPS_ITEMS, also rendered inline.
-const MAIN_ROUTES = ["home", "today", "calendar"];
-
-// Per-item circle background — a soft pastel palette so each menu item has its
-// own colour, while the icon stays the family theme colour on top. Keyed by
-// route (or "family"); falls back to the theme tint if a key is missing.
-const MENU_BG: Record<string, string> = {
-  home:     "#E6EBEA", // muted sage-gray
-  today:    "#EFEAE0", // warm sand
-  calendar: "#E4E9F0", // slate blue
-  grocery:  "#E7EDE6", // soft moss
-  budget:   "#EAE8EF", // muted slate-lilac
-  chores:   "#E3ECE9", // muted teal-gray
-  notes:    "#EEEAE1", // greige
-  projects: "#E6E8EF", // cool gray-blue
-  family:   "#ECE8E4", // warm stone
-};
 
 const isWeb = Platform.OS === "web";
 const webCursor = isWeb ? ({ cursor: "pointer" } as any) : {};
+// Anchor the drawer flush to the PHYSICAL right edge on every platform. Native
+// mirrors absolute left/right under RTL (so `left:0` lands on the right); web
+// does not (so `right:0`). Same trick as fabAnchor, with a 0 inset.
+const DRAWER_SIDE = isWeb ? ({ right: 0 } as const) : ({ left: 0 } as const);
 
 // ── Component ─────────────────────────────────────────────────────────────
 
-export default function CustomTabBar({
-  state,
-  descriptors,
-  navigation,
-}: BottomTabBarProps) {
+export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   // Match the page add-FABs, which sit at inset + 16 (S.lg) from the screen
   // bottom — so the nav FAB and a page's "+" FAB align horizontally.
   const bottomPad = insets.bottom + 16;
   const router = useRouter();
 
   const theme = useThemeColor();
+  const familyName = useFamilyStore((s) => s.familyName);
 
   const [expanded, setExpanded] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  // Drawer width — capped so it never swallows the whole screen on tablets/web.
+  const panelWidth = Math.min(340, Math.round(width * 0.84));
+
   // Native driver is unsupported on web (react-native-web warns + no-ops);
   // fall back to JS-driven animation there.
-  const SPRING = { useNativeDriver: !isWeb, tension: 240, friction: 22 };
+  const SPRING = { useNativeDriver: !isWeb, tension: 240, friction: 24 };
 
   const expand = useCallback(() => {
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
@@ -103,12 +99,12 @@ export default function CustomTabBar({
   const collapse = useCallback(() => {
     Animated.spring(anim, { toValue: 0, ...SPRING }).start();
     // Flip state on a timer rather than the spring's `finished` callback —
-    // a navigation re-render (router.push) can deliver finished:false and
-    // strand the menu open. The timer is cleared by expand() on rapid re-open.
+    // a navigation re-render (router.navigate) can deliver finished:false and
+    // strand the drawer open. The timer is cleared by expand() on rapid re-open.
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
     collapseTimer.current = setTimeout(() => {
       setExpanded(false);
-    }, 240);
+    }, 260);
   }, [anim]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = useCallback(() => {
@@ -116,113 +112,38 @@ export default function CustomTabBar({
     else expand();
   }, [expanded, expand, collapse]);
 
-  const handleOpSelect = useCallback(
-    (route: string) => {
-      router.push(`/${route}` as any);
-      collapse();
-    },
-    [router, collapse],
-  );
+  const activeName = state.routes[state.index]?.name;
 
-  const handleSelect = useCallback(
-    (routeName: string, routeKey: string, isFocused: boolean) => {
-      const event = navigation.emit({
-        type: "tabPress",
-        target: routeKey,
-        canPreventDefault: true,
-      });
-      if (!isFocused && !event.defaultPrevented) {
-        navigation.navigate(routeName);
+  // Navigate to a menu item. All items are registered (tabs) screens, so use
+  // the idiomatic tabPress + navigate (keeps tab state, no back-stack buildup).
+  // Falls back to router for any name that isn't a registered route.
+  const go = useCallback(
+    (name: string) => {
+      const route = state.routes.find((r) => r.name === name);
+      if (route) {
+        const isFocused = state.routes[state.index]?.name === name;
+        const event = navigation.emit({
+          type: "tabPress",
+          target: route.key,
+          canPreventDefault: true,
+        });
+        if (!isFocused && !event.defaultPrevented) {
+          navigation.navigate(name as never);
+        }
+      } else {
+        router.navigate(("/" + name) as any);
       }
       collapse();
     },
-    [navigation, collapse],
+    [state, navigation, router, collapse],
   );
 
-  // Main-row tabs only (today/calendar/home). Grocery + budget live under the
-  // ops layer; href:null screens (kid/customization) are excluded.
-  // Ordered by MAIN_ROUTES (display order), not the tab-registration order.
-  const navRoutes = MAIN_ROUTES
-    .map((name) => state.routes.find((r) => r.name === name))
-    .filter((r): r is (typeof state.routes)[number] => !!r);
-  // Currently focused route name — drives the "selected" inversion for every
-  // item (main tabs + ops actions are all registered tab screens).
-  const activeName = state.routes[state.index]?.name;
-
-  // Each circle gets its own pastel background (MENU_BG); the icon stays the
-  // family theme colour on top. The focused item gets a thin theme ring as the
-  // "you are here" cue.
-  const circleBg = (key: string, focused: boolean) => [
-    { backgroundColor: MENU_BG[key] ?? theme },
-    focused ? { borderWidth: 2, borderColor: theme } : null,
-  ];
-
   const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
-  const menuOpacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.4, 1] });
-  const menuTranslate = anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
-
-  // Flat list of circles for the current layer. Main = the tabs + every
-  // management action inline (no nested "ניהול" tap); kids = the kid list + back.
-  const mainItems: { key: string; node: React.ReactNode }[] = [
-    ...navRoutes.map((route) => {
-      const idx = state.routes.indexOf(route);
-      const isFocused = state.index === idx;
-      const label = descriptors[route.key]?.options?.title ?? route.name;
-      return {
-        key: route.key,
-        node: (
-          <Pressable
-            onPress={() => handleSelect(route.name, route.key, isFocused)}
-            style={[styles.circle, webCursor, circleBg(route.name, isFocused)]}
-            accessibilityRole="button"
-            accessibilityLabel={label}
-            accessibilityState={{ selected: isFocused }}
-            testID={`tab-${route.name}`}
-          >
-            <Ionicons
-              name={TAB_ICONS[route.name] ?? "ellipse"}
-              size={28}
-              color={theme}
-            />
-          </Pressable>
-        ),
-      };
-    }),
-    ...OPS_ITEMS.map((op) => {
-      const isFocused = op.route === activeName;
-      return {
-        key: `op-${op.route}`,
-        node: (
-          <Pressable
-            onPress={() => handleOpSelect(op.route)}
-            style={[styles.circle, webCursor, circleBg(op.route, isFocused)]}
-            accessibilityRole="button"
-            accessibilityLabel={t(op.labelKey)}
-            accessibilityState={{ selected: isFocused }}
-            testID={`nav-op-${op.route}`}
-          >
-            <Ionicons name={op.icon} size={28} color={theme} />
-          </Pressable>
-        ),
-      };
-    }),
-    {
-      key: "family",
-      node: (
-        <Pressable
-          onPress={() => { router.push("/family"); collapse(); }}
-          style={[styles.circle, webCursor, circleBg("family", activeName === "family")]}
-          accessibilityRole="button"
-          accessibilityLabel={t("family.title")}
-          testID="nav-family"
-        >
-          <Ionicons name="people" size={28} color={theme} />
-        </Pressable>
-      ),
-    },
-  ];
-
-  const items = mainItems;
+  // Closed → panel pushed off the right edge by its own width; open → flush.
+  const panelTranslate = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [panelWidth, 0],
+  });
 
   return (
     <View
@@ -239,24 +160,62 @@ export default function CustomTabBar({
         </Animated.View>
       )}
 
-      {/* Bottom-right anchored column: menu items + FAB */}
-      <View style={[styles.anchor, { bottom: bottomPad }]} pointerEvents="box-none">
-        {/* Speed-dial menu items (above the FAB) — open together */}
-        {expanded && (
-          <Animated.View
-            style={[
-              styles.menu,
-              { opacity: menuOpacity, transform: [{ translateY: menuTranslate }] },
-            ]}
-            pointerEvents="auto"
-          >
-            {items.map((item) => (
-              <React.Fragment key={item.key}>{item.node}</React.Fragment>
-            ))}
-          </Animated.View>
-        )}
+      {/* The drawer panel — slides in from the right edge (RTL) */}
+      {expanded && (
+        <Animated.View
+          style={[
+            styles.drawer,
+            DRAWER_SIDE,
+            { width: panelWidth, transform: [{ translateX: panelTranslate }] },
+          ]}
+          pointerEvents="auto"
+          accessibilityRole={isWeb ? ("menu" as any) : undefined}
+        >
+          {/* Brand wordmark */}
+          <View style={[styles.brand, { paddingTop: insets.top + S.md }]}>
+            <View style={[styles.brandBadge, { backgroundColor: theme }]}>
+              <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+            </View>
+            <Text style={styles.brandText} numberOfLines={1}>
+              {familyName || "Family OS"}
+            </Text>
+          </View>
 
-        {/* The FAB — toggles open/close */}
+          <View style={styles.divider} />
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: bottomPad + 64, paddingTop: S.xs }}
+          >
+            {MENU_ITEMS.map((item) => {
+              const focused = item.name === activeName;
+              return (
+                <Pressable
+                  key={item.name}
+                  onPress={() => go(item.name)}
+                  style={[
+                    styles.row,
+                    webCursor,
+                    focused && { backgroundColor: item.color + "1A" },
+                  ]}
+                  accessibilityRole={isWeb ? ("menuitem" as any) : "button"}
+                  accessibilityLabel={t(item.labelKey)}
+                  accessibilityState={{ selected: focused }}
+                  testID={`tab-${item.name}`}
+                >
+                  <Ionicons name={item.icon} size={24} color={item.color} />
+                  <Text style={[styles.rowLabel, { color: item.color }]} numberOfLines={1}>
+                    {t(item.labelKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
+      )}
+
+      {/* Bottom-right anchored FAB — toggles the drawer open/close */}
+      <View style={[styles.anchor, { bottom: bottomPad }]} pointerEvents="box-none">
         <Pressable
           onPress={toggle}
           style={[
@@ -281,29 +240,71 @@ export default function CustomTabBar({
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15,15,30,0.18)",
+    backgroundColor: "rgba(15,15,30,0.32)",
+  },
+  drawer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    backgroundColor: C.surface,
+    // Round only the inner (content-facing) vertical edge. borderTop/BottomLeft
+    // are physical props (not RTL-swapped), and the panel's inner edge is the
+    // physical left on both web and native — so this rounds the right spot.
+    borderTopLeftRadius: 22,
+    borderBottomLeftRadius: 22,
+    ...SHADOW.lg,
+    ...(isWeb ? ({ zIndex: 1 } as any) : {}),
+  },
+  brand: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: S.lg,
+    paddingBottom: S.md,
+  },
+  brandBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandText: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: "800",
+    color: C.textPrimary,
+    writingDirection: "rtl",
+    textAlign: TEXT_RIGHT,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: C.border,
+    marginHorizontal: S.lg,
+    marginBottom: S.xs,
+  },
+  row: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 13,
+    paddingHorizontal: S.md,
+    marginHorizontal: S.sm,
+    borderRadius: 14,
+  },
+  rowLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    writingDirection: "rtl",
+    textAlign: TEXT_RIGHT,
   },
   anchor: {
     position: "absolute",
-    ...FAB_RIGHT, // always bottom-right (web reference); native would mirror a bare `right`
+    ...(isWeb ? { right: 16 } : { left: 16 }), // physical bottom-right on all platforms
     alignItems: "flex-end",
+    ...(isWeb ? ({ zIndex: 2 } as any) : {}),
     // bottom set inline from safe-area inset
-  },
-  menu: {
-    width: 50, // match the FAB width so the circles centre over it
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 14,
-  },
-  // Icon-only circular menu button (no text labels — icons are intuitive).
-  // Layout only — each item's pastel background (MENU_BG) + the theme-coloured
-  // icon are applied inline (see circleBg); the focused item gets a theme ring.
-  circle: {
-    width: 48,
-    height: 48,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
   },
   fab: {
     width: 50,
