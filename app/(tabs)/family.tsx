@@ -17,6 +17,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
 import PageHeader from "@src/components/PageHeader";
 import FeatureTile from "@src/components/FeatureTile";
+import FamilyStats from "@src/components/FamilyStats";
 import { t } from "@src/i18n";
 import { C, S } from "@src/ui/tokens";
 import { TEXT_RIGHT } from "@src/ui/rtl";
@@ -82,6 +83,9 @@ export default function FamilyScreen() {
             ))}
           </View>
         )}
+
+        {/* ── Per-member statistics roll-up ── */}
+        <FamilyStats />
       </ScreenScrollView>
     </SafeAreaView>
   );

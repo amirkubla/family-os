@@ -18,7 +18,6 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
 import { t } from "@src/i18n";
 import FeatureTile from "@src/components/FeatureTile";
-import FamilyStats from "@src/components/FamilyStats";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, S } from "@src/ui/tokens";
 
@@ -146,9 +145,6 @@ export default function HomeScreen() {
             onPress={() => router.push("/budget" as any)} testID="tile-budget"
           />
         </View>
-
-        {/* ── Per-member stats roll-up ── */}
-        <FamilyStats />
 
       </ScreenScrollView>
     </SafeAreaView>
