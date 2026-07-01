@@ -230,11 +230,34 @@ import { RTL_ROW, RTL_ALIGN_RIGHT, rtl, TEXT_RIGHT, TEXT_LEFT } from "@src/ui/rt
 ### Backend (`backend/`)
 Hono REST API with Drizzle ORM on Neon Postgres. Routes follow pattern `/v1/family/:familyId/<resource>`. All routes under `/v1/family/*` are protected by JWT middleware (`jwtAuth` + `familyGuard` ensures the JWT's familyId matches the URL param).
 
-**Route files:** `auth`, `chores`, `family`, `familyEvents`, `familyMembers`, `grocery`, `internal`, `invites`, `kids`, `notes`, `notifications`, `projects`, `pushTokens`, `scheduleBlocks`.
+**Route files:** `auth`, `chores`, `documents`, `family`, `familyEvents`, `familyMembers`, `folders`, `grocery`, `internal`, `invites`, `kids`, `notes`, `notifications`, `projects`, `pushTokens`, `scheduleBlocks`.
 
 Schema is in `backend/src/db/schema.ts`. After schema changes: `npm run db:generate` → `npm run db:migrate`.
 
+**⚠️ Migration-generation drift (as of 2026-07-01):** `npm run db:generate` currently can't run non-interactively — the Drizzle snapshot chain drifted (`grocery_items.shopping_category` exists via migration `0004` but is missing from the `0031` snapshot), so `generate` keeps prompting to "re-create" it. Until that's repaired (tracked as a separate task), new migrations must be **hand-authored** (write `NNNN_name.sql` + add an entry to `migrations/meta/_journal.json`) — runtime `migrate()` applies them fine regardless. Migration `0032_documents_folders` was done this way. Migrations auto-apply on deploy (Dockerfile CMD: `migrate.ts && server.ts`).
+
 **Internal service-to-service routes (`/v1/internal/*`):** narrow write-only surface for the Telegram bot Assistant. Auth'd by `SERVICE_TOKEN` (shared bearer) via `middleware/serviceToken.ts`, NOT user JWT. Currently exposes `POST /v1/internal/family/:familyId/{family-events,grocery}`. Add new endpoints here only when the Assistant grows new capabilities — don't widen this surface for general clients. The token lives in the family-os Cloud Run `SERVICE_TOKEN` env var and the Assistant Cloud Run `FAMILY_OS_SERVICE_TOKEN` env var — same value on both sides. Rotate together.
+
+### Family Documents (GCS-backed) — feature in progress
+
+Family document scanner + storage: folders/subfolders tree + files, with the **metadata in Postgres** and the **bytes in a private GCS bucket** (never in the Zustand store — files are fetched on demand via short-lived signed URLs).
+
+**Model:** `folders` (adjacency-list tree — `parentId` null = root, self-ref cascade) + `documents` (metadata only; object key `families/{familyId}/{documentId}`, `status` `pending`→`ready`). `documents.folderId` is `ON DELETE SET NULL` so deleting a folder detaches its docs to root — a folder delete never destroys files. Folder rename/move is pure metadata (the object key uses the id, not the path — no GCS copies). Repos scope every write by `familyId`.
+
+**Routes** (all under `jwtAuth + familyGuard`):
+- `folders`: `GET /` · `POST /` · `PATCH /:id` (rename/move, with cycle guard) · `DELETE /:id`.
+- `documents`: `GET /` · `POST /init-upload` (create pending row + return V4 signed PUT URL) · `POST /:id/confirm` (verify bytes landed → `ready` + record real size/type) · `GET /:id/download-url` (short-TTL signed GET) · `PATCH /:id` (rename/move) · `DELETE /:id` (deletes the GCS object then the row). Upload allowlist: PDF/JPEG/PNG/HEIC/HEIF/WEBP, ≤25 MB.
+
+**Storage helper:** `backend/src/lib/documentsStorage.ts`. Signing uses ADC (`new Storage()`) — on Cloud Run there's no key file, so V4 signing goes through the IAM `signBlob` API using the runtime SA. `documentsConfigured()` gates the endpoints to a graceful 503 when `DOCUMENTS_BUCKET` is unset (e.g. local dev).
+
+**GCS infra (Phase 0, personal project `family-os-489209`, region `me-west1`):**
+- Bucket **`family-os-489209-documents`** — private, uniform bucket-level access, public-access-prevention.
+- Runtime SA (the default compute SA the Tasks client uses) has `roles/storage.objectAdmin` on the bucket **and** `roles/iam.serviceAccountTokenCreator` **on itself** (the latter is what makes signed URLs work on Cloud Run — without it `getSignedUrl` throws at runtime).
+- APIs enabled: `storage.googleapis.com`, `iamcredentials.googleapis.com`.
+- Bucket **CORS** allows `PUT`/`GET`/`HEAD` from the prod Cloud Run URL + `localhost:8083`/`8081` (web uploads PUT bytes directly from the browser — native RN isn't subject to browser CORS). Add new origins (e.g. staging) here.
+- Cloud Run env var **`DOCUMENTS_BUCKET`** = the bucket name (backend-only; NOT an `EXPO_PUBLIC_*` var — the frontend never sees it).
+
+**Status:** Phase 1 (schema + folder/doc metadata CRUD) and Phase 2 (GCS signed-URL upload/download/delete) are backend-complete. Remaining: frontend folder browser + upload/scan UI (picker + camera; native edge-detection scanner deferred), and an orphaned-`pending` cleanup job. Delete is hard-delete.
 
 ### Telegram bot architecture (the sibling `family-ai-assistant` repo)
 
@@ -446,7 +469,7 @@ These rules exist because we leaked the Neon DB password, JWT_SECRET, and SCHEDU
   ```
 - **Never paste secrets into chat with Claude.** Conversation transcripts are stored; treat them as semi-public. If you do paste one, rotate it after the task is done.
 - **Backend secrets live in Cloud Run env vars** (`gcloud run services update --update-env-vars` for plain, or Secret Manager for sensitive — prefer Secret Manager for new ones), never in the repo. Two services, two projects:
-  - **family-os** (`family-os-489209`): `DATABASE_URL`, `JWT_SECRET`, `SCHEDULER_SECRET`, `SERVICE_TOKEN`.
+  - **family-os** (`family-os-489209`): `DATABASE_URL`, `JWT_SECRET`, `SCHEDULER_SECRET`, `SERVICE_TOKEN`, `DOCUMENTS_BUCKET` (plain — the GCS bucket for family documents; not a secret).
   - **family-ai-assistant** (`family-ai-assistant-476208`): `DATABASE_URL` (Assistant's own Neon, NOT family-os's), `OPENAI_API_KEY` (Secret Manager), `TELEGRAM_BOT_TOKEN` (Secret Manager), `FAMILY_OS_API_URL` (plain), `FAMILY_OS_SERVICE_TOKEN` (matches family-os `SERVICE_TOKEN`, rotate together).
   Inspect with `gcloud run services describe <service> --project=<proj> --region=me-west1 --format="value(spec.template.spec.containers[0].env[].name)"` to see names without leaking values.
 - **Frontend `EXPO_PUBLIC_*` are NOT secret** — they're baked into the JS bundle and inspectable in DevTools. Anything truly sensitive must NEVER use this prefix.
