@@ -10,7 +10,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { View, StyleSheet, Pressable, Alert } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
-import { Text, IconButton, FAB, ActivityIndicator } from "react-native-paper";
+import { Text, IconButton, FAB } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -99,7 +99,10 @@ export default function DocumentsScreen() {
   const files = useMemo(
     () =>
       documents
-        .filter((d) => (d.folderId ?? null) === currentFolderId)
+        // Only show confirmed uploads. 'pending' rows are transient (an upload
+        // in flight, or an orphan from a failed/abandoned one) — the FAB spinner
+        // is the in-progress indicator, so pending rows never linger on screen.
+        .filter((d) => (d.folderId ?? null) === currentFolderId && d.status === "ready")
         .sort((a, b) => a.name.localeCompare(b.name, "he")),
     [documents, currentFolderId],
   );
@@ -192,49 +195,39 @@ export default function DocumentsScreen() {
               </View>
             ))}
 
-            {files.map((d) => {
-              const isPending = d.status === "pending";
-              return (
-                <View key={d.id} style={styles.row}>
-                  <Pressable
-                    style={styles.rowMain}
-                    disabled={isPending}
-                    onPress={() => handleView(d.id)}
-                    testID={`doc-${d.name}`}
-                    accessibilityRole="button"
-                    accessibilityLabel={d.name}
-                  >
-                    <View style={styles.iconWrap}>
-                      {isPending ? (
-                        <ActivityIndicator size={16} color={C.textSecondary} />
-                      ) : (
-                        <Ionicons name={fileIcon(d.contentType)} size={20} color={C.textSecondary} />
-                      )}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.rowName} numberOfLines={1}>
-                        {d.name}
-                      </Text>
-                      <Text style={styles.rowMeta} numberOfLines={1}>
-                        {isPending ? t("documents.pending") : formatSize(d.sizeBytes)}
-                      </Text>
-                    </View>
-                  </Pressable>
-                  {!isPending && (
-                    <IconButton
-                      icon="trash-can-outline"
-                      size={18}
-                      iconColor={C.textMuted}
-                      onPress={() => {
-                        setDeleteMsg(t("documents.deleteDocConfirm"));
-                        requestDelete(() => deleteDocumentRemote(d.id));
-                      }}
-                      testID={`doc-delete-${d.name}`}
-                    />
-                  )}
-                </View>
-              );
-            })}
+            {files.map((d) => (
+              <View key={d.id} style={styles.row}>
+                <Pressable
+                  style={styles.rowMain}
+                  onPress={() => handleView(d.id)}
+                  testID={`doc-${d.name}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={d.name}
+                >
+                  <View style={styles.iconWrap}>
+                    <Ionicons name={fileIcon(d.contentType)} size={20} color={C.textSecondary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowName} numberOfLines={1}>
+                      {d.name}
+                    </Text>
+                    <Text style={styles.rowMeta} numberOfLines={1}>
+                      {formatSize(d.sizeBytes)}
+                    </Text>
+                  </View>
+                </Pressable>
+                <IconButton
+                  icon="trash-can-outline"
+                  size={18}
+                  iconColor={C.textMuted}
+                  onPress={() => {
+                    setDeleteMsg(t("documents.deleteDocConfirm"));
+                    requestDelete(() => deleteDocumentRemote(d.id));
+                  }}
+                  testID={`doc-delete-${d.name}`}
+                />
+              </View>
+            ))}
           </>
         )}
       </ScreenScrollView>

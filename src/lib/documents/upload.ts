@@ -66,9 +66,16 @@ export async function uploadDocument(
     store.setLastSyncedAt(Date.now());
     return ready;
   } catch (err) {
-    // Roll back the optimistic row; the orphaned GCS object (if any) is swept
-    // by the pending-cleanup job.
+    // Roll back locally AND delete the server-side pending row (+ any partial
+    // GCS object), so a failed upload never leaves an orphan that re-appears
+    // on the next sync. Best-effort — a leftover pending row is still swept by
+    // the cleanup job.
     store.deleteDocument(pending.id);
+    try {
+      await documentsApi.delete(fid, pending.id);
+    } catch {
+      /* best-effort cleanup */
+    }
     throw err;
   }
 }
