@@ -63,12 +63,15 @@ const KEYWORD_MAP: Record<ShoppingCategory, Record<string, string[]>> = {
  */
 export function inferGrocerySubcategory(
   title: string,
-  shoppingCategory: ShoppingCategory,
+  shoppingCategory: string,
 ): string {
   const normalized = title.trim().toLowerCase();
   if (!normalized) return "Other";
 
-  const map = KEYWORD_MAP[shoppingCategory];
+  // Custom (user-added) main categories have no built-in keyword map — skip
+  // inference rather than crashing on Object.entries(undefined).
+  const map = (KEYWORD_MAP as Record<string, Record<string, string[]>>)[shoppingCategory];
+  if (!map) return "Other";
   for (const [subcategory, keywords] of Object.entries(map)) {
     for (const kw of keywords) {
       if (normalized.includes(kw.toLowerCase())) return subcategory;
