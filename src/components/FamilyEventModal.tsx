@@ -565,7 +565,7 @@ export default function FamilyEventModal({
                     setSelectedReminders((prev) => [...prev, minutes]);
                   }
                 }}
-                style={MS.chip}
+                style={[MS.chip, styles.reminderChip]}
                 labelStyle={MS.chipLabel}
                 buttonColor={selected ? theme + "20" : undefined}
                 textColor={selected ? theme : C.textSecondary}
@@ -626,6 +626,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: C.textSecondary,
     writingDirection: "rtl",
+  },
+  // Uniform reminder chips — all as wide as the widest label ("12 שעות").
+  reminderChip: {
+    minWidth: 76,
   },
   monthlyHint: {
     fontSize: 13,
