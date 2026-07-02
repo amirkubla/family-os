@@ -412,11 +412,7 @@ export default function FamilyEventModal({
             {/* Weekly → which weekday(s) within each active cycle. */}
             {repeatUnit === "week" && (
               <>
-                <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-                  <Text style={MS.sectionLabel}>{t("eventModal.day")}</Text>
-                  <Text style={MS.sectionIcon}>📆</Text>
-                </View>
-                <View style={[MS.chipRow, { gap: S.xs, flexWrap: "nowrap" }]}>
+                <View style={[MS.chipRow, { gap: S.xs, flexWrap: "nowrap", marginTop: S.sm }]}>
                   {Array.from({ length: 7 }, (_, idx) => {
                     const sel = selectedDays.includes(idx);
                     return (
@@ -482,12 +478,8 @@ export default function FamilyEventModal({
         )}
       </View>
 
-      {/* ── Time section ── */}
+      {/* ── Time section (label omitted) ── */}
       <View style={MS.section}>
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionLabel}>{t("eventModal.time")}</Text>
-          <Text style={MS.sectionIcon}>⏰</Text>
-        </View>
         <View style={MS.segmented}>
           <SegmentedPills
             value={allDay ? "allDay" : "timed"}
