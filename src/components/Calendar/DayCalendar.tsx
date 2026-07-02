@@ -20,6 +20,7 @@ import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S, R } from "@src/ui/tokens";
 import { TEXT_RIGHT, RTL_ROW } from "@src/ui/rtl";
+import NowIndicator, { useNowMinutes } from "./NowIndicator";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -253,6 +254,20 @@ export default function DayCalendar({
     return h;
   }, []);
 
+  // Current-time line — only when the displayed day is today, positioned at
+  // the current minute (null when now falls outside the 06:00–29:00 window).
+  const nowMinutes = useNowMinutes();
+  // Re-derived each render (which happens ≥ once a minute via nowMinutes), so it
+  // flips correctly at the midnight boundary without a stale memo.
+  const nowDate = new Date();
+  const isToday =
+    selectedDate === `${nowDate.getFullYear()}-${pad(nowDate.getMonth() + 1)}-${pad(nowDate.getDate())}`;
+  const nowTop = useMemo(() => {
+    const g = toGridMin(nowMinutes);
+    if (g < GRID_START_HOUR * 60 || g > GRID_END_HOUR * 60) return null;
+    return ((g - GRID_START_HOUR * 60) / 60) * HOUR_HEIGHT;
+  }, [nowMinutes]);
+
   return (
     <View style={styles.root}>
       {/* Header (RTL): left arrow = next day, right arrow = previous. */}
@@ -372,6 +387,11 @@ export default function DayCalendar({
                   </Pressable>
                 );
               })}
+
+              {/* Current-time line + pulse — only when viewing today. */}
+              {isToday && nowTop != null && (
+                <NowIndicator top={nowTop} color={accentColor} />
+              )}
             </View>
           </View>
         </View>

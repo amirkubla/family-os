@@ -28,6 +28,7 @@ import {
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C } from "@src/ui/tokens";
 import { TEXT_RIGHT, RTL_ROW } from "@src/ui/rtl";
+import NowIndicator, { useNowMinutes } from "./NowIndicator";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -227,6 +228,15 @@ export default function WeekCalendar({
   );
 
   const today = useMemo(() => ymd(new Date()), []);
+
+  // Current-time line position (px within the grid), or null when now falls
+  // outside the visible 06:00–29:00 window.
+  const nowMinutes = useNowMinutes();
+  const nowTop = useMemo(() => {
+    const g = toGridMin(nowMinutes);
+    if (g < GRID_START_HOUR * 60 || g > GRID_END_HOUR * 60) return null;
+    return ((g - GRID_START_HOUR * 60) / 60) * HOUR_HEIGHT;
+  }, [nowMinutes]);
 
   const goBack = useCallback(() => setWeekOffset((o) => o - 1), []);
   const goForward = useCallback(() => setWeekOffset((o) => o + 1), []);
@@ -520,6 +530,11 @@ export default function WeekCalendar({
                       </Pressable>
                     );
                   })}
+
+                  {/* Current-time line + pulse — only on today's column. */}
+                  {dateStr === today && nowTop != null && (
+                    <NowIndicator top={nowTop} color={accentColor} />
+                  )}
                 </View>
               );
             })}
