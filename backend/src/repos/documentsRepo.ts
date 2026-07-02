@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, lt } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { documents } from "../db/schema.js";
 import type { Document, NewDocument, UpdateDocument } from "../types/models.js";
@@ -15,6 +15,14 @@ export const documentsRepo = {
 
   async listByFamily(familyId: string): Promise<Document[]> {
     return db.select().from(documents).where(eq(documents.familyId, familyId));
+  },
+
+  /** Cross-family: 'pending' docs older than the cutoff (abandoned uploads). */
+  async listStalePending(cutoff: Date): Promise<Document[]> {
+    return db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.status, "pending"), lt(documents.updatedAt, cutoff)));
   },
 
   async getById(id: string, familyId: string): Promise<Document | undefined> {

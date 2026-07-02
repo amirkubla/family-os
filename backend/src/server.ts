@@ -31,6 +31,7 @@ import { budgetCategoriesRoutes } from "./routes/budgetCategories.js";
 import { expensesRoutes } from "./routes/expenses.js";
 import { foldersRoutes } from "./routes/folders.js";
 import { documentsRoutes } from "./routes/documents.js";
+import { documentsMaintenanceRoutes } from "./routes/documentsMaintenance.js";
 import { jwtAuth, familyGuard } from "./middleware/auth.js";
 import { serviceTokenAuth } from "./middleware/serviceToken.js";
 
@@ -78,6 +79,8 @@ app.route("/v1/family/:familyId/budget-categories", budgetCategoriesRoutes);
 app.route("/v1/family/:familyId/expenses", expensesRoutes);
 app.route("/v1/family/:familyId/folders", foldersRoutes);
 app.route("/v1/family/:familyId/documents", documentsRoutes);
+// System document maintenance (cleanup job) — shared-secret auth, not family-scoped.
+app.route("/v1/documents", documentsMaintenanceRoutes);
 
 // Internal API surface for service-to-service calls (Telegram bot Assistant).
 // Authed by SERVICE_TOKEN, not user JWT. Narrow scope: writes only.
