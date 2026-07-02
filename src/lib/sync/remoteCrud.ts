@@ -924,6 +924,21 @@ export function deleteFolderRemote(id: string) {
 // Documents (upload lives in lib/documents/upload.ts; view in view.ts)
 // ---------------------------------------------------------------------------
 
+/** Rename a document or move it to another folder (folderId null = root). Optimistic. */
+export function updateDocumentRemote(
+  id: string,
+  patch: { name?: string; folderId?: string | null },
+) {
+  useFamilyStore.getState().updateDocument(id, {
+    ...(patch.name !== undefined ? { name: patch.name } : {}),
+    ...("folderId" in patch ? { folderId: patch.folderId ?? undefined } : {}),
+  });
+  fireAndForget(
+    getFamilyId().then((fid) => documentsApi.update(fid, id, patch)),
+    "Update document",
+  );
+}
+
 /** Delete a document (optimistic); the backend removes the GCS object too. */
 export function deleteDocumentRemote(id: string) {
   useFamilyStore.getState().deleteDocument(id);

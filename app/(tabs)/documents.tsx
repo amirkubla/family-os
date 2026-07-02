@@ -16,12 +16,19 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
-import type { Folder } from "@src/models/document";
-import { deleteFolderRemote, deleteDocumentRemote } from "@src/lib/sync/remoteCrud";
+import type { Folder, FamilyDocument } from "@src/models/document";
+import {
+  deleteFolderRemote,
+  deleteDocumentRemote,
+  updateFolderRemote,
+  updateDocumentRemote,
+} from "@src/lib/sync/remoteCrud";
 import { pickFromCamera, pickFromLibrary, pickDocument, type PickedFile } from "@src/lib/documents/capture";
 import { uploadDocument } from "@src/lib/documents/upload";
 import { openDocument } from "@src/lib/documents/view";
 import FolderModal from "@src/components/FolderModal";
+import RenameModal from "@src/components/RenameModal";
+import FolderPickerSheet from "@src/components/FolderPickerSheet";
 import DocumentAddSheet from "@src/components/DocumentAddSheet";
 import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
@@ -59,6 +66,39 @@ export default function DocumentsScreen() {
   const [uploading, setUploading] = useState(false);
   // Message for the shared confirm dialog (folders and documents differ).
   const [deleteMsg, setDeleteMsg] = useState(t("documents.deleteFolderConfirm"));
+  // Document rename (folders rename via FolderModal).
+  const [renameDoc, setRenameDoc] = useState<FamilyDocument | null>(null);
+  // Move destination picker target: a document (by folderId) or folder (by parentId).
+  const [moveTarget, setMoveTarget] = useState<
+    { kind: "doc" | "folder"; id: string; currentParent: string | null } | null
+  >(null);
+
+  // When moving a folder, its own subtree isn't a valid destination (cycle).
+  const moveExclude = useMemo(() => {
+    if (!moveTarget || moveTarget.kind !== "folder") return undefined;
+    const set = new Set<string>([moveTarget.id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const f of folders) {
+        if (f.parentId && set.has(f.parentId) && !set.has(f.id)) {
+          set.add(f.id);
+          changed = true;
+        }
+      }
+    }
+    return set;
+  }, [moveTarget, folders]);
+
+  const onPickMove = useCallback(
+    (folderId: string | null) => {
+      if (!moveTarget) return;
+      if (moveTarget.kind === "doc") updateDocumentRemote(moveTarget.id, { folderId });
+      else updateFolderRemote(moveTarget.id, { parentId: folderId });
+      setMoveTarget(null);
+    },
+    [moveTarget],
+  );
 
   // Pick a file (camera / library / document) then run the 3-step upload.
   const handlePick = useCallback(
@@ -183,6 +223,16 @@ export default function DocumentsScreen() {
                   accessibilityLabel={t("documents.renameFolder")}
                 />
                 <IconButton
+                  icon="folder-move-outline"
+                  size={18}
+                  iconColor={C.textMuted}
+                  onPress={() =>
+                    setMoveTarget({ kind: "folder", id: f.id, currentParent: f.parentId ?? null })
+                  }
+                  testID={`folder-move-${f.name}`}
+                  accessibilityLabel={t("documents.move")}
+                />
+                <IconButton
                   icon="trash-can-outline"
                   size={18}
                   iconColor={C.textMuted}
@@ -216,6 +266,24 @@ export default function DocumentsScreen() {
                     </Text>
                   </View>
                 </Pressable>
+                <IconButton
+                  icon="pencil-outline"
+                  size={18}
+                  iconColor={C.textMuted}
+                  onPress={() => setRenameDoc(d)}
+                  testID={`doc-rename-${d.name}`}
+                  accessibilityLabel={t("documents.rename")}
+                />
+                <IconButton
+                  icon="folder-move-outline"
+                  size={18}
+                  iconColor={C.textMuted}
+                  onPress={() =>
+                    setMoveTarget({ kind: "doc", id: d.id, currentParent: d.folderId ?? null })
+                  }
+                  testID={`doc-move-${d.name}`}
+                  accessibilityLabel={t("documents.move")}
+                />
                 <IconButton
                   icon="trash-can-outline"
                   size={18}
@@ -266,6 +334,26 @@ export default function DocumentsScreen() {
         editFolder={editFolder}
         parentId={currentFolderId ?? undefined}
       />
+      <RenameModal
+        visible={!!renameDoc}
+        onDismiss={() => setRenameDoc(null)}
+        title={t("documents.renameDoc")}
+        initialName={renameDoc?.name ?? ""}
+        onSubmit={(name) => {
+          if (renameDoc) updateDocumentRemote(renameDoc.id, { name });
+        }}
+      />
+
+      <FolderPickerSheet
+        visible={!!moveTarget}
+        onDismiss={() => setMoveTarget(null)}
+        title={moveTarget?.kind === "folder" ? t("documents.moveFolderTo") : t("documents.moveDocTo")}
+        folders={folders}
+        excludeIds={moveExclude}
+        currentId={moveTarget?.currentParent ?? null}
+        onPick={onPickMove}
+      />
+
       <ConfirmDeleteModal
         visible={confirmVisible}
         onConfirm={confirmDelete}

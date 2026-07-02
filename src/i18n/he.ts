@@ -59,6 +59,12 @@ const he = {
     deleteDocConfirm: "למחוק את המסמך לצמיתות?",
     uploadError: "ההעלאה נכשלה — נסו שוב",
     viewError: "פתיחת המסמך נכשלה — נסו שוב",
+    rename: "שינוי שם",
+    renameDoc: "שינוי שם המסמך",
+    move: "העברה",
+    moveDocTo: "העברת המסמך אל",
+    moveFolderTo: "העברת התיקייה אל",
+    currentLocation: "מיקום נוכחי",
   },
 
   // ── Floating nav ──
