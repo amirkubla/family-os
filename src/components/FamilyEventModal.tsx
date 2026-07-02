@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, Button, IconButton } from "react-native-paper";
+import { Text, Button } from "react-native-paper";
 import ModalTextInput from "./ModalTextInput";
 import SegmentedPills from "@src/components/SegmentedPills";
 import { useForm, Controller } from "react-hook-form";
@@ -24,6 +24,7 @@ import { useThemeColor } from "@src/ui/useThemeColor";
 import ModalWrapper from "./ModalWrapper";
 import SelectChip from "./SelectChip";
 import DateTimeField from "./DateTimeField";
+import NumberField from "./NumberField";
 import { formatDateHe } from "./DatePicker";
 
 const timeRegex = /^\d{1,2}:\d{2}$/;
@@ -395,22 +396,13 @@ export default function FamilyEventModal({
             </View>
             <View style={styles.stepperRow}>
               <Text style={styles.stepperEvery}>{t("eventModal.repeatEvery")}</Text>
-              <IconButton
-                icon="minus"
-                mode="outlined"
-                size={16}
-                disabled={repeatInterval <= 1}
-                onPress={() => setValue("repeatInterval", Math.max(1, repeatInterval - 1))}
-                style={styles.stepperBtn}
-              />
-              <Text style={styles.stepperValue}>{repeatInterval}</Text>
-              <IconButton
-                icon="plus"
-                mode="outlined"
-                size={16}
-                disabled={repeatInterval >= 52}
-                onPress={() => setValue("repeatInterval", Math.min(52, repeatInterval + 1))}
-                style={styles.stepperBtn}
+              <NumberField
+                value={repeatInterval}
+                onChange={(v) => setValue("repeatInterval", v)}
+                min={1}
+                max={repeatUnit === "week" ? 52 : 12}
+                title={t("eventModal.repeatEvery")}
+                testID="event-repeat-interval"
               />
               <Text style={styles.stepperUnit}>
                 {repeatUnit === "week"
@@ -629,17 +621,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: C.textSecondary,
     writingDirection: "rtl",
-  },
-  stepperBtn: {
-    margin: 0,
-    borderColor: C.border,
-  },
-  stepperValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: C.textPrimary,
-    minWidth: 22,
-    textAlign: "center",
   },
   stepperUnit: {
     fontSize: 14,
