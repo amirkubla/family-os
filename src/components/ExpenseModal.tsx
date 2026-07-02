@@ -197,10 +197,6 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave, 
       {/* ── Payment status — paid vs. pending; one-time only, pinned to top ── */}
       {paymentType === "single" && (
         <View style={MS.section}>
-          <View style={MS.sectionHeader}>
-            <Text style={MS.sectionLabel}>{t("budget.paymentStatus")}</Text>
-            <Text style={MS.sectionIcon}>💳</Text>
-          </View>
           <PillToggle
             value={paidNow}
             onChange={setPaidNow}
