@@ -1,4 +1,10 @@
-import { nextDueDate } from "@src/utils/date";
+import { nextDueDate, toYMD } from "@src/utils/date";
+
+/**
+ * Default category a kid payment rolls into once settled — the "kids & classes"
+ * bucket on the budget screen. New kid payments default to it (still editable).
+ */
+export const KID_PAYMENT_CATEGORY = "ילדים וחוגים";
 
 export interface BudgetCategory {
   id: string;
@@ -41,6 +47,31 @@ export function formatILS(agorot: number): string {
 export function parseILS(input: string): number {
   const n = parseFloat(input.replace(/,/g, ""));
   return isNaN(n) ? 0 : Math.round(n * 100);
+}
+
+/**
+ * Recurring kid payments anchor their template `date` on the next matching day
+ * so the outstanding-period math (which steps from `date`) stays aligned to the
+ * chosen weekday / day-of-month.
+ */
+// Next date (today or later) whose weekday is `dow` (0=Sunday).
+export function nextWeeklyDate(dow: number): string {
+  const today = new Date();
+  const diff = (dow - today.getDay() + 7) % 7;
+  return toYMD(new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff));
+}
+
+// `dom`-th of this month, or next month if that day has already passed.
+export function nextMonthlyDate(dom: number): string {
+  const today = new Date();
+  let y = today.getFullYear();
+  let m = today.getMonth();
+  if (dom < today.getDate()) {
+    m += 1;
+    if (m > 11) { m = 0; y += 1; }
+  }
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  return toYMD(new Date(y, m, Math.min(dom, daysInMonth)));
 }
 
 // ── Recurring kid payments ──────────────────────────────────────────────────

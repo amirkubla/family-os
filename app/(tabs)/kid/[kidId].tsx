@@ -41,6 +41,7 @@ import {
   deleteProjectRemote,
   reorderNotesRemote,
   reorderProjectsRemote,
+  addExpenseRemote,
   deleteExpenseRemote,
   markKidPaymentPaidRemote,
   markKidPaymentUnpaidRemote,
@@ -49,7 +50,7 @@ import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { Note } from "@src/models/note";
 import type { Project } from "@src/models/project";
-import type { Expense } from "@src/models/budget";
+import { type Expense, nextWeeklyDate, nextMonthlyDate } from "@src/models/budget";
 import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
@@ -67,7 +68,7 @@ import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import NoteModal from "@src/components/NoteModal";
 import ProjectModal from "@src/components/ProjectModal";
-import KidPaymentModal from "@src/components/KidPaymentModal";
+import ExpenseModal from "@src/components/ExpenseModal";
 import type { ModalCarousel } from "@src/components/ModalWrapper";
 import SectionHeader from "@src/components/SectionHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
@@ -425,6 +426,24 @@ export default function KidScheduleScreen() {
     [],
   );
   const handleMarkUnpaid = useCallback((pay: Expense) => markKidPaymentUnpaidRemote(pay), []);
+
+  // Save a kid payment (create or edit). Recurring payments anchor their due
+  // date on the next matching day so the outstanding-period math (which steps
+  // from `date`) stays aligned. Edit = delete + recreate, matching the budget
+  // screen's expense-save pattern.
+  const handleSaveKidPayment = useCallback(
+    (data: Parameters<typeof addExpenseRemote>[0]) => {
+      const date = data.isRecurring
+        ? data.recurrenceType === "weekly"
+          ? nextWeeklyDate(data.recurrenceDay ?? 0)
+          : nextMonthlyDate(data.recurrenceDay ?? 1)
+        : data.date;
+      if (editingPayment) deleteExpenseRemote(editingPayment.id);
+      addExpenseRemote({ ...data, kidId, date });
+      setEditingPayment(null);
+    },
+    [editingPayment, kidId],
+  );
 
   const openAdd = (dayOfWeek?: number) => {
     setEditingBlock(null);
@@ -1141,17 +1160,18 @@ export default function KidScheduleScreen() {
         />
 
         {/* This kid's payments (תשלומים) — new ones start as "to pay". */}
-        <KidPaymentModal
+        <ExpenseModal
           visible={paymentModalOpen || addType === "payment"}
           onDismiss={() => {
             setPaymentModalOpen(false);
             setEditingPayment(null);
             setAddType(null);
           }}
-          kidId={kidId}
           editExpense={editingPayment}
+          lockedKidId={kidId}
           lockedKidName={kid?.name}
           carousel={addCarousel("payment")}
+          onSave={handleSaveKidPayment}
         />
 
         <ConfirmDeleteModal

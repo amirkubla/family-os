@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, Button } from "react-native-paper";
 import ModalTextInput from "./ModalTextInput";
-import ModalWrapper from "./ModalWrapper";
+import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
 import SegmentedPills from "./SegmentedPills";
 import PillToggle from "./PillToggle";
 import { MS } from "@src/ui/modalStyles";
@@ -13,7 +13,7 @@ import { t, dayNameShort } from "@src/i18n";
 import { toYMD } from "@src/utils/date";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import type { Expense } from "@src/models/budget";
-import { parseILS } from "@src/models/budget";
+import { parseILS, KID_PAYMENT_CATEGORY } from "@src/models/budget";
 
 // ---------------------------------------------------------------------------
 // Wheel data
@@ -48,6 +48,13 @@ interface Props {
     recurrenceType?: RecurrenceType;
     recurrenceDay?: number;
   }) => void;
+  /** Kid-payment mode: the owner is this kid (no payer picker), the category
+   *  defaults to the kids bucket, and new payments default to "to pay". The
+   *  only difference from a general payment is that the owner can't be chosen. */
+  lockedKidId?: string;
+  lockedKidName?: string;
+  /** Carousel arrows for swapping between the kid "add" modals. */
+  carousel?: ModalCarousel;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,8 +81,9 @@ const EMPTY_FORM: FormState = {
   recurrenceDay: 1,
 };
 
-export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }: Props) {
+export default function ExpenseModal({ visible, onDismiss, editExpense, onSave, lockedKidId, lockedKidName, carousel }: Props) {
   const theme = useThemeColor();
+  const isKid = !!lockedKidId;
   const budgetCategories = useFamilyStore((s) => s.budgetCategories);
   const familyMembers = useFamilyStore((s) => s.familyMembers).filter((m) => m.isActive);
 
@@ -102,7 +110,12 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
 
   useEffect(() => {
     if (!visible) return;
-    const base: FormState = { ...EMPTY_FORM, categoryName: budgetCategories[0]?.name ?? "" };
+    // Kid payments default to the "kids & classes" bucket (still editable).
+    const defaultCategory =
+      (isKid && budgetCategories.find((c) => c.name === KID_PAYMENT_CATEGORY)?.name) ||
+      budgetCategories[0]?.name ||
+      "";
+    const base: FormState = { ...EMPTY_FORM, categoryName: defaultCategory };
     if (editExpense) {
       const filled: FormState = {
         amountText: String(editExpense.amount / 100),
@@ -128,12 +141,14 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
       setSingle(base);
       setRecurring(base);
       setDate(today);
-      setPaidNow(true);
+      // Kid payments are obligations → default to "to pay"; general expenses
+      // default to "paid" (the common log-what-I-spent case).
+      setPaidNow(!isKid);
     }
     setTitleError("");
     setAmountError("");
     setCategoryError("");
-  }, [visible, editExpense, budgetCategories, today]);
+  }, [visible, editExpense, budgetCategories, today, isKid]);
 
   const switchType = (type: PaymentType) => {
     setPaymentType(type);
@@ -153,8 +168,10 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
     onSave({
       amount,
       categoryName: form.categoryName,
-      // Recurring templates have no per-occurrence payer.
-      payerMemberId: isRecurring ? undefined : form.payerMemberId,
+      // Kid payments are owned by the kid; recurring templates have no
+      // per-occurrence payer either.
+      payerMemberId: isKid || isRecurring ? undefined : form.payerMemberId,
+      kidId: lockedKidId,
       date,
       note: title,
       // Pending applies to one-time payments only; recurring templates keep
@@ -171,8 +188,10 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
     <ModalWrapper
       visible={visible}
       onDismiss={onDismiss}
+      carousel={carousel}
       icon="card-outline"
-      title={editExpense ? t("budget.editExpense") : t("budget.addExpense")}
+      title={(editExpense ? t("budget.editExpense") : t("budget.addExpense")) +
+        (lockedKidName ? ` ל${lockedKidName}` : "")}
       onSave={handleSave}
     >
       {/* ── Payment status — paid vs. pending; one-time only, pinned to top ── */}
@@ -334,13 +353,10 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
         {categoryError ? <Text style={MS.error}>{categoryError}</Text> : null}
       </View>
 
-      {/* ── Payer — one-time payments only ── */}
-      {paymentType === "single" && familyMembers.length > 0 && (
+      {/* ── Payer — one-time general payments only (kid payments are owned by
+          the kid, so no picker). Label intentionally omitted. ── */}
+      {!isKid && paymentType === "single" && familyMembers.length > 0 && (
         <View style={MS.section}>
-          <View style={MS.sectionHeader}>
-            <Text style={MS.sectionLabel}>{t("budget.payer")}</Text>
-            <Text style={MS.sectionIcon}>👤</Text>
-          </View>
           <View style={MS.chipRow}>
             <Button
               mode={!form.payerMemberId ? "contained" : "outlined"}
