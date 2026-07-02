@@ -21,9 +21,8 @@ import { MS } from "@src/ui/modalStyles";
 import { C, R, S } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
-import { t, shoppingCategoryLabel } from "@src/i18n";
+import { t } from "@src/i18n";
 import { OTHER_SUBCATEGORY, type GrocerySubcategory } from "@src/models/customization";
-import type { ShoppingCategory } from "@src/models/grocery";
 import { CATEGORY_ICON_OPTIONS } from "@src/ui/semanticColors";
 
 const ICON_OPTIONS = CATEGORY_ICON_OPTIONS;
@@ -33,12 +32,13 @@ const DEFAULT_COLOR = "#9AA0B5";
 interface Props {
   visible: boolean;
   onDismiss: () => void;
-  category: ShoppingCategory;
+  /** Display name of the main category whose sub-categories are being managed. */
+  categoryLabel?: string;
   list: GrocerySubcategory[];
   onChange: (next: GrocerySubcategory[]) => void;
 }
 
-export default function GroceryCategoriesModal({ visible, onDismiss, category, list, onChange }: Props) {
+export default function GroceryCategoriesModal({ visible, onDismiss, categoryLabel, list, onChange }: Props) {
   const theme = useThemeColor();
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -99,7 +99,7 @@ export default function GroceryCategoriesModal({ visible, onDismiss, category, l
             ? editItem
               ? t("customization.editSubcategory")
               : t("customization.addSubcategoryTitle")
-            : `${t("grocery.customizeCategories")} · ${shoppingCategoryLabel(category)}`
+            : `${t("grocery.manageSubcategories")}${categoryLabel ? ` · ${categoryLabel}` : ""}`
         }
         onSave={isForm ? saveForm : undefined}
         saveLabel={t("save")}

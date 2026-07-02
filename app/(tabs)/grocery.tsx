@@ -24,6 +24,7 @@ import {
 } from "@src/lib/sync/remoteCrud";
 import GroceryAddModal from "@src/components/GroceryAddModal";
 import GroceryCategoriesModal from "@src/components/GroceryCategoriesModal";
+import ShoppingCategoriesModal from "@src/components/ShoppingCategoriesModal";
 import VoiceReviewModal from "@src/components/VoiceReviewModal";
 import { useGroceryVoice } from "@src/hooks/useGroceryVoice";
 import { useVoiceCapture } from "@src/hooks/useVoiceCapture";
@@ -32,11 +33,12 @@ import { inferGrocerySubcategory } from "@src/lib/groceryCategoryInfer";
 import type { VoiceGroceryResult } from "@src/lib/api/endpoints";
 import { t, groceryCategoryLabel, shoppingCategoryLabel } from "@src/i18n";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
-import { SHOPPING_CATEGORIES } from "@src/models/grocery";
 import {
   effectiveSubcategories,
+  effectiveShoppingCategories,
   OTHER_SUBCATEGORY,
   type GrocerySubcategory,
+  type ShoppingCategoryDef,
 } from "@src/models/customization";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
@@ -57,21 +59,54 @@ const LEGACY_EMOJI: Record<string, string> = {
 /** Main shopping-category emoji for the voice review list. */
 const CAT_EMOJI: Record<string, string> = { grocery: "🛒", home: "🏠", health: "💊" };
 
-const EMPTY_KEYS: Record<ShoppingCategory, string> = {
-  grocery: "grocery.emptyGrocery",
-  health: "grocery.emptyHealth",
-  home: "grocery.emptyHome",
-};
-
 export default function GroceryScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const grocery = useFamilyStore((s) => s.grocery);
   const customizations = useFamilyStore((s) => s.customizations);
   const [modalOpen, setModalOpen] = useState(false);
-  const [catModalOpen, setCatModalOpen] = useState(false);
+  const [catModalOpen, setCatModalOpen] = useState(false); // sub-categories
+  const [mainCatModalOpen, setMainCatModalOpen] = useState(false); // main categories
   const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ShoppingCategory>("grocery");
+
+  // The family's configurable main categories (defaults when unset).
+  const shoppingCategories = useMemo(
+    () => effectiveShoppingCategories(customizations),
+    [customizations],
+  );
+  const activeCat = shoppingCategories.find((c) => c.key === selectedCategory);
+
+  // Keep selectedCategory valid: on first load, or after a category is
+  // deleted/renamed away, fall back to the first available category.
+  useEffect(() => {
+    if (!shoppingCategories.some((c) => c.key === selectedCategory)) {
+      setSelectedCategory(shoppingCategories[0]?.key ?? "grocery");
+    }
+  }, [shoppingCategories, selectedCategory]);
+
+  // Persist an add/edit of the main-category list (optimistic + synced).
+  const setShoppingCategoriesList = (next: ShoppingCategoryDef[]) =>
+    updateCustomizationsRemote({ ...customizations, shoppingCategories: next });
+
+  // Delete a main category: remove its items (cascade), drop its sub-category
+  // list, and remove it from the list — all in one customizations write.
+  const deleteShoppingCategory = (key: string) => {
+    clearAllCategoryRemote(key);
+    const nextSubs = { ...(customizations.grocerySubcategories ?? {}) };
+    delete (nextSubs as Record<string, unknown>)[key];
+    updateCustomizationsRemote({
+      ...customizations,
+      shoppingCategories: shoppingCategories.filter((c) => c.key !== key),
+      grocerySubcategories: nextSubs,
+    });
+    if (selectedCategory === key) {
+      setSelectedCategory(shoppingCategories.find((c) => c.key !== key)?.key ?? "grocery");
+    }
+  };
+
+  const itemCountForCategory = (key: string) =>
+    grocery.filter((g) => g.shoppingCategory === key).length;
 
   // Save the active category's sub-category list (optimistic + synced).
   const setSubcategoriesFor = (next: GrocerySubcategory[]) =>
@@ -100,8 +135,8 @@ export default function GroceryScreen() {
     // The family's sub-category names per category so the Assistant can label items.
     getContext: () => {
       const taxonomy: Record<string, string[]> = {};
-      for (const cat of SHOPPING_CATEGORIES) {
-        taxonomy[cat] = effectiveSubcategories(customizations, cat).map((s) => s.name);
+      for (const cat of shoppingCategories) {
+        taxonomy[cat.key] = effectiveSubcategories(customizations, cat.key).map((s) => s.name);
       }
       return taxonomy;
     },
@@ -111,9 +146,9 @@ export default function GroceryScreen() {
   // Add the reviewed items through the normal optimistic grocery CRUD.
   const handleVoiceConfirm = (items: VoiceGroceryResult["items"]) => {
     for (const it of items) {
-      const cat = (SHOPPING_CATEGORIES as string[]).includes(it.shopping_category)
-        ? (it.shopping_category as ShoppingCategory)
-        : "grocery";
+      const cat = shoppingCategories.some((c) => c.key === it.shopping_category)
+        ? it.shopping_category
+        : shoppingCategories[0]?.key ?? "grocery";
       addGroceryRemote({
         title: it.title,
         shoppingCategory: cat,
@@ -159,16 +194,12 @@ export default function GroceryScreen() {
       .filter((g) => g.items.length > 0);
   }, [unbought, customizations, selectedCategory]);
 
-  const CATEGORY_EMOJI: Record<ShoppingCategory, string> = {
-    grocery: "🛒",
-    health: "🧴",
-    home: "🏠",
-  };
-  // The active category underline/pill uses the family theme colour.
-  const segmentOptions = SHOPPING_CATEGORIES.map((cat) => ({
-    value: cat,
-    label: shoppingCategoryLabel(cat),
-    emoji: CATEGORY_EMOJI[cat],
+  // Tabs are the family's configurable main categories (name + emoji). The
+  // active pill underline uses the family theme colour.
+  const segmentOptions = shoppingCategories.map((cat) => ({
+    value: cat.key,
+    label: cat.name,
+    emoji: cat.emoji,
     color: theme,
   }));
 
@@ -185,17 +216,28 @@ export default function GroceryScreen() {
           />
         </View>
 
-        {/* Customize categories + clear all */}
+        {/* Manage main categories + sub-categories, and clear all */}
         <View style={styles.countRow}>
-          <Button
-            compact
-            icon="tag-multiple-outline"
-            onPress={() => setCatModalOpen(true)}
-            textColor={theme}
-            testID="btn-customize-categories"
-          >
-            {t("grocery.customizeCategories")}
-          </Button>
+          <View style={styles.mgmtBtns}>
+            <Button
+              compact
+              icon="tag-multiple-outline"
+              onPress={() => setMainCatModalOpen(true)}
+              textColor={theme}
+              testID="btn-manage-categories"
+            >
+              {t("grocery.customizeCategories")}
+            </Button>
+            <Button
+              compact
+              icon="tag-outline"
+              onPress={() => setCatModalOpen(true)}
+              textColor={theme}
+              testID="btn-manage-subcategories"
+            >
+              {t("grocery.manageSubcategories")}
+            </Button>
+          </View>
           {filtered.length > 0 && (
             <Button
               compact
@@ -212,7 +254,7 @@ export default function GroceryScreen() {
           <Card.Content>
             {filtered.length === 0 && (
               <Text style={styles.emptyText}>
-                {t(EMPTY_KEYS[selectedCategory])}
+                {t("grocery.emptyCategory", { name: activeCat?.name ?? "" })}
               </Text>
             )}
 
@@ -365,10 +407,19 @@ export default function GroceryScreen() {
         editItem={editingItem}
       />
 
+      <ShoppingCategoriesModal
+        visible={mainCatModalOpen}
+        onDismiss={() => setMainCatModalOpen(false)}
+        list={shoppingCategories}
+        onChange={setShoppingCategoriesList}
+        onDeleteCategory={deleteShoppingCategory}
+        itemCount={itemCountForCategory}
+      />
+
       <GroceryCategoriesModal
         visible={catModalOpen}
         onDismiss={() => setCatModalOpen(false)}
-        category={selectedCategory}
+        categoryLabel={activeCat?.name}
         list={effectiveSubcategories(customizations, selectedCategory)}
         onChange={setSubcategoriesFor}
       />
@@ -396,8 +447,10 @@ const styles = StyleSheet.create({
     flexDirection: RTL_ROW,
     justifyContent: "space-between",
     alignItems: "center",
+    flexWrap: "wrap",
     marginBottom: S.sm,
   },
+  mgmtBtns: { flexDirection: RTL_ROW, alignItems: "center", flexWrap: "wrap" },
   itemCount: { fontSize: 12, color: C.textMuted, textAlign: TEXT_RIGHT },
   card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
   emptyText: {
