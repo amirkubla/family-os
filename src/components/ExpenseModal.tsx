@@ -3,12 +3,11 @@ import { View, StyleSheet } from "react-native";
 import { Text, Button } from "react-native-paper";
 import ModalTextInput from "./ModalTextInput";
 import ModalWrapper from "./ModalWrapper";
-import WheelPicker from "./WheelPicker";
 import SegmentedPills from "./SegmentedPills";
 import PillToggle from "./PillToggle";
 import { MS } from "@src/ui/modalStyles";
 import { C, S } from "@src/ui/tokens";
-import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { TEXT_RIGHT } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
 import { t, dayNameShort } from "@src/i18n";
 import { toYMD } from "@src/utils/date";
@@ -292,14 +291,24 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
             )}
 
             {form.recurrenceType === "monthly" && (
-              <View style={styles.pickerRow}>
-                <WheelPicker
-                  data={DAYS_OF_MONTH.map(String)}
-                  selectedIndex={form.recurrenceDay - 1}
-                  onChange={(i) => patch({ recurrenceDay: i + 1 })}
-                  width={72}
-                />
-                <Text style={styles.pickerLabel}>{t("payment.inMonth")}</Text>
+              <View style={MS.chipRow}>
+                {DAYS_OF_MONTH.map((d) => {
+                  const sel = form.recurrenceDay === d;
+                  return (
+                    <Button
+                      key={d}
+                      mode={sel ? "contained" : "outlined"}
+                      compact
+                      onPress={() => patch({ recurrenceDay: d })}
+                      style={[MS.chip, styles.dayNumChip]}
+                      labelStyle={MS.chipLabel}
+                      buttonColor={sel ? theme + "20" : undefined}
+                      textColor={sel ? theme : C.textSecondary}
+                    >
+                      {String(d)}
+                    </Button>
+                  );
+                })}
               </View>
             )}
           </>
@@ -392,16 +401,9 @@ const styles = StyleSheet.create({
     marginTop: -S.xs,
     marginBottom: S.sm,
   },
-  pickerRow: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: S.sm,
-    marginTop: S.sm,
-  },
-  pickerLabel: {
-    fontSize: 13,
-    color: C.textSecondary,
-    writingDirection: "rtl",
+  // Day-of-month chips — a fixed min width so single- and double-digit days
+  // line up in a tidy grid (the events day-of-week chips are naturally even).
+  dayNumChip: {
+    minWidth: 44,
   },
 });
