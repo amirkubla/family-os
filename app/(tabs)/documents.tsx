@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Alert, Platform } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text, IconButton, FAB } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,7 +23,13 @@ import {
   updateFolderRemote,
   updateDocumentRemote,
 } from "@src/lib/sync/remoteCrud";
-import { pickFromCamera, pickFromLibrary, pickDocument, type PickedFile } from "@src/lib/documents/capture";
+import {
+  pickFromCamera,
+  pickFromLibrary,
+  pickDocument,
+  scanDocuments,
+  type PickedFile,
+} from "@src/lib/documents/capture";
 import { uploadDocument } from "@src/lib/documents/upload";
 import { openDocument } from "@src/lib/documents/view";
 import FolderModal from "@src/components/FolderModal";
@@ -116,6 +122,27 @@ export default function DocumentsScreen() {
     },
     [currentFolderId],
   );
+
+  // "Scan" — native edge-detection scanner (multi-page → one image per page).
+  // Web has no native scanner, so fall back to the camera/file picker.
+  const handleScan = useCallback(async () => {
+    if (Platform.OS === "web") {
+      handlePick(pickFromCamera);
+      return;
+    }
+    try {
+      const pages = await scanDocuments();
+      if (pages.length === 0) return; // cancelled
+      setUploading(true);
+      for (const page of pages) {
+        await uploadDocument(page, currentFolderId ?? undefined);
+      }
+    } catch {
+      Alert.alert(t("documents.uploadError"));
+    } finally {
+      setUploading(false);
+    }
+  }, [currentFolderId, handlePick]);
 
   const handleView = useCallback(async (id: string) => {
     try {
@@ -316,7 +343,7 @@ export default function DocumentsScreen() {
       <DocumentAddSheet
         visible={addSheet}
         onDismiss={() => setAddSheet(false)}
-        onCamera={() => handlePick(pickFromCamera)}
+        onCamera={handleScan}
         onLibrary={() => handlePick(pickFromLibrary)}
         onFile={() => handlePick(pickDocument)}
         onNewFolder={() => {

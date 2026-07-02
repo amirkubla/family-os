@@ -74,6 +74,26 @@ export async function pickFromLibrary(): Promise<PickedFile | null> {
   };
 }
 
+/**
+ * Native edge-detection scanner (ML Kit on Android, VisionKit on iOS). Returns
+ * one PickedFile per scanned page (auto-cropped + enhanced JPEGs). Returns []
+ * on web (no native scanner — the caller falls back to a picker) or on cancel.
+ */
+export async function scanDocuments(): Promise<PickedFile[]> {
+  if (Platform.OS === "web") return [];
+  // Loaded lazily so the native TurboModule is never required on web.
+  const DocumentScanner = (await import("react-native-document-scanner-plugin")).default;
+  const { scannedImages, status } = await DocumentScanner.scanDocument({ croppedImageQuality: 80 });
+  if (status !== "success" || !scannedImages || scannedImages.length === 0) return [];
+  const stamp = Date.now();
+  const multi = scannedImages.length > 1;
+  return scannedImages.map((uri, i) => ({
+    uri,
+    name: `סריקה-${stamp}${multi ? `-${i + 1}` : ""}.jpg`,
+    contentType: "image/jpeg",
+  }));
+}
+
 export async function pickDocument(): Promise<PickedFile | null> {
   const res = await DocumentPicker.getDocumentAsync({
     type: ALLOWED_TYPES,

@@ -68,7 +68,8 @@
           "photosPermission": "האפליקציה ניגשת לתמונות כדי להעלות ולסרוק מסמכים משפחתיים.",
           "cameraPermission": "המצלמה משמשת לצילום וסריקת מסמכים משפחתיים."
         }
-      ]
+      ],
+      "react-native-document-scanner-plugin"
     ],
     "experiments": {
       "typedRoutes": true
