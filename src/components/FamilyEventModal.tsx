@@ -273,10 +273,6 @@ export default function FamilyEventModal({
         />
         {errors.title && <Text style={MS.error}>{errors.title.message}</Text>}
 
-        <View style={MS.sectionHeader}>
-          <Text style={MS.sectionLabel}>{t("eventModal.assignee")}</Text>
-          <Text style={MS.sectionIcon}>👥</Text>
-        </View>
         <View style={MS.segmented}>
           <SegmentedPills
             value={assigneeType}
