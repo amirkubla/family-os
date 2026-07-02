@@ -21,6 +21,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import {
   useKidBlocks,
   useKidBlocksForDate,
@@ -192,7 +193,11 @@ function KidEventRow({
 // Screen
 // ---------------------------------------------------------------------------
 
-export default function KidScheduleScreen() {
+export default function KidScheduleScreenRoute() {
+  return <KidScheduleScreen key={useBlurRemountKey()} />;
+}
+
+function KidScheduleScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const { kidId } = useLocalSearchParams<{ kidId: string }>();

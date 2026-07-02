@@ -2,6 +2,10 @@ import { Tabs } from "expo-router";
 import { t } from "@src/i18n";
 import CustomTabBar from "@src/components/CustomTabBar";
 
+// Default landing tab for the group (e.g. when entering "/(tabs)" without a
+// specific screen). The root index also redirects here.
+export const unstable_settings = { initialRouteName: "today" };
+
 export default function TabLayout() {
   return (
     <Tabs

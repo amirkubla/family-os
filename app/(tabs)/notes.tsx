@@ -13,6 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import type { Note } from "@src/models/note";
 import { toggleNotePinnedRemote, deleteNoteRemote, reorderNotesRemote } from "@src/lib/sync/remoteCrud";
 import NoteModal from "@src/components/NoteModal";
@@ -118,7 +119,11 @@ function NoteCard({
   );
 }
 
-export default function NotesScreen() {
+export default function NotesScreenRoute() {
+  return <NotesScreen key={useBlurRemountKey()} />;
+}
+
+function NotesScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const { modal } = useLocalSearchParams<{ modal?: string }>();

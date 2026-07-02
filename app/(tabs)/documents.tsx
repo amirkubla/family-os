@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import type { Folder, FamilyDocument } from "@src/models/document";
 import {
   deleteFolderRemote,
@@ -57,7 +58,12 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function DocumentsScreen() {
+export default function DocumentsScreenRoute() {
+  // Remount on every re-focus → back to the root folder with modals closed.
+  return <DocumentsScreen key={useBlurRemountKey()} />;
+}
+
+function DocumentsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const folders = useFamilyStore((s) => s.folders);

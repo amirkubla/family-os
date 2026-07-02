@@ -13,6 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import type { Chore } from "@src/models/chore";
 import {
   addChoreRemote,
@@ -145,7 +146,11 @@ function ChoreRow({
   );
 }
 
-export default function ChoresScreen() {
+export default function ChoresScreenRoute() {
+  return <ChoresScreen key={useBlurRemountKey()} />;
+}
+
+function ChoresScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const { modal } = useLocalSearchParams<{ modal?: string }>();

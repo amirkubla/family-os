@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import {
   useFamilyEventsForDate,
   useFamilyEventRecurringByDay,
@@ -96,7 +97,11 @@ function SectionShell({
   );
 }
 
-export default function ParentScreen() {
+export default function ParentScreenRoute() {
+  return <ParentScreen key={useBlurRemountKey()} />;
+}
+
+function ParentScreen() {
   const { memberId } = useLocalSearchParams<{ memberId: string }>();
 
   const members = useFamilyStore((s) => s.familyMembers);

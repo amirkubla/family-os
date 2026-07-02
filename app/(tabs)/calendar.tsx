@@ -19,6 +19,7 @@ import SegmentedPills from "@src/components/SegmentedPills";
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import { useFamilyEventsForDate } from "@src/store/familyEventSelectors";
 import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
 import { eventOccursOn } from "@src/utils/recurrence";
@@ -188,7 +189,11 @@ function KidBlockRow({
 
 type CalendarView = "month" | "week" | "3day" | "day";
 
-export default function CalendarScreen() {
+export default function CalendarScreenRoute() {
+  return <CalendarScreen key={useBlurRemountKey()} />;
+}
+
+function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const { modal } = useLocalSearchParams<{ modal?: string }>();

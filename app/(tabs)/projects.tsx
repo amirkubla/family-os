@@ -13,6 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import type { Project } from "@src/models/project";
 import { deleteProjectRemote, reorderProjectsRemote } from "@src/lib/sync/remoteCrud";
 import ProjectModal from "@src/components/ProjectModal";
@@ -130,7 +131,11 @@ function ProjectCard({
   );
 }
 
-export default function ProjectsScreen() {
+export default function ProjectsScreenRoute() {
+  return <ProjectsScreen key={useBlurRemountKey()} />;
+}
+
+function ProjectsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const { modal, status: initialStatus } = useLocalSearchParams<{ modal?: string; status?: string }>();

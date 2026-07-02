@@ -14,6 +14,7 @@ import SegmentedPills from "@src/components/SegmentedPills";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import {
   toggleGroceryBoughtRemote,
   deleteGroceryRemote,
@@ -59,7 +60,12 @@ const LEGACY_EMOJI: Record<string, string> = {
 /** Main shopping-category emoji for the voice review list. */
 const CAT_EMOJI: Record<string, string> = { grocery: "🛒", home: "🏠", health: "💊" };
 
-export default function GroceryScreen() {
+export default function GroceryScreenRoute() {
+  // Remount on every re-focus → resets tabs/modals/selections to defaults.
+  return <GroceryScreen key={useBlurRemountKey()} />;
+}
+
+function GroceryScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const grocery = useFamilyStore((s) => s.grocery);

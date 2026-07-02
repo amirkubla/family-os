@@ -17,6 +17,7 @@ import type { Project } from "@src/models/project";
 import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
 import { useTodayFamilyEvents, useFamilyEventsForDate } from "@src/store/familyEventSelectors";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
@@ -91,7 +92,12 @@ type TodayItem =
 // Screen
 // ---------------------------------------------------------------------------
 
-export default function TodayScreen() {
+export default function TodayScreenRoute() {
+  // Remount on re-focus → the day-nav returns to today with a clean view.
+  return <TodayScreen key={useBlurRemountKey()} />;
+}
+
+function TodayScreen() {
   // The ACTUAL today (fixed) — drives the personal hero + "is this today?".
   const actualToday = toYMD(new Date());
   const actualDow = new Date().getDay();

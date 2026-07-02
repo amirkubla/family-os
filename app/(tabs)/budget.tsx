@@ -10,6 +10,7 @@ import { Text, FAB, IconButton, Button } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import { useAuthStore } from "@src/auth/useAuthStore";
 import {
   addExpenseRemote,
@@ -82,7 +83,11 @@ function nextMonth(ym: string): string {
 // Screen
 // ---------------------------------------------------------------------------
 
-export default function BudgetScreen() {
+export default function BudgetScreenRoute() {
+  return <BudgetScreen key={useBlurRemountKey()} />;
+}
+
+function BudgetScreen() {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
   const budgetCategories = useFamilyStore((s) => s.budgetCategories);
