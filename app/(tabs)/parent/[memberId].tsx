@@ -14,7 +14,7 @@ import { View, StyleSheet, Pressable } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text, IconButton, Card } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import {
@@ -37,7 +37,6 @@ import type { Project } from "@src/models/project";
 import type { Chore } from "@src/models/chore";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 
-import PageHeader from "@src/components/PageHeader";
 import PersonStats from "@src/components/person/PersonStats";
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import SectionHeader from "@src/components/SectionHeader";
@@ -98,7 +97,6 @@ function SectionShell({
 }
 
 export default function ParentScreen() {
-  const router = useRouter();
   const { memberId } = useLocalSearchParams<{ memberId: string }>();
 
   const members = useFamilyStore((s) => s.familyMembers);
@@ -183,20 +181,17 @@ export default function ParentScreen() {
   );
 
   if (!member) {
-    return (
-      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-        <PageHeader title={t("family.parents")} onBack={() => router.replace("/family")} />
-      </SafeAreaView>
-    );
+    return <SafeAreaView style={styles.safe} edges={["top", "bottom"]} />;
   }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <PageHeader
-        title={`${member.avatarEmoji ?? "👤"}  ${member.name}`}
-        onBack={() => router.replace("/family")}
-      />
       <ScreenScrollView contentContainerStyle={styles.container}>
+        {/* Member identity — the person's name + avatar as a plain heading
+            (no back-button header; navigation is via the floating drawer). */}
+        <Text style={styles.personTitle}>
+          {`${member.avatarEmoji ?? "👤"}  ${member.name}`}
+        </Text>
         {/* ── Stats strip ── */}
         <PersonStats
           accent={accent}
@@ -364,6 +359,15 @@ export default function ParentScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
+
+  personTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    marginBottom: S.md,
+  },
 
   emptyText: {
     fontSize: 13,

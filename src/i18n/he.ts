@@ -109,7 +109,9 @@ const he = {
     statChores: "מטלות",
     statProjects: "פרויקטים",
     statEvents: "אירועים",
+    statGrocery: "קניות",
     familyToday: "היום במשפחה",
+    backToToday: "חזרה להיום",
   },
 
   // ── Home screen ──

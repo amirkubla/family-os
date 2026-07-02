@@ -24,7 +24,6 @@ import {
 } from "@src/lib/sync/remoteCrud";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import VoiceReviewModal from "@src/components/VoiceReviewModal";
-import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { useChoreVoice } from "@src/hooks/useChoreVoice";
@@ -199,7 +198,6 @@ export default function ChoresScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <PageHeader title={t("home.chores")} />
       <ScreenScrollView style={styles.list} contentContainerStyle={styles.container}>
         {chores.length === 0 ? (
           <View style={styles.emptyState}>

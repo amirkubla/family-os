@@ -15,12 +15,12 @@ import { useRouter } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
-import PageHeader from "@src/components/PageHeader";
 import FeatureTile from "@src/components/FeatureTile";
 import FamilyStats from "@src/components/FamilyStats";
 import { t } from "@src/i18n";
-import { C, S } from "@src/ui/tokens";
-import { TEXT_RIGHT } from "@src/ui/rtl";
+import { C, S, R, SHADOW } from "@src/ui/tokens";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
+import { useThemeColor } from "@src/ui/useThemeColor";
 
 const PARENT_FALLBACK = "#6C63FF";
 const KID_FALLBACK = "#E0699B";
@@ -34,18 +34,46 @@ export default function FamilyScreen() {
 
   const activeMembers = useMemo(() => members.filter((m) => m.isActive), [members]);
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
+  const theme = useThemeColor();
 
-  // Emoji + "משפחת <name>" (matches the home header + the parent-page title
-  // convention of embedding the icon in the title string). Falls back to the
-  // generic "משפחה" while a new family has no name yet.
-  const headerTitle = familyName
-    ? `${familyEmoji}  ${t("familyBadge.prefix")} ${familyName}`
-    : `${familyEmoji}  ${t("family.title")}`;
+  // Decorative "family lineup" — everyone's avatar in one row.
+  const lineup = [
+    ...activeMembers.map((m) => ({ id: `m-${m.id}`, emoji: m.avatarEmoji ?? "👤", color: m.color ?? PARENT_FALLBACK })),
+    ...activeKids.map((k) => ({ id: `k-${k.id}`, emoji: k.emoji ?? "🧒", color: k.color ?? KID_FALLBACK })),
+  ];
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <PageHeader title={headerTitle} onBack={() => router.replace("/home")} />
       <ScreenScrollView contentContainerStyle={styles.container}>
+        {/* ── Family identity hero (no back header — nav is via the drawer) ── */}
+        <View style={[styles.hero, { borderColor: theme + "22" }]}>
+          <View style={styles.heroTop}>
+            <View style={[styles.emojiCircle, { backgroundColor: theme + "14" }]}>
+              <Text style={styles.emojiText}>{familyEmoji}</Text>
+            </View>
+            <View style={styles.heroTitleWrap}>
+              <Text style={[styles.familyName, { color: theme }]} numberOfLines={1}>
+                {familyName ? `${t("familyBadge.prefix")} ${familyName}` : t("family.title")}
+              </Text>
+              <Text style={styles.familyMeta}>
+                {`${activeMembers.length} ${t("family.parents")} · ${activeKids.length} ${t("family.kids")}`}
+              </Text>
+            </View>
+          </View>
+          {lineup.length > 0 && (
+            <View style={styles.avatarRow}>
+              {lineup.map((a) => (
+                <View
+                  key={a.id}
+                  style={[styles.avatar, { backgroundColor: a.color + "22", borderColor: a.color }]}
+                >
+                  <Text style={styles.avatarEmoji}>{a.emoji}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
         {/* ── Parents ── */}
         <Text style={styles.gridLabel}>{t("family.parents")}</Text>
         {activeMembers.length === 0 ? (
@@ -94,6 +122,50 @@ export default function FamilyScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   container: { padding: S.lg, paddingBottom: S.xxl + S.lg },
+
+  // ── Family identity hero ──
+  hero: {
+    backgroundColor: C.surface,
+    borderRadius: R.xl,
+    borderWidth: 1,
+    padding: S.lg,
+    marginBottom: S.md,
+    ...SHADOW.sm,
+  },
+  heroTop: { flexDirection: RTL_ROW, alignItems: "center", gap: S.md },
+  emojiCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emojiText: { fontSize: 30 },
+  heroTitleWrap: { flex: 1 },
+  familyName: {
+    fontSize: 22,
+    fontWeight: "800",
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  familyMeta: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    marginTop: 2,
+  },
+  avatarRow: { flexDirection: RTL_ROW, flexWrap: "wrap", gap: S.xs, marginTop: S.md },
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarEmoji: { fontSize: 16 },
+
   gridLabel: {
     fontSize: 15,
     fontWeight: "700",

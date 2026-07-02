@@ -17,7 +17,6 @@ import type { Project } from "@src/models/project";
 import { deleteProjectRemote, reorderProjectsRemote } from "@src/lib/sync/remoteCrud";
 import ProjectModal from "@src/components/ProjectModal";
 import OwnerBadge from "@src/components/OwnerBadge";
-import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { useProjectVoice } from "@src/hooks/useProjectVoice";
@@ -184,7 +183,6 @@ export default function ProjectsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <PageHeader title={t("home.projects")} />
       <ScreenScrollView style={styles.list} contentContainerStyle={styles.container}>
         {projects.length === 0 ? (
           <View style={styles.emptyState}>

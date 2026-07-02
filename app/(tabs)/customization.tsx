@@ -17,8 +17,6 @@ import { StyleSheet } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Card, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import PageHeader from "@src/components/PageHeader";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { updateCustomizationsRemote } from "@src/lib/sync/remoteCrud";
@@ -88,11 +86,9 @@ function ThemeColorSection() {
 // ---------------------------------------------------------------------------
 
 export default function CustomizationScreen() {
-  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <PageHeader title={t("customization.title")} onBack={() => router.replace("/settings")} />
       <ScreenScrollView contentContainerStyle={styles.container}>
         <Text style={styles.subtitle}>{t("customization.subtitle")}</Text>
 

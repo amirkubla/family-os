@@ -36,7 +36,6 @@ import FolderModal from "@src/components/FolderModal";
 import RenameModal from "@src/components/RenameModal";
 import FolderPickerSheet from "@src/components/FolderPickerSheet";
 import DocumentAddSheet from "@src/components/DocumentAddSheet";
-import PageHeader from "@src/components/PageHeader";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { t } from "@src/i18n";
@@ -190,7 +189,6 @@ export default function DocumentsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <PageHeader title={t("documents.title")} />
       <ScreenScrollView style={styles.list} contentContainerStyle={styles.container}>
         {/* Breadcrumb */}
         <View style={styles.crumbs}>

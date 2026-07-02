@@ -20,8 +20,7 @@ export default function TabLayout() {
         name="kid/[kidId]"
         options={{
           href: null,
-          headerShown: true,
-          title: "",
+          headerShown: false,
         }}
       />
       <Tabs.Screen

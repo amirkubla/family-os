@@ -18,8 +18,8 @@ import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
-import { useTodayFamilyEvents } from "@src/store/familyEventSelectors";
-import { toYMD } from "@src/utils/date";
+import { useTodayFamilyEvents, useFamilyEventsForDate } from "@src/store/familyEventSelectors";
+import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { syncAll } from "@src/lib/sync/syncEngine";
 import {
   toggleChoreDoneRemote,
@@ -92,9 +92,17 @@ type TodayItem =
 // ---------------------------------------------------------------------------
 
 export default function TodayScreen() {
-  // Computed inside component so they're fresh on each render/remount
-  const todayDow = new Date().getDay();
-  const todayDate = toYMD(new Date());
+  // The ACTUAL today (fixed) — drives the personal hero + "is this today?".
+  const actualToday = toYMD(new Date());
+  const actualDow = new Date().getDay();
+  // The browsed day — prev/next arrows move it; defaults to today.
+  const [selectedDate, setSelectedDate] = useState(actualToday);
+  const selectedDow = dayOfWeekFromYMD(selectedDate);
+  const isToday = selectedDate === actualToday;
+  const shiftDay = (delta: number) => {
+    const [y, m, d] = selectedDate.split("-").map(Number);
+    setSelectedDate(toYMD(new Date(y, m - 1, d + delta)));
+  };
 
   const session = useAuthStore((s) => s.session);
   const grocery = useFamilyStore((s) => s.grocery);
@@ -147,8 +155,11 @@ export default function TodayScreen() {
   );
 
   const todayChores = chores.filter((c) => c.selectedForToday);
-  const todayEvents = useTodayFamilyEvents(todayDate, todayDow);
-  const allKidBlocks = useAllKidBlocksForDate(todayDate, todayDow);
+  // Family day card follows the browsed day; the hero counts stay on today.
+  const dayEvents = useFamilyEventsForDate(selectedDate, selectedDow);
+  const allKidBlocks = useAllKidBlocksForDate(selectedDate, selectedDow);
+  const heroEvents = useTodayFamilyEvents(actualToday, actualDow);
+  const groceryToBuy = useMemo(() => grocery.filter((g) => !g.isBought).length, [grocery]);
 
   // The current logged-in member (parent) → personal greeting + counts.
   const me = useMemo(
@@ -164,22 +175,23 @@ export default function TodayScreen() {
     [projects, me],
   );
   const myEventsCount = useMemo(
-    () => todayEvents.filter((e) => e.assigneeType === "member" && e.assigneeId === me?.id).length,
-    [todayEvents, me],
+    () => heroEvents.filter((e) => e.assigneeType === "member" && e.assigneeId === me?.id).length,
+    [heroEvents, me],
   );
 
   // Timed items (events + kid blocks) sorted chronologically
   const timedItems = useMemo(() => {
     const items: Array<{ kind: "event"; data: FamilyEvent } | { kind: "block"; data: ScheduleBlock }> = [
-      ...todayEvents.map((e) => ({ kind: "event" as const, data: e })),
+      ...dayEvents.map((e) => ({ kind: "event" as const, data: e })),
       ...allKidBlocks.map((b) => ({ kind: "block" as const, data: b })),
     ];
     items.sort((a, b) => a.data.startMinutes - b.data.startMinutes);
     return items;
-  }, [todayEvents, allKidBlocks]);
+  }, [dayEvents, allKidBlocks]);
 
   const hasTimedItems = timedItems.length > 0;
-  const hasChores = todayChores.length > 0;
+  // "Selected for today" chores only make sense on the actual today.
+  const hasChores = isToday && todayChores.length > 0;
   const isEmpty = !hasTimedItems && !hasChores;
 
   const handleSync = async () => {
@@ -243,6 +255,7 @@ export default function TodayScreen() {
             { emoji: "✅", count: myChoresCount, label: t("today.statChores"), onPress: () => router.push("/chores" as any) },
             { emoji: "🚀", count: myProjectsCount, label: t("today.statProjects"), onPress: () => router.push("/projects" as any) },
             { emoji: "📅", count: myEventsCount, label: t("today.statEvents"), onPress: () => router.push("/calendar" as any) },
+            { emoji: "🛒", count: groceryToBuy, label: t("today.statGrocery"), onPress: () => router.push("/grocery" as any) },
           ]}
         />
 
@@ -251,9 +264,29 @@ export default function TodayScreen() {
 
         {/* ── Unified Today Card ── */}
         <Card style={styles.todayCard} mode="elevated">
-          {/* Date header */}
+          {/* Date header — prev/next day nav (RTL: right = previous, left = next);
+              tap the date to jump back to today. */}
           <View style={styles.dateHeader}>
-            <Text style={styles.dateText}>{formatDateHe(todayDate)}</Text>
+            <IconButton
+              icon="chevron-right"
+              size={22}
+              iconColor={C.textPrimary}
+              style={styles.dateNavBtn}
+              onPress={() => shiftDay(-1)}
+              accessibilityLabel="יום קודם"
+            />
+            <Pressable style={styles.dateTextWrap} onPress={() => setSelectedDate(actualToday)}>
+              <Text style={styles.dateText}>{formatDateHe(selectedDate)}</Text>
+              {!isToday && <Text style={styles.dateTodayHint}>{t("today.backToToday")}</Text>}
+            </Pressable>
+            <IconButton
+              icon="chevron-left"
+              size={22}
+              iconColor={C.textPrimary}
+              style={styles.dateNavBtn}
+              onPress={() => shiftDay(1)}
+              accessibilityLabel="יום הבא"
+            />
           </View>
 
           {/* Merged item list */}
@@ -366,8 +399,8 @@ export default function TodayScreen() {
                   </View>
                 )}
 
-                {/* ── Chores ── */}
-                {todayChores.map((chore) => {
+                {/* ── Chores (today only) ── */}
+                {hasChores && todayChores.map((chore) => {
                 const member = chore.assignedToMemberId
                   ? familyMembers.find(
                       (m) => m.id === chore.assignedToMemberId,
@@ -381,6 +414,7 @@ export default function TodayScreen() {
                   : member
                     ? `${member.avatarEmoji ?? ""} ${member.name}`
                     : chore.assignedTo;
+                const assigneeColor = assignedKid?.color ?? member?.color ?? C.purple;
                 return (
                   <View
                     key={`chore-${chore.id}`}
@@ -407,12 +441,18 @@ export default function TodayScreen() {
                       >
                         {chore.title}
                       </Text>
-                      {assigneeDisplay ? (
-                        <Text style={styles.choreAssignee}>
-                          {assigneeDisplay}
-                        </Text>
-                      ) : null}
                     </Pressable>
+                    {assigneeDisplay ? (
+                      <Text
+                        style={[
+                          styles.badge,
+                          { color: assigneeColor, backgroundColor: assigneeColor + "18" },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {assigneeDisplay}
+                      </Text>
+                    ) : null}
                     <IconButton
                       icon="trash-can-outline"
                       size={18}
@@ -617,8 +657,8 @@ export default function TodayScreen() {
           setEditingEvent(null);
         }}
         editEvent={editingEvent}
-        defaultDaysOfWeek={[todayDow]}
-        defaultDate={todayDate}
+        defaultDaysOfWeek={[selectedDow]}
+        defaultDate={selectedDate}
         onSubmit={(data) => {
           if (editingEvent) {
             updateFamilyEventRemote(editingEvent.id, data);
@@ -633,8 +673,8 @@ export default function TodayScreen() {
           setEditingBlock(null);
         }}
         editBlock={editingBlock}
-        defaultDaysOfWeek={[todayDow]}
-        defaultDate={todayDate}
+        defaultDaysOfWeek={[selectedDow]}
+        defaultDate={selectedDate}
         onSubmit={(data) => {
           if (editingBlock) {
             updateScheduleBlockRemote(editingBlock.id, data);
@@ -688,14 +728,26 @@ const styles = StyleSheet.create({
   },
   dateHeader: {
     backgroundColor: HEADER_BG,
-    paddingHorizontal: S.xl,
-    paddingVertical: S.lg,
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: S.sm,
+    paddingVertical: S.xs,
   },
+  dateNavBtn: { margin: 0 },
+  dateTextWrap: { flex: 1, alignItems: "center" },
   dateText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: C.textPrimary,
-    textAlign: TEXT_RIGHT,
+    textAlign: "center",
+    writingDirection: "rtl",
+  },
+  dateTodayHint: {
+    fontSize: 11,
+    color: C.textSecondary,
+    marginTop: 1,
+    writingDirection: "rtl",
   },
 
   // ── Item list ─────────────────────────────────────────────────────────────
