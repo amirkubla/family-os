@@ -12,20 +12,22 @@
  * fire-and-forget the PUT. Server errors surface via the global snackbar.
  */
 
-import React from "react";
-import { StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { StyleSheet, View, Image } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
-import { Card, Text } from "react-native-paper";
+import { Card, Text, Button } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { updateCustomizationsRemote } from "@src/lib/sync/remoteCrud";
+import { pickFamilyPhoto } from "@src/lib/pickFamilyPhoto";
 import SectionHeader from "@src/components/SectionHeader";
 import PaginatedPicker from "@src/components/PaginatedPicker";
 import { FAMILY_EMOJI_OPTIONS, COLOR_SWATCHES_LARGE } from "@src/ui/semanticColors";
 import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
+import { useThemeColor } from "@src/ui/useThemeColor";
 import { t } from "@src/i18n";
-import { TEXT_RIGHT } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, R, S } from "@src/ui/tokens";
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,70 @@ function FamilyIconSection() {
             onChange={(emoji) => updateCustomizationsRemote({ ...customizations, familyEmoji: emoji })}
             testIDPrefix="family-emoji"
           />
+        </Card.Content>
+      </Card>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Family photo section — an optional photo shown behind the family name in the
+// nav drawer, the home header, and the family page. Stored as a data: URI in
+// the customizations blob (no separate upload pipeline).
+// ---------------------------------------------------------------------------
+
+function FamilyPhotoSection() {
+  const customizations = useFamilyStore((s) => s.customizations);
+  const photo = customizations.familyPhoto;
+  const theme = useThemeColor();
+  const [busy, setBusy] = useState(false);
+
+  const choose = async () => {
+    setBusy(true);
+    try {
+      const uri = await pickFamilyPhoto();
+      if (uri) updateCustomizationsRemote({ ...customizations, familyPhoto: uri });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = () => {
+    const next = { ...customizations };
+    delete next.familyPhoto;
+    updateCustomizationsRemote(next);
+  };
+
+  return (
+    <>
+      <SectionHeader label={t("customization.familyPhoto")} />
+      <Card style={styles.card} mode="elevated">
+        <Card.Content>
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.photoPreview} resizeMode="cover" />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <Text style={styles.photoHint}>{t("customization.familyPhotoHint")}</Text>
+            </View>
+          )}
+          <View style={styles.photoActions}>
+            <Button
+              mode="contained"
+              icon="image"
+              onPress={choose}
+              loading={busy}
+              disabled={busy}
+              buttonColor={theme}
+              testID="family-photo-choose"
+            >
+              {photo ? t("customization.familyPhotoChange") : t("customization.familyPhotoChoose")}
+            </Button>
+            {photo ? (
+              <Button mode="outlined" icon="trash-can-outline" textColor={C.red} onPress={remove}>
+                {t("customization.familyPhotoRemove")}
+              </Button>
+            ) : null}
+          </View>
         </Card.Content>
       </Card>
     </>
@@ -94,6 +160,8 @@ export default function CustomizationScreen() {
 
         <FamilyIconSection />
 
+        <FamilyPhotoSection />
+
         <ThemeColorSection />
       </ScreenScrollView>
     </SafeAreaView>
@@ -114,4 +182,32 @@ const styles = StyleSheet.create({
   },
 
   card: { borderRadius: R.lg, backgroundColor: C.surface, marginBottom: S.lg },
+
+  photoPreview: {
+    width: "100%",
+    height: 140,
+    borderRadius: R.md,
+    marginBottom: S.md,
+    backgroundColor: C.bg,
+  },
+  photoPlaceholder: {
+    width: "100%",
+    height: 100,
+    borderRadius: R.md,
+    marginBottom: S.md,
+    backgroundColor: C.bg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: S.lg,
+  },
+  photoHint: {
+    fontSize: 13,
+    color: C.textMuted,
+    textAlign: "center",
+    writingDirection: "rtl",
+  },
+  photoActions: { flexDirection: RTL_ROW, gap: S.sm, flexWrap: "wrap" },
 });

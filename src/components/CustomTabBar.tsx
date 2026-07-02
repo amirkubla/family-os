@@ -30,6 +30,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import { C, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
+import FamilyPhotoBackdrop from "@src/components/FamilyPhotoBackdrop";
 import { t } from "@src/i18n";
 
 // ── Menu items ────────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   const theme = useThemeColor();
   const familyName = useFamilyStore((s) => s.familyName);
+  const familyPhoto = useFamilyStore((s) => s.customizations.familyPhoto);
 
   const [expanded, setExpanded] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;
@@ -172,17 +174,30 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           pointerEvents="auto"
           accessibilityRole={isWeb ? ("menu" as any) : undefined}
         >
-          {/* Brand wordmark */}
-          <View style={[styles.brand, { paddingTop: insets.top + S.md }]}>
-            <View style={[styles.brandBadge, { backgroundColor: theme }]}>
-              <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-            </View>
-            <Text style={styles.brandText} numberOfLines={1}>
-              {familyName || "Family OS"}
-            </Text>
-          </View>
-
-          <View style={styles.divider} />
+          {/* Brand wordmark — a family photo becomes the banner background. */}
+          {familyPhoto ? (
+            <FamilyPhotoBackdrop
+              uri={familyPhoto}
+              scrim={0.4}
+              style={[styles.brandPhoto, { paddingTop: insets.top + S.md }]}
+            >
+              <Text style={styles.brandTextPhoto} numberOfLines={1}>
+                {familyName || "Family OS"}
+              </Text>
+            </FamilyPhotoBackdrop>
+          ) : (
+            <>
+              <View style={[styles.brand, { paddingTop: insets.top + S.md }]}>
+                <View style={[styles.brandBadge, { backgroundColor: theme }]}>
+                  <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+                </View>
+                <Text style={styles.brandText} numberOfLines={1}>
+                  {familyName || "Family OS"}
+                </Text>
+              </View>
+              <View style={styles.divider} />
+            </>
+          )}
 
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -253,6 +268,8 @@ const styles = StyleSheet.create({
     // physical left on both web and native — so this rounds the right spot.
     borderTopLeftRadius: 22,
     borderBottomLeftRadius: 22,
+    // Clip content (e.g. a family-photo banner) to the rounded corners.
+    overflow: "hidden",
     ...SHADOW.lg,
     ...(isWeb ? ({ zIndex: 1 } as any) : {}),
   },
@@ -262,6 +279,23 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: S.lg,
     paddingBottom: S.md,
+  },
+  brandPhoto: {
+    minHeight: 104,
+    justifyContent: "flex-end",
+    paddingHorizontal: S.lg,
+    paddingBottom: S.md,
+    marginBottom: S.xs,
+  },
+  brandTextPhoto: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    writingDirection: "rtl",
+    textAlign: TEXT_RIGHT,
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   brandBadge: {
     width: 34,

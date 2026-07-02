@@ -17,6 +17,7 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
 import FeatureTile from "@src/components/FeatureTile";
 import FamilyStats from "@src/components/FamilyStats";
+import FamilyPhotoBackdrop from "@src/components/FamilyPhotoBackdrop";
 import { t } from "@src/i18n";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -31,6 +32,7 @@ export default function FamilyScreen() {
   const kids = useFamilyStore((s) => s.kids);
   const familyName = useFamilyStore((s) => s.familyName);
   const familyEmoji = useFamilyStore((s) => s.customizations.familyEmoji) || DEFAULT_FAMILY_EMOJI;
+  const familyPhoto = useFamilyStore((s) => s.customizations.familyPhoto);
 
   const activeMembers = useMemo(() => members.filter((m) => m.isActive), [members]);
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
@@ -42,37 +44,53 @@ export default function FamilyScreen() {
     ...activeKids.map((k) => ({ id: `k-${k.id}`, emoji: k.emoji ?? "🧒", color: k.color ?? KID_FALLBACK })),
   ];
 
+  const onPhoto = !!familyPhoto;
+  // Shared hero content — same layout whether over a photo or the themed card.
+  const heroInner = (
+    <>
+      <View style={styles.heroTop}>
+        <View style={[styles.emojiCircle, { backgroundColor: onPhoto ? "rgba(255,255,255,0.25)" : theme + "14" }]}>
+          <Text style={styles.emojiText}>{familyEmoji}</Text>
+        </View>
+        <View style={styles.heroTitleWrap}>
+          <Text
+            style={[styles.familyName, { color: onPhoto ? "#FFFFFF" : theme }, onPhoto && styles.onPhotoShadow]}
+            numberOfLines={1}
+          >
+            {familyName ? `${t("familyBadge.prefix")} ${familyName}` : t("family.title")}
+          </Text>
+          <Text style={[styles.familyMeta, onPhoto && styles.familyMetaPhoto]}>
+            {`${activeMembers.length} ${t("family.parents")} · ${activeKids.length} ${t("family.kids")}`}
+          </Text>
+        </View>
+      </View>
+      {lineup.length > 0 && (
+        <View style={styles.avatarRow}>
+          {lineup.map((a) => (
+            <View
+              key={a.id}
+              style={[styles.avatar, { backgroundColor: a.color + "22", borderColor: onPhoto ? "#FFFFFF" : a.color }]}
+            >
+              <Text style={styles.avatarEmoji}>{a.emoji}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <ScreenScrollView contentContainerStyle={styles.container}>
-        {/* ── Family identity hero (no back header — nav is via the drawer) ── */}
-        <View style={[styles.hero, { borderColor: theme + "22" }]}>
-          <View style={styles.heroTop}>
-            <View style={[styles.emojiCircle, { backgroundColor: theme + "14" }]}>
-              <Text style={styles.emojiText}>{familyEmoji}</Text>
-            </View>
-            <View style={styles.heroTitleWrap}>
-              <Text style={[styles.familyName, { color: theme }]} numberOfLines={1}>
-                {familyName ? `${t("familyBadge.prefix")} ${familyName}` : t("family.title")}
-              </Text>
-              <Text style={styles.familyMeta}>
-                {`${activeMembers.length} ${t("family.parents")} · ${activeKids.length} ${t("family.kids")}`}
-              </Text>
-            </View>
-          </View>
-          {lineup.length > 0 && (
-            <View style={styles.avatarRow}>
-              {lineup.map((a) => (
-                <View
-                  key={a.id}
-                  style={[styles.avatar, { backgroundColor: a.color + "22", borderColor: a.color }]}
-                >
-                  <Text style={styles.avatarEmoji}>{a.emoji}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
+        {/* ── Family identity hero (no back header — nav is via the drawer).
+            A family photo, when set, becomes the hero background. ── */}
+        {onPhoto ? (
+          <FamilyPhotoBackdrop uri={familyPhoto!} radius={R.xl} scrim={0.45} style={styles.heroPhoto}>
+            {heroInner}
+          </FamilyPhotoBackdrop>
+        ) : (
+          <View style={[styles.hero, { borderColor: theme + "22" }]}>{heroInner}</View>
+        )}
 
         {/* ── Parents ── */}
         <Text style={styles.gridLabel}>{t("family.parents")}</Text>
@@ -132,6 +150,20 @@ const styles = StyleSheet.create({
     marginBottom: S.md,
     ...SHADOW.sm,
   },
+  heroPhoto: {
+    borderRadius: R.xl,
+    overflow: "hidden",
+    padding: S.lg,
+    marginBottom: S.md,
+    minHeight: 132,
+    justifyContent: "center",
+  },
+  onPhotoShadow: {
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  familyMetaPhoto: { color: "rgba(255,255,255,0.92)" },
   heroTop: { flexDirection: RTL_ROW, alignItems: "center", gap: S.md },
   emojiCircle: {
     width: 56,

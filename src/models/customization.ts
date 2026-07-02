@@ -36,6 +36,11 @@ export interface FamilyCustomizations {
   /** Family avatar shown at the top of the home screen. */
   familyEmoji?: string;
   /**
+   * Family photo (data: URI). When set, it's shown as a background behind the
+   * family name in the nav drawer, the home header, and the family page.
+   */
+  familyPhoto?: string;
+  /**
    * Brand/theme accent (hex). Applied app-wide to modal buttons, the nav menu,
    * and the floating action buttons. Falls back to `C.primary` (#003333) when
    * unset — see `useThemeColor`. Picked from the family-member colour palette.

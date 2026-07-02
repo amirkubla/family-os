@@ -164,6 +164,18 @@ const he = {
     quickAdd: "הוספה",
     itemCount: "{{count}} פריטים",
     customizeCategories: "ניהול קטגוריות",
+    manageSubcategories: "ניהול תת-קטגוריות",
+    emptyCategory: "אין עדיין פריטים ב{{name}}",
+    // Main-category management
+    newCategory: "קטגוריה חדשה",
+    editCategory: "עריכת קטגוריה",
+    categoryName: "שם הקטגוריה",
+    categoryNamePlaceholder: "לדוגמה: מכולת",
+    categoryEmoji: "סמל",
+    addCategory: "הוספת קטגוריה",
+    deleteCategory: "מחיקת קטגוריה",
+    deleteCategoryConfirm:
+      "מחיקת הקטגוריה תמחק לצמיתות גם את {{count}} הפריטים שבתוכה. להמשיך?",
   },
 
   // ── Voice → grocery (POC) ──
@@ -578,6 +590,11 @@ const he = {
     subtitle:
       "הגדרות אישיות למשפחה שלכם. ההגדרות נשמרות לכל בני המשפחה ויסונכרנו אוטומטית.",
     familyIcon: "אייקון המשפחה",
+    familyPhoto: "תמונת משפחה",
+    familyPhotoHint: "בחרו תמונה שתוצג ברקע שם המשפחה — בתפריט, בדף הבית ובדף המשפחה.",
+    familyPhotoChoose: "בחירת תמונה",
+    familyPhotoChange: "החלפת תמונה",
+    familyPhotoRemove: "הסרת התמונה",
     themeColor: "צבע ערכת הנושא",
     grocerySubcategories: "תת-קטגוריות מכולת",
     healthSubcategories: "תת-קטגוריות פארם",

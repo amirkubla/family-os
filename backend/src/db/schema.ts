@@ -48,6 +48,9 @@ export type FamilyCustomizations = {
     { name: string; icon: string; color: string }[]
   >;
   familyEmoji?: string;
+  /** Family photo (data: URI) — background behind the family name in the
+   *  drawer / home header / family page. */
+  familyPhoto?: string;
   /** Brand/theme accent (hex). Free-form — stored in the JSONB blob. */
   themeColor?: string;
 };

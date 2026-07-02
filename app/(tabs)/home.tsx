@@ -18,8 +18,9 @@ import { useFamilyStore } from "@src/store/useFamilyStore";
 import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
 import { t } from "@src/i18n";
 import FeatureTile from "@src/components/FeatureTile";
+import FamilyPhotoBackdrop from "@src/components/FamilyPhotoBackdrop";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { C, S } from "@src/ui/tokens";
+import { C, S, R } from "@src/ui/tokens";
 
 // Tile accent palette — mirrors the nav tab colours for a cohesive feel.
 const TILE = {
@@ -46,6 +47,7 @@ export default function HomeScreen() {
   const allDocuments = useFamilyStore((s) => s.documents);
   const familyName = useFamilyStore((s) => s.familyName);
   const familyEmoji = useFamilyStore((s) => s.customizations.familyEmoji) || DEFAULT_FAMILY_EMOJI;
+  const familyPhoto = useFamilyStore((s) => s.customizations.familyPhoto);
 
   // ── Live counts for the launcher tiles ──
   const counts = useMemo(() => {
@@ -85,29 +87,52 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenScrollView contentContainerStyle={styles.container}>
-        {/* ── Header: family name · settings (spacer balances the cog) ── */}
-        <View style={styles.headerRow}>
-          {/* Settings cog on the RIGHT (leading in RTL); spacer balances it. */}
-          <IconButton
-            icon="cog-outline"
-            size={24}
-            iconColor={C.textSecondary}
-            onPress={() => router.push("/settings")}
-            accessibilityLabel={t("tabs.settings")}
-            testID="home-settings"
-          />
-          <View style={[{ flexDirection: RTL_ROW }, styles.headerCenter]}>
-            <View style={styles.familyBadge}>
-              <Text style={styles.familyBadgeEmoji}>{familyEmoji}</Text>
+        {/* ── Header: family name · settings (spacer balances the cog). When a
+            family photo is set it becomes the banner background. ── */}
+        {familyPhoto ? (
+          <FamilyPhotoBackdrop uri={familyPhoto} radius={R.lg} scrim={0.42} style={styles.headerPhoto}>
+            <IconButton
+              icon="cog-outline"
+              size={24}
+              iconColor="#FFFFFF"
+              onPress={() => router.push("/settings")}
+              accessibilityLabel={t("tabs.settings")}
+              testID="home-settings"
+            />
+            <View style={[{ flexDirection: RTL_ROW }, styles.headerCenter]}>
+              <Text style={styles.headerEmojiPhoto}>{familyEmoji}</Text>
+              {!!familyName && (
+                <Text style={styles.headerFamilyPhoto} numberOfLines={1}>
+                  {t("familyBadge.prefix")} {familyName}
+                </Text>
+              )}
             </View>
-            {!!familyName && (
-              <Text style={styles.headerFamily} numberOfLines={1}>
-                {t("familyBadge.prefix")} {familyName}
-              </Text>
-            )}
+            <View style={styles.headerSpacer} />
+          </FamilyPhotoBackdrop>
+        ) : (
+          <View style={styles.headerRow}>
+            {/* Settings cog on the RIGHT (leading in RTL); spacer balances it. */}
+            <IconButton
+              icon="cog-outline"
+              size={24}
+              iconColor={C.textSecondary}
+              onPress={() => router.push("/settings")}
+              accessibilityLabel={t("tabs.settings")}
+              testID="home-settings"
+            />
+            <View style={[{ flexDirection: RTL_ROW }, styles.headerCenter]}>
+              <View style={styles.familyBadge}>
+                <Text style={styles.familyBadgeEmoji}>{familyEmoji}</Text>
+              </View>
+              {!!familyName && (
+                <Text style={styles.headerFamily} numberOfLines={1}>
+                  {t("familyBadge.prefix")} {familyName}
+                </Text>
+              )}
+            </View>
+            <View style={styles.headerSpacer} />
           </View>
-          <View style={styles.headerSpacer} />
-        </View>
+        )}
 
         {/* ── Launcher tile grid ── */}
         <Text style={styles.gridLabel}>{t("home.quickAccess")}</Text>
@@ -172,6 +197,28 @@ const styles = StyleSheet.create({
   },
   headerSpacer: { width: 40 },
   headerCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: S.xs },
+  headerPhoto: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.sm,
+    minHeight: 120,
+    borderRadius: R.lg,
+    overflow: "hidden",
+    paddingHorizontal: S.sm,
+    marginBottom: S.lg,
+  },
+  headerEmojiPhoto: { fontSize: 22 },
+  headerFamilyPhoto: {
+    flexShrink: 1,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
   familyBadge: {
     width: 34,
     height: 34,
