@@ -4,8 +4,8 @@
  */
 
 import React, { useEffect, useState, useRef } from "react";
-import { View } from "react-native";
-import { Text, Button } from "react-native-paper";
+import { View, StyleSheet } from "react-native";
+import { Text, Button, IconButton } from "react-native-paper";
 import ModalTextInput from "./ModalTextInput";
 import SegmentedPills from "@src/components/SegmentedPills";
 import { useForm, Controller } from "react-hook-form";
@@ -19,7 +19,7 @@ import { dayOfWeekFromYMD, toYMD } from "@src/utils/date";
 import { t, dayNameShort, assigneeTypeLabel } from "@src/i18n";
 import { MS } from "@src/ui/modalStyles";
 import { C, S } from "@src/ui/tokens";
-import { RTL_ROW } from "@src/ui/rtl";
+import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { useThemeColor } from "@src/ui/useThemeColor";
 import ModalWrapper from "./ModalWrapper";
 import SelectChip from "./SelectChip";
@@ -46,9 +46,11 @@ const schema = z
     assigneeId: z.string().optional(),
     isRecurring: z.boolean(),
     allDay: z.boolean(),
-    daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1),
-    date: z.string().optional(),
+    daysOfWeek: z.array(z.number().int().min(0).max(6)),
+    date: z.string(),
     endDate: z.string().optional(),
+    repeatUnit: z.enum(["week", "month"]),
+    repeatInterval: z.number().int().min(1).max(52),
     startTime: z
       .string()
       .regex(timeRegex, t("eventModal.useHHMM"))
@@ -69,8 +71,8 @@ const schema = z
     { message: t("eventModal.endAfterStart"), path: ["endTime"] },
   )
   .refine(
+    // The date anchor is always present (one-time day OR recurring anchor).
     (d) => {
-      if (d.isRecurring) return true;
       if (!d.date || !dateRegex.test(d.date)) return false;
       const [y, m, day] = d.date.split("-").map(Number);
       const dateObj = new Date(y, m - 1, day);
@@ -84,8 +86,13 @@ const schema = z
   )
   .refine(
     // Multi-day end date must not precede the start date.
-    (d) => d.isRecurring || !d.endDate || !d.date || d.endDate >= d.date,
+    (d) => !d.endDate || !d.date || d.endDate >= d.date,
     { message: t("eventModal.endDateBeforeStart"), path: ["endDate"] },
+  )
+  .refine(
+    // Weekly repeats need at least one weekday selected.
+    (d) => !(d.isRecurring && d.repeatUnit === "week") || d.daysOfWeek.length > 0,
+    { message: t("eventModal.daysOfWeekRequired"), path: ["daysOfWeek"] },
   );
 
 type FormData = z.infer<typeof schema>;
@@ -109,6 +116,8 @@ interface Props {
     isRecurring: boolean;
     date?: string;
     endDate?: string;
+    repeatUnit?: "week" | "month";
+    repeatInterval?: number;
     allDay?: boolean;
     reminders?: number[];
   }) => void;
@@ -152,6 +161,8 @@ export default function FamilyEventModal({
       daysOfWeek: defaultDaysOfWeek,
       date: defaultDate ?? toYMD(new Date()),
       endDate: undefined,
+      repeatUnit: "week",
+      repeatInterval: 1,
       startTime: "09:00",
       endTime: "10:00",
       location: "",
@@ -169,6 +180,8 @@ export default function FamilyEventModal({
         daysOfWeek: editEvent.daysOfWeek,
         date: editEvent.date ?? toYMD(new Date()),
         endDate: editEvent.endDate,
+        repeatUnit: editEvent.repeatUnit ?? "week",
+        repeatInterval: editEvent.repeatInterval ?? 1,
         startTime: minutesToHHMM(editEvent.startMinutes),
         endTime: minutesToHHMM(editEvent.endMinutes),
         location: editEvent.location ?? "",
@@ -179,11 +192,13 @@ export default function FamilyEventModal({
         title: "",
         assigneeType: "family",
         assigneeId: undefined,
-        isRecurring: false, // new events default to one-time
+        isRecurring: false, // new events default to one-time (repeat off)
         allDay: false,
         daysOfWeek: defaultDaysOfWeek,
         date: defaultDate ?? toYMD(new Date()),
         endDate: undefined,
+        repeatUnit: "week",
+        repeatInterval: 1,
         startTime: defaultStartTime ?? "09:00",
         endTime: defaultEndTime ?? "10:00",
         location: "",
@@ -198,6 +213,8 @@ export default function FamilyEventModal({
   const allDay = watch("allDay");
   const startDate = watch("date");
   const assigneeId = watch("assigneeId");
+  const repeatUnit = watch("repeatUnit");
+  const repeatInterval = watch("repeatInterval");
 
   // In-flight guard against rapid double-clicks (QA Pass 1 BUG #2).
   // Ref for synchronous re-entrancy check; state for visual disabled/loading.
@@ -214,13 +231,14 @@ export default function FamilyEventModal({
     if (submittingRef.current) return; // double-click guard (synchronous)
     submittingRef.current = true;
     setSubmitting(true);
-    const daysOfWeek = data.isRecurring
-      ? data.daysOfWeek
-      : [dayOfWeekFromYMD(data.date!)];
+    // Weekly repeats carry the selected weekdays; monthly + one-time derive a
+    // single weekday from the anchor date (harmless, keeps the field populated).
+    const weekly = data.isRecurring && data.repeatUnit === "week";
+    const daysOfWeek = weekly ? data.daysOfWeek : [dayOfWeekFromYMD(data.date)];
 
     // Multi-day end date only when it's a one-time event and is after the start.
     const endDate =
-      !data.isRecurring && data.endDate && data.date && data.endDate > data.date
+      !data.isRecurring && data.endDate && data.endDate > data.date
         ? data.endDate
         : undefined;
 
@@ -235,8 +253,11 @@ export default function FamilyEventModal({
       endMinutes: data.allDay ? 1439 : hhmmToMinutes(data.endTime),
       location: data.location?.trim() || undefined,
       isRecurring: data.isRecurring,
-      date: data.isRecurring ? undefined : data.date,
+      // The date is now always the anchor (one-time day OR recurrence anchor).
+      date: data.date,
       endDate,
+      repeatUnit: data.isRecurring ? data.repeatUnit : undefined,
+      repeatInterval: data.isRecurring ? data.repeatInterval : undefined,
       allDay: data.allDay,
       reminders: selectedReminders.length > 0 ? selectedReminders : undefined,
     });
@@ -319,60 +340,120 @@ export default function FamilyEventModal({
         )}
       </View>
 
-      {/* ── Schedule section ── */}
+      {/* ── Schedule section ── date + time first, then an optional "repeat" ── */}
       <View style={MS.section}>
-        <View style={MS.segmented}>
+        {/* Start date — always shown (the calendar pill is self-evident). */}
+        <Controller
+          control={control}
+          name="date"
+          render={({ field: { onChange, value } }) => (
+            <DateTimeField
+              mode="date"
+              value={value ?? toYMD(new Date())}
+              onChange={onChange}
+              title={t("eventModal.date")}
+              error={!!errors.date}
+            />
+          )}
+        />
+        {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
+
+        {/* Repeat on/off. */}
+        <View style={[MS.segmented, { marginTop: S.sm }]}>
           <SegmentedPills
             value={isRecurring ? "recurring" : "oneTime"}
             onChange={(v) => setValue("isRecurring", v === "recurring")}
             options={[
-              { value: "recurring", label: t("eventModal.recurring") },
               { value: "oneTime", label: t("eventModal.oneTime") },
+              { value: "recurring", label: t("eventModal.recurring") },
             ]}
           />
         </View>
 
         {isRecurring && (
           <>
-            <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionLabel}>{t("eventModal.day")}</Text>
-              <Text style={MS.sectionIcon}>📆</Text>
+            {/* Cadence unit + interval: "כל N שבועות/חודשים". */}
+            <View style={[MS.segmented, { marginTop: S.sm }]}>
+              <SegmentedPills
+                value={repeatUnit}
+                onChange={(v) => setValue("repeatUnit", v as "week" | "month")}
+                options={[
+                  { value: "week", label: t("eventModal.unitWeeks") },
+                  { value: "month", label: t("eventModal.unitMonths") },
+                ]}
+              />
             </View>
-            <View style={[MS.chipRow, { gap: S.xs, flexWrap: "nowrap" }]}>
-              {Array.from({ length: 7 }, (_, idx) => {
-                const sel = selectedDays.includes(idx);
-                return (
-                  <Button
-                    key={idx}
-                    mode={sel ? "contained" : "outlined"}
-                    compact
-                    onPress={() => {
-                      // Allow deselecting freely — including the last day.
-                      // The Zod `daysOfWeek.min(1)` rule catches "no days at
-                      // all" on save, with the message rendered below. The
-                      // previous `cur.length > 1` guard made the button look
-                      // broken when it was the only selected day (QA Pass 2
-                      // BUG-N14 — silently unresponsive).
-                      const cur = selectedDays;
-                      if (cur.includes(idx)) {
-                        setValue("daysOfWeek", cur.filter((d) => d !== idx), { shouldValidate: true });
-                      } else {
-                        setValue("daysOfWeek", [...cur, idx], { shouldValidate: true });
-                      }
-                    }}
-                    style={[MS.chip, { flex: 1, minWidth: 0 }]}
-                    labelStyle={MS.chipLabel}
-                    buttonColor={sel ? theme + "20" : undefined}
-                    textColor={sel ? theme : C.textSecondary}
-                  >
-                    {dayNameShort(idx)}
-                  </Button>
-                );
-              })}
+            <View style={styles.stepperRow}>
+              <Text style={styles.stepperEvery}>{t("eventModal.repeatEvery")}</Text>
+              <IconButton
+                icon="minus"
+                mode="outlined"
+                size={16}
+                disabled={repeatInterval <= 1}
+                onPress={() => setValue("repeatInterval", Math.max(1, repeatInterval - 1))}
+                style={styles.stepperBtn}
+              />
+              <Text style={styles.stepperValue}>{repeatInterval}</Text>
+              <IconButton
+                icon="plus"
+                mode="outlined"
+                size={16}
+                disabled={repeatInterval >= 52}
+                onPress={() => setValue("repeatInterval", Math.min(52, repeatInterval + 1))}
+                style={styles.stepperBtn}
+              />
+              <Text style={styles.stepperUnit}>
+                {repeatUnit === "week"
+                  ? repeatInterval === 1 ? t("eventModal.unitWeek") : t("eventModal.unitWeeks")
+                  : repeatInterval === 1 ? t("eventModal.unitMonth") : t("eventModal.unitMonths")}
+              </Text>
             </View>
-            {errors.daysOfWeek && (
-              <Text style={[MS.error, { marginTop: 4 }]}>
-                {t("eventModal.daysOfWeekRequired")}
+
+            {/* Weekly → which weekday(s) within each active cycle. */}
+            {repeatUnit === "week" && (
+              <>
+                <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
+                  <Text style={MS.sectionLabel}>{t("eventModal.day")}</Text>
+                  <Text style={MS.sectionIcon}>📆</Text>
+                </View>
+                <View style={[MS.chipRow, { gap: S.xs, flexWrap: "nowrap" }]}>
+                  {Array.from({ length: 7 }, (_, idx) => {
+                    const sel = selectedDays.includes(idx);
+                    return (
+                      <Button
+                        key={idx}
+                        mode={sel ? "contained" : "outlined"}
+                        compact
+                        onPress={() => {
+                          const cur = selectedDays;
+                          if (cur.includes(idx)) {
+                            setValue("daysOfWeek", cur.filter((d) => d !== idx), { shouldValidate: true });
+                          } else {
+                            setValue("daysOfWeek", [...cur, idx], { shouldValidate: true });
+                          }
+                        }}
+                        style={[MS.chip, { flex: 1, minWidth: 0 }]}
+                        labelStyle={MS.chipLabel}
+                        buttonColor={sel ? theme + "20" : undefined}
+                        textColor={sel ? theme : C.textSecondary}
+                      >
+                        {dayNameShort(idx)}
+                      </Button>
+                    );
+                  })}
+                </View>
+                {errors.daysOfWeek && (
+                  <Text style={[MS.error, { marginTop: 4 }]}>
+                    {t("eventModal.daysOfWeekRequired")}
+                  </Text>
+                )}
+              </>
+            )}
+
+            {/* Monthly → keys off the anchor's day-of-month. */}
+            {repeatUnit === "month" && startDate && (
+              <Text style={styles.monthlyHint}>
+                {t("eventModal.monthlyOnDay", { day: Number(startDate.split("-")[2]) })}
               </Text>
             )}
           </>
@@ -380,26 +461,7 @@ export default function FamilyEventModal({
 
         {!isRecurring && (
           <>
-            {/* Start date — label removed; the calendar pill is self-evident. */}
-            <View style={{ marginTop: S.sm }}>
-              <Controller
-                control={control}
-                name="date"
-                render={({ field: { onChange, value } }) => (
-                  <DateTimeField
-                    mode="date"
-                    value={value ?? toYMD(new Date())}
-                    onChange={onChange}
-                    title={t("eventModal.date")}
-                    error={!!errors.date}
-                  />
-                )}
-              />
-            </View>
-            {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
-
-            {/* "עד תאריך" label sits between the two date pills (no emoji).
-                Leave equal to the start for a single-day event. */}
+            {/* Optional multi-day span for a one-time event. */}
             <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
               <Text style={MS.sectionLabel}>{t("eventModal.endDate")}</Text>
             </View>
@@ -552,3 +614,41 @@ export default function FamilyEventModal({
     </ModalWrapper>
   );
 }
+
+const styles = StyleSheet.create({
+  // "כל [−] N [+] שבועות/חודשים" interval stepper.
+  stepperRow: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.xs,
+    marginTop: S.sm,
+  },
+  stepperEvery: {
+    fontSize: 14,
+    color: C.textSecondary,
+    writingDirection: "rtl",
+  },
+  stepperBtn: {
+    margin: 0,
+    borderColor: C.border,
+  },
+  stepperValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: C.textPrimary,
+    minWidth: 22,
+    textAlign: "center",
+  },
+  stepperUnit: {
+    fontSize: 14,
+    color: C.textSecondary,
+    writingDirection: "rtl",
+  },
+  monthlyHint: {
+    fontSize: 13,
+    color: C.textSecondary,
+    writingDirection: "rtl",
+    textAlign: TEXT_RIGHT,
+    marginTop: S.sm,
+  },
+});

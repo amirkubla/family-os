@@ -232,6 +232,13 @@
       "when": 1782500000000,
       "tag": "0032_documents_folders",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1782600000000,
+      "tag": "0033_family_event_repeat",
+      "breakpoints": true
     }
   ]
 }

@@ -670,6 +670,8 @@ export function addFamilyEventRemote(input: {
   isRecurring?: boolean;
   date?: string;
   endDate?: string;
+  repeatUnit?: "week" | "month";
+  repeatInterval?: number;
   allDay?: boolean;
   reminders?: number[];
 }) {
@@ -687,7 +689,7 @@ export function updateFamilyEventRemote(
   patch: Partial<
     Pick<
       FamilyEvent,
-      "title" | "assigneeType" | "assigneeId" | "daysOfWeek" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "endDate" | "allDay" | "reminders"
+      "title" | "assigneeType" | "assigneeId" | "daysOfWeek" | "startMinutes" | "endMinutes" | "location" | "color" | "isRecurring" | "date" | "endDate" | "repeatUnit" | "repeatInterval" | "allDay" | "reminders"
     >
   >,
 ) {
@@ -706,6 +708,8 @@ export function updateFamilyEventRemote(
   if (patch.isRecurring !== undefined) apiPatch.isRecurring = patch.isRecurring;
   if (patch.date !== undefined) apiPatch.date = patch.date ?? null;
   if (patch.endDate !== undefined) apiPatch.endDate = patch.endDate ?? null;
+  if (patch.repeatUnit !== undefined) apiPatch.repeatUnit = patch.repeatUnit ?? null;
+  if (patch.repeatInterval !== undefined) apiPatch.repeatInterval = patch.repeatInterval ?? 1;
   if (patch.allDay !== undefined) apiPatch.allDay = patch.allDay;
   if (patch.reminders !== undefined)
     apiPatch.reminders =

@@ -9,8 +9,9 @@
 import { useMemo } from "react";
 import { useFamilyStore } from "./useFamilyStore";
 import type { FamilyEvent } from "@src/models/familyEvent";
+import { eventOccursOn } from "@src/utils/recurrence";
 
-/** Safely get daysOfWeek as an array, handling legacy data where it might be a number or undefined. */
+/** daysOfWeek as an array, tolerating legacy number/undefined shapes. */
 function getDays(e: FamilyEvent): number[] {
   const d = (e as any).daysOfWeek ?? (e as any).dayOfWeek;
   if (Array.isArray(d)) return d;
@@ -21,10 +22,11 @@ function getDays(e: FamilyEvent): number[] {
 /**
  * Does a one-time event fall on `dateStr`? Multi-day events span their full
  * [date … endDate] range (inclusive); single-day events match the exact date.
+ * (Thin wrapper over the shared rule, kept for the calendar views' imports.)
  */
 export function oneTimeEventOnDate(e: FamilyEvent, dateStr: string): boolean {
-  if (e.isRecurring || !e.date) return false;
-  return dateStr >= e.date && dateStr <= (e.endDate || e.date);
+  if (e.isRecurring) return false;
+  return eventOccursOn(e, dateStr);
 }
 
 /**
@@ -39,13 +41,9 @@ export function useFamilyEventsForDate(
   return useMemo(
     () =>
       events
-        .filter(
-          (e) =>
-            (e.isRecurring && getDays(e).includes(dayOfWeek)) ||
-            oneTimeEventOnDate(e, dateStr),
-        )
+        .filter((e) => eventOccursOn(e, dateStr))
         .sort((a, b) => a.startMinutes - b.startMinutes),
-    [events, dateStr, dayOfWeek],
+    [events, dateStr],
   );
 }
 
@@ -61,13 +59,9 @@ export function useTodayFamilyEvents(
   return useMemo(
     () =>
       events
-        .filter(
-          (e) =>
-            (e.isRecurring && getDays(e).includes(dayOfWeek)) ||
-            oneTimeEventOnDate(e, dateStr),
-        )
+        .filter((e) => eventOccursOn(e, dateStr))
         .sort((a, b) => a.startMinutes - b.startMinutes),
-    [events, dateStr, dayOfWeek],
+    [events, dateStr],
   );
 }
 

@@ -30,6 +30,7 @@ import {
   pushTokens as pushTokensTable,
 } from "../db/schema.js";
 import { remindersRepo } from "../repos/remindersRepo.js";
+import { eventOccursOn } from "../lib/recurrence.js";
 import {
   createReminderTask,
   deleteReminderTask,
@@ -40,12 +41,6 @@ import type {
 } from "../types/models.js";
 
 const TZ = "Asia/Jerusalem";
-
-// Cap on how far into the future we'll walk looking for the next recurring
-// occurrence. 14 days covers weekly events comfortably; if a recurring
-// event has daysOfWeek=[], or all leads put fire_at past this window for
-// some weird reason, we give up.
-const MAX_FUTURE_DAYS = 14;
 
 // ---------------------------------------------------------------------------
 // Source row union — we accept either kind via a small adapter
@@ -58,7 +53,9 @@ interface ReminderSource {
   startMinutes: number;
   isRecurring: boolean;
   daysOfWeek: number[];
-  date: string | null; // "YYYY-MM-DD" for one-off
+  date: string | null; // "YYYY-MM-DD" — anchor / first occurrence
+  repeatUnit: "week" | "month" | null; // null = weekly (legacy default)
+  repeatInterval: number; // every N units; 1 = every week/month
   reminders: string | null; // JSON array of lead-minutes
 }
 
@@ -80,10 +77,12 @@ async function loadSource(
       isRecurring: row.isRecurring,
       daysOfWeek: row.daysOfWeek,
       date: row.date,
+      repeatUnit: row.repeatUnit,
+      repeatInterval: row.repeatInterval,
       reminders: row.reminders,
     };
   }
-  // schedule_block
+  // schedule_block — no interval columns; always weekly-every-week.
   const [row] = await db
     .select()
     .from(scheduleBlocks)
@@ -97,6 +96,8 @@ async function loadSource(
     isRecurring: row.isRecurring,
     daysOfWeek: row.daysOfWeek,
     date: row.date,
+    repeatUnit: null,
+    repeatInterval: 1,
     reminders: row.reminders,
   };
 }
@@ -148,24 +149,6 @@ function jlmYMD(d: Date): string {
   return d.toLocaleDateString("en-CA", { timeZone: TZ });
 }
 
-/** Day-of-week in JLM (Sun=0..Sat=6) for a given UTC instant. */
-function jlmDayOfWeek(d: Date): number {
-  const weekdayShort = new Intl.DateTimeFormat("en-US", {
-    timeZone: TZ,
-    weekday: "short",
-  }).format(d);
-  const map: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
-  return map[weekdayShort] ?? d.getDay();
-}
-
 // ---------------------------------------------------------------------------
 // Next-occurrence math
 // ---------------------------------------------------------------------------
@@ -192,21 +175,24 @@ function computeNextFireAt(
     return fireAt > after ? { occurrenceTs: occurrence, fireAt } : null;
   }
 
-  // Recurring: walk forward day-by-day from `after`'s JLM date.
-  if (!source.daysOfWeek || source.daysOfWeek.length === 0) return null;
-  const wanted = new Set(source.daysOfWeek);
+  // Recurring: walk forward day-by-day from `after`'s JLM date, testing each
+  // day against the shared occurrence rule (weekly-on-days every N weeks, or
+  // monthly every N months). The horizon is sized to the interval so a large
+  // "every 12 months" still finds its next hit.
+  const interval = Math.max(1, source.repeatInterval ?? 1);
+  const maxFutureDays =
+    (source.repeatUnit === "month" ? 31 : 7) * interval + 40;
   const startUtc = new Date(after.getTime());
 
-  for (let dayOffset = 0; dayOffset <= MAX_FUTURE_DAYS; dayOffset++) {
+  for (let dayOffset = 0; dayOffset <= maxFutureDays; dayOffset++) {
     const probe = new Date(startUtc.getTime() + dayOffset * 86_400_000);
-    if (!wanted.has(jlmDayOfWeek(probe))) continue;
-
     const ymd = jlmYMD(probe);
+    if (!eventOccursOn(source, ymd)) continue;
+
     const occurrence = jlmDateTimeToUtc(ymd, source.startMinutes);
     const fireAt = new Date(occurrence.getTime() - leadMinutes * 60_000);
     if (fireAt > after) return { occurrenceTs: occurrence, fireAt };
-    // Else: this day's slot already passed the lead window — try the next
-    // matching dayOfWeek.
+    // Else: this occurrence's lead window already passed — try the next hit.
   }
   return null;
 }

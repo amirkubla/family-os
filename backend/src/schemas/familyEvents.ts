@@ -60,6 +60,8 @@ const baseFamilyEvent = z
     isRecurring: z.boolean(),
     date: ymdDate.nullable().optional(),
     endDate: ymdDate.nullable().optional(),
+    repeatUnit: z.enum(["week", "month"]).nullable().optional(),
+    repeatInterval: z.number().int().min(1).max(52).optional(),
     allDay: z.boolean().optional(),
     reminders: remindersJson,
   })
@@ -71,14 +73,21 @@ const baseFamilyEvent = z
     path: ["endDate"],
     message: "endDate must be on or after date",
   })
-  .refine((d) => !d.isRecurring || d.daysOfWeek.length > 0, {
+  // Weekly repeats need at least one weekday (monthly repeats key off the date).
+  .refine((d) => !(d.isRecurring && (d.repeatUnit ?? "week") === "week") || d.daysOfWeek.length > 0, {
     path: ["daysOfWeek"],
-    message: "recurring events must have at least one day of week",
+    message: "weekly recurring events must have at least one day of week",
   })
-  .refine((d) => d.isRecurring || !!d.date, {
-    path: ["date"],
-    message: "one-time events must have a date",
-  });
+  // An anchor date is required for one-time events, monthly repeats, and any
+  // every-N (>1) repeat. Legacy weekly-every-week rows may omit it.
+  .refine(
+    (d) => {
+      const needsAnchor =
+        !d.isRecurring || (d.repeatUnit ?? "week") === "month" || (d.repeatInterval ?? 1) > 1;
+      return !needsAnchor || !!d.date;
+    },
+    { path: ["date"], message: "an anchor date is required for this repeat" },
+  );
 
 /** POST /v1/family/:familyId/family-events */
 export const createFamilyEventSchema = baseFamilyEvent;
@@ -110,6 +119,8 @@ export const patchFamilyEventSchema = z.object({
   isRecurring: z.boolean().optional(),
   date: ymdDate.nullable().optional(),
   endDate: ymdDate.nullable().optional(),
+  repeatUnit: z.enum(["week", "month"]).nullable().optional(),
+  repeatInterval: z.number().int().min(1).max(52).optional(),
   allDay: z.boolean().optional(),
   reminders: remindersJson,
 });

@@ -150,6 +150,8 @@ export interface ApiFamilyEvent {
   isRecurring: boolean;
   date: string | null;
   endDate: string | null;
+  repeatUnit: "week" | "month" | null;
+  repeatInterval: number;
   allDay: boolean;
   reminders: string | null; // JSON string e.g. "[1440,60,5]"
   createdAt: string;

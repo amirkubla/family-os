@@ -9,6 +9,7 @@
 import { useMemo } from "react";
 import { useFamilyStore } from "./useFamilyStore";
 import type { ScheduleBlock } from "@src/models/schedule";
+import { eventOccursOn } from "@src/utils/recurrence";
 
 /** Safely get daysOfWeek as an array, handling legacy data where it might be a number or undefined. */
 function getDays(b: ScheduleBlock): number[] {
@@ -67,14 +68,9 @@ export function useKidBlocksForDate(
   return useMemo(
     () =>
       blocks
-        .filter(
-          (b) =>
-            b.kidId === kidId &&
-            ((b.isRecurring && getDays(b).includes(dayOfWeek)) ||
-              oneTimeBlockOnDate(b, dateStr)),
-        )
+        .filter((b) => b.kidId === kidId && eventOccursOn(b, dateStr))
         .sort((a, b) => a.startMinutes - b.startMinutes),
-    [blocks, kidId, dateStr, dayOfWeek],
+    [blocks, kidId, dateStr],
   );
 }
 
@@ -103,13 +99,9 @@ export function useAllKidBlocksForDate(
   return useMemo(
     () =>
       blocks
-        .filter(
-          (b) =>
-            (b.isRecurring && getDays(b).includes(dayOfWeek)) ||
-            oneTimeBlockOnDate(b, dateStr),
-        )
+        .filter((b) => eventOccursOn(b, dateStr))
         .sort((a, b) => a.startMinutes - b.startMinutes),
-    [blocks, dateStr, dayOfWeek],
+    [blocks, dateStr],
   );
 }
 

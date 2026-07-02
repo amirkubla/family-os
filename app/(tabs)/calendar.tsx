@@ -19,16 +19,9 @@ import SegmentedPills from "@src/components/SegmentedPills";
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
-import {
-  useFamilyEventsForDate,
-  useFamilyEventOneTimeBlocks,
-  useFamilyEventRecurringByDay,
-} from "@src/store/familyEventSelectors";
-import {
-  useAllKidBlocksForDate,
-  useAllKidRecurringByDay,
-  useAllKidOneTimeBlocks,
-} from "@src/store/scheduleSelectors";
+import { useFamilyEventsForDate } from "@src/store/familyEventSelectors";
+import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
+import { eventOccursOn } from "@src/utils/recurrence";
 import {
   addFamilyEventRemote,
   updateFamilyEventRemote,
@@ -218,12 +211,10 @@ export default function CalendarScreen() {
     [dayEvents, dayBlocks],
   );
 
-  // For calendar dots — family events
-  const recurringByDay = useFamilyEventRecurringByDay();
-  const oneTimeEvents = useFamilyEventOneTimeBlocks();
-  // For calendar dots — kid schedule blocks
-  const kidRecurringByDay = useAllKidRecurringByDay();
-  const kidOneTimeBlocks = useAllKidOneTimeBlocks();
+  // Raw arrays for month dots + grid-press lookup — filtered per date via the
+  // shared occurrence rule so intervals/monthly mark the right days.
+  const allFamilyEvents = useFamilyStore((s) => s.familyEvents);
+  const allBlocks = useFamilyStore((s) => s.scheduleBlocks);
 
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
@@ -285,6 +276,8 @@ export default function CalendarScreen() {
     isRecurring: boolean;
     date?: string;
     endDate?: string;
+    repeatUnit?: "week" | "month";
+    repeatInterval?: number;
     allDay?: boolean;
   }) => {
     if (editingEvent) {
@@ -383,27 +376,18 @@ export default function CalendarScreen() {
 
   const handleGridEventPress = useCallback((id: string, source: "event" | "block") => {
     if (source === "event") {
-      const event = dayEvents.find((e) => e.id === id)
-        ?? oneTimeEvents.find((e) => e.id === id)
-        ?? [...Array(7)].reduce<FamilyEvent | undefined>(
-          (found, _, dow) => found ?? recurringByDay[dow]?.find((e) => e.id === id),
-          undefined,
-        );
+      const event = allFamilyEvents.find((e) => e.id === id);
       if (event) openEdit(event);
     } else {
-      const block = dayBlocks.find((b) => b.id === id)
-        ?? kidOneTimeBlocks.find((b) => b.id === id)
-        ?? [...Array(7)].reduce<ScheduleBlock | undefined>(
-          (found, _, dow) => found ?? kidRecurringByDay[dow]?.find((b) => b.id === id),
-          undefined,
-        );
+      const block = allBlocks.find((b) => b.id === id);
       if (block) openEditBlock(block);
     }
-  }, [dayEvents, dayBlocks, oneTimeEvents, kidOneTimeBlocks, recurringByDay, kidRecurringByDay]);
+  }, [allFamilyEvents, allBlocks]);
 
   const hasAnyItems = dayEvents.length > 0 || dayBlocks.length > 0;
 
-  // Build markedDates
+  // Build markedDates — a dot on any day an event or block actually occurs,
+  // computed through the shared occurrence rule so every-N/monthly land right.
   const markedDates = useMemo(() => {
     const marks: Record<string, { dotColor: string }> = {};
     const now = new Date();
@@ -411,27 +395,15 @@ export default function CalendarScreen() {
       const d = new Date(now);
       d.setDate(d.getDate() + offset);
       const ymd = toYMD(d);
-      const dow = d.getDay();
-      if (recurringByDay[dow]?.length > 0 || kidRecurringByDay[dow]?.length > 0) {
+      if (
+        allFamilyEvents.some((e) => eventOccursOn(e, ymd)) ||
+        allBlocks.some((b) => eventOccursOn(b, ymd))
+      ) {
         marks[ymd] = { dotColor: C.purple };
       }
     }
-    for (const e of oneTimeEvents) {
-      if (!e.date) continue;
-      // Multi-day events: mark every day in the [date…endDate] range.
-      const end = e.endDate && e.endDate > e.date ? e.endDate : e.date;
-      const cur = new Date(e.date + "T00:00:00");
-      const last = new Date(end + "T00:00:00");
-      for (let i = 0; i < 366 && cur <= last; i++) {
-        marks[toYMD(cur)] = { dotColor: C.purple };
-        cur.setDate(cur.getDate() + 1);
-      }
-    }
-    for (const b of kidOneTimeBlocks) {
-      if (b.date) marks[b.date] = { dotColor: C.purple };
-    }
     return marks;
-  }, [recurringByDay, oneTimeEvents, kidRecurringByDay, kidOneTimeBlocks]);
+  }, [allFamilyEvents, allBlocks]);
 
   return (
     <SafeAreaView style={styles.safe}>

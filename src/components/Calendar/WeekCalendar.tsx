@@ -15,17 +15,8 @@ import { Text, IconButton } from "react-native-paper";
 import he from "@src/i18n/he";
 import { LOCALE } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
-import {
-  useFamilyEventRecurringByDay,
-  useFamilyEventOneTimeBlocks,
-  oneTimeEventOnDate,
-} from "@src/store/familyEventSelectors";
-import {
-  useAllKidRecurringByDay,
-  useAllKidOneTimeBlocks,
-  oneTimeBlockOnDate,
-} from "@src/store/scheduleSelectors";
 import { useFamilyStore } from "@src/store/useFamilyStore";
+import { eventOccursOn } from "@src/utils/recurrence";
 import { C } from "@src/ui/tokens";
 import { TEXT_RIGHT, RTL_ROW } from "@src/ui/rtl";
 import NowIndicator, { useNowMinutes } from "./NowIndicator";
@@ -254,10 +245,11 @@ export default function WeekCalendar({
   }, [days]);
 
   // ── Event data ──
-  const familyRecurringByDow = useFamilyEventRecurringByDay();
-  const familyOneTimeEvents = useFamilyEventOneTimeBlocks();
-  const kidRecurringByDow = useAllKidRecurringByDay();
-  const kidOneTimeBlocks = useAllKidOneTimeBlocks();
+  // Filter every event/block per concrete date through the shared occurrence
+  // rule — this is what makes "every N weeks/months" land on the right days
+  // (a per-day-of-week map can't express intervals).
+  const familyEvents = useFamilyStore((s) => s.familyEvents);
+  const scheduleBlocks = useFamilyStore((s) => s.scheduleBlocks);
   const kids = useFamilyStore((s) => s.kids);
   const familyMembers = useFamilyStore((s) => s.familyMembers);
 
@@ -271,8 +263,6 @@ export default function WeekCalendar({
     // a given kid/member's events match their own colour), falling back to the
     // generic role colour only when the person has none / is unknown.
     const eventColor = (e: { color?: string; assigneeType: string; assigneeId?: string }) => {
-      // Live assignee colour wins so events follow the person's CURRENT colour;
-      // a stored colour is only a stale snapshot, used as a fallback.
       if (e.assigneeType === "member")
         return familyMembers.find((m) => m.id === e.assigneeId)?.color ?? e.color ?? MEMBER_COLOR;
       if (e.assigneeType === "kid")
@@ -289,30 +279,19 @@ export default function WeekCalendar({
     const timed: Record<string, LayoutedEvent[]> = {};
     const allDay: Record<string, EventItem[]> = {};
     for (const day of days) {
-      const dow = day.getDay();
       const dateStr = ymd(day);
       const items: EventItem[] = [];
 
-      // Family – recurring
-      for (const e of (familyRecurringByDow[dow] ?? []).filter(keepEvent)) {
+      for (const e of familyEvents) {
+        if (!keepEvent(e) || !eventOccursOn(e, dateStr)) continue;
         items.push({
           id: e.id, title: e.title, color: eventColor(e),
           startMinutes: e.startMinutes, endMinutes: e.endMinutes,
           source: "event", icon: eventIcon(e), allDay: e.allDay,
         });
       }
-      // Family – one-time (multi-day events span their whole [date…endDate])
-      for (const e of familyOneTimeEvents.filter(keepEvent)) {
-        if (oneTimeEventOnDate(e, dateStr)) {
-          items.push({
-            id: e.id, title: e.title, color: eventColor(e),
-            startMinutes: e.startMinutes, endMinutes: e.endMinutes,
-            source: "event", icon: eventIcon(e), allDay: e.allDay,
-          });
-        }
-      }
-      // Kid blocks – recurring (always timed)
-      for (const b of (kidRecurringByDow[dow] ?? []).filter(keepBlock)) {
+      for (const b of scheduleBlocks) {
+        if (!keepBlock(b) || !eventOccursOn(b, dateStr)) continue;
         const kid = kids.find((k) => k.id === b.kidId);
         items.push({
           id: b.id, title: b.title, color: b.color ?? kid?.color ?? KID_COLOR,
@@ -320,24 +299,13 @@ export default function WeekCalendar({
           source: "block", icon: kid?.emoji ?? "👶",
         });
       }
-      // Kid blocks – one-time (multi-day blocks span their whole [date…endDate])
-      for (const b of kidOneTimeBlocks.filter(keepBlock)) {
-        if (oneTimeBlockOnDate(b, dateStr)) {
-          const kid = kids.find((k) => k.id === b.kidId);
-          items.push({
-            id: b.id, title: b.title, color: b.color ?? kid?.color ?? KID_COLOR,
-            startMinutes: b.startMinutes, endMinutes: b.endMinutes,
-            source: "block", icon: kid?.emoji ?? "👶",
-          });
-        }
-      }
 
       // All-day events live in the band at the top; only timed go in the grid.
       allDay[dateStr] = items.filter((i) => i.allDay);
       timed[dateStr] = layoutEvents(items.filter((i) => !i.allDay));
     }
     return { timed, allDay };
-  }, [days, familyRecurringByDow, familyOneTimeEvents, kidRecurringByDow, kidOneTimeBlocks, kids, familyMembers, kidId]);
+  }, [days, familyEvents, scheduleBlocks, kids, familyMembers, kidId]);
 
   const hasAllDay = useMemo(
     () => days.some((d) => (weekEvents.allDay[ymd(d)] ?? []).length > 0),

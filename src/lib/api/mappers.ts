@@ -288,6 +288,8 @@ export function apiToLocalFamilyEvent(a: ApiFamilyEvent): FamilyEvent {
     isRecurring: a.isRecurring,
     date: a.date ?? undefined,
     endDate: a.endDate ?? undefined,
+    repeatUnit: a.repeatUnit ?? undefined,
+    repeatInterval: a.repeatInterval ?? undefined,
     allDay: a.allDay ?? false,
     reminders: a.reminders ? JSON.parse(a.reminders) : undefined,
     updatedAt: toMs(a.updatedAt),
@@ -375,6 +377,8 @@ export function localToApiFamilyEvent(item: FamilyEvent) {
     isRecurring: item.isRecurring,
     date: item.date ?? null,
     endDate: item.endDate ?? null,
+    repeatUnit: item.repeatUnit ?? null,
+    repeatInterval: item.repeatInterval ?? 1,
     allDay: item.allDay ?? false,
     reminders:
       item.reminders && item.reminders.length > 0

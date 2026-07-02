@@ -143,10 +143,19 @@ export async function buildSnapshot(familyId: string): Promise<Record<string, un
   for (const e of events) {
     const owner = ownerOf(e.assigneeType, e.assigneeId);
     const time = e.allDay ? "כל היום" : `${hhmm(e.startMinutes)}-${hhmm(e.endMinutes)}`;
-    if (e.isRecurring && Array.isArray(e.daysOfWeek) && e.daysOfWeek.length > 0) {
+    if (e.isRecurring) {
+      const interval = Math.max(1, e.repeatInterval ?? 1);
+      const repeat =
+        (e.repeatUnit ?? "week") === "month"
+          ? (interval === 1 ? "כל חודש" : `כל ${interval} חודשים`) +
+            (e.date ? ` ביום ${Number(e.date.split("-")[2])}` : "")
+          : (interval === 1 ? "כל שבוע" : `כל ${interval} שבועות`) +
+            (Array.isArray(e.daysOfWeek) && e.daysOfWeek.length
+              ? ` (${heDays(e.daysOfWeek)})`
+              : "");
       recurringEvents.push({
         title: e.title,
-        days: heDays(e.daysOfWeek),
+        repeat,
         time,
         ...(owner ? { owner } : {}),
         ...(e.location ? { location: e.location } : {}),

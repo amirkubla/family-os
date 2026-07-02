@@ -360,9 +360,15 @@ export const familyEvents = pgTable(
     location: text("location"),
     color: text("color"),
     isRecurring: boolean("is_recurring").default(true).notNull(),
-    date: text("date"), // "YYYY-MM-DD" start date for one-time events
+    // "YYYY-MM-DD". One-time = the day; recurring = the anchor / first
+    // occurrence, off which repeatInterval is measured.
+    date: text("date"),
     // Inclusive end date for multi-day one-time events (NULL = single day).
     endDate: text("end_date"),
+    // Repeat cadence for recurring events. NULL = weekly (legacy default).
+    repeatUnit: text("repeat_unit", { enum: ["week", "month"] }),
+    // Repeat every N units (weeks/months). Default 1 = every week/month.
+    repeatInterval: integer("repeat_interval").default(1).notNull(),
     // All-day event: start/end minutes are ignored; UI shows "כל היום".
     allDay: boolean("all_day").default(false).notNull(),
     reminders: text("reminders"), // JSON array of integers e.g. "[1440,60,5]"

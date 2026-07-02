@@ -26,6 +26,7 @@ import { db } from "../db/client.js";
 import { familyEvents, scheduleBlocks } from "../db/schema.js";
 import { pushTokensRepo } from "../repos/pushTokensRepo.js";
 import { sentNotificationsRepo } from "../repos/sentNotificationsRepo.js";
+import { eventOccursOn } from "../lib/recurrence.js";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const TZ = "Asia/Jerusalem";
@@ -205,15 +206,21 @@ export async function checkAndSendReminders(): Promise<{
 // ---------------------------------------------------------------------------
 
 function getEventDateForToday(
-  event: { isRecurring: boolean; daysOfWeek: number[]; date: string | null },
-  currentDow: number,
+  event: {
+    isRecurring: boolean;
+    daysOfWeek: number[];
+    date: string | null;
+    repeatUnit?: "week" | "month" | null;
+    repeatInterval?: number | null;
+  },
+  _currentDow: number,
   todayYMD: string,
 ): string | null {
   if (event.isRecurring) {
-    return event.daysOfWeek.includes(currentDow) ? todayYMD : null;
-  } else {
-    return event.date === todayYMD ? todayYMD : null;
+    // Weekly-every-N / monthly-every-N via the shared occurrence rule.
+    return eventOccursOn(event, todayYMD) ? todayYMD : null;
   }
+  return event.date === todayYMD ? todayYMD : null;
 }
 
 function formatYMD(date: Date): string {

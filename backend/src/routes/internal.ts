@@ -23,6 +23,7 @@ import { notesRepo } from "../repos/notesRepo.js";
 import { projectsRepo } from "../repos/projectsRepo.js";
 import { scheduleBlocksRepo } from "../repos/scheduleBlocksRepo.js";
 import { createFamilyEventSchema } from "../schemas/familyEvents.js";
+import { eventOccursOn } from "../lib/recurrence.js";
 import { materializeForSource } from "../services/reminderService.js";
 import {
   buildOutstanding,
@@ -214,34 +215,24 @@ internalRoutes.get("/family/:familyId/family-events", async (c) => {
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
   const tomorrowParts = localDateParts(tomorrow);
 
-  const isOneTime = (e: (typeof all)[number]) => !e.isRecurring && !!e.date;
-  const isRecurring = (e: (typeof all)[number]) =>
-    e.isRecurring && Array.isArray(e.daysOfWeek) && e.daysOfWeek.length > 0;
-
-  const matchesDay = (e: (typeof all)[number], isoDate: string, dow: number) =>
-    (isOneTime(e) && e.date === isoDate) ||
-    (isRecurring(e) && (e.daysOfWeek as number[]).includes(dow));
+  // Occurrence test — one-time span, weekly-every-N, or monthly-every-N.
+  const matchesDay = (e: (typeof all)[number], isoDate: string) =>
+    eventOccursOn(e, isoDate);
 
   let filtered = all;
   if (range === "today") {
-    filtered = all.filter((e) =>
-      matchesDay(e, todayParts.isoDate, todayParts.dayOfWeek),
-    );
+    filtered = all.filter((e) => matchesDay(e, todayParts.isoDate));
   } else if (range === "tomorrow") {
-    filtered = all.filter((e) =>
-      matchesDay(e, tomorrowParts.isoDate, tomorrowParts.dayOfWeek),
-    );
+    filtered = all.filter((e) => matchesDay(e, tomorrowParts.isoDate));
   } else {
     // week — next 7 days inclusive of today.
-    const weekDays: { isoDate: string; dayOfWeek: number }[] = [];
+    const weekDays: string[] = [];
     for (let i = 0; i < 7; i++) {
       weekDays.push(
-        localDateParts(new Date(today.getTime() + i * 24 * 60 * 60 * 1000)),
+        localDateParts(new Date(today.getTime() + i * 24 * 60 * 60 * 1000)).isoDate,
       );
     }
-    filtered = all.filter((e) =>
-      weekDays.some((d) => matchesDay(e, d.isoDate, d.dayOfWeek)),
-    );
+    filtered = all.filter((e) => weekDays.some((iso) => matchesDay(e, iso)));
   }
 
   // Apply kid scope after the date filter to keep the matchesDay closure simple.
