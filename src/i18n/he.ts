@@ -97,6 +97,19 @@ const he = {
     addNote: "פתק חדש",
     addProject: "פרויקט חדש",
     noActiveProjects: "אין פרויקטים פעילים — התחילו משהו חדש",
+    // Personalized hero
+    greetingMorning: "בוקר טוב",
+    greetingNoon: "צהריים טובים",
+    greetingEvening: "ערב טוב",
+    greetingNight: "לילה טוב",
+    heroCalm: "היום פנוי — קחו נשימה עמוקה 🌿",
+    heroPush1: "יום מנצח מתחיל בצעד אחד קטן 💪",
+    heroPush2: "קדימה, אתם על זה! 🚀",
+    heroPush3: "בואו נהפוך את הרשימה ל׳בוצע׳ ✨",
+    statChores: "מטלות",
+    statProjects: "פרויקטים",
+    statEvents: "אירועים",
+    familyToday: "היום במשפחה",
   },
 
   // ── Home screen ──

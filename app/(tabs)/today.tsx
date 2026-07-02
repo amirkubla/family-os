@@ -45,6 +45,7 @@ import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import SummaryHeroCard from "@src/components/budget/SummaryHeroCard";
+import TodayHero from "@src/components/TodayHero";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { formatILS } from "@src/models/budget";
 
@@ -149,6 +150,24 @@ export default function TodayScreen() {
   const todayEvents = useTodayFamilyEvents(todayDate, todayDow);
   const allKidBlocks = useAllKidBlocksForDate(todayDate, todayDow);
 
+  // The current logged-in member (parent) → personal greeting + counts.
+  const me = useMemo(
+    () => familyMembers.find((m) => m.userId === session?.user.id),
+    [familyMembers, session],
+  );
+  const myChoresCount = useMemo(
+    () => chores.filter((c) => c.assignedToMemberId === me?.id && !c.done).length,
+    [chores, me],
+  );
+  const myProjectsCount = useMemo(
+    () => projects.filter((p) => p.ownerMemberId === me?.id && p.status !== "done").length,
+    [projects, me],
+  );
+  const myEventsCount = useMemo(
+    () => todayEvents.filter((e) => e.assigneeType === "member" && e.assigneeId === me?.id).length,
+    [todayEvents, me],
+  );
+
   // Timed items (events + kid blocks) sorted chronologically
   const timedItems = useMemo(() => {
     const items: Array<{ kind: "event"; data: FamilyEvent } | { kind: "block"; data: ScheduleBlock }> = [
@@ -216,6 +235,19 @@ export default function TodayScreen() {
         {session?.user.username ? (
           <View testID="user-header-name" accessibilityLabel={session.user.username} style={{ height: 0, overflow: "hidden" }} />
         ) : null}
+
+        {/* ── Personalized greeting + my stats ── */}
+        <TodayHero
+          name={me?.name ?? session?.user.username ?? ""}
+          stats={[
+            { emoji: "✅", count: myChoresCount, label: t("today.statChores"), onPress: () => router.push("/chores" as any) },
+            { emoji: "🚀", count: myProjectsCount, label: t("today.statProjects"), onPress: () => router.push("/projects" as any) },
+            { emoji: "📅", count: myEventsCount, label: t("today.statEvents"), onPress: () => router.push("/calendar" as any) },
+          ]}
+        />
+
+        {/* ── The family's shared day ── */}
+        <SectionHeader label={t("today.familyToday")} />
 
         {/* ── Unified Today Card ── */}
         <Card style={styles.todayCard} mode="elevated">
