@@ -18,7 +18,20 @@ export interface GrocerySubcategory {
   color: string;
 }
 
+/**
+ * A configurable grocery main category. `key` is stable + immutable (items
+ * reference it, sub-categories are keyed by it); `name`/`emoji` are editable.
+ * The three defaults keep the keys "grocery" / "health" / "home".
+ */
+export interface ShoppingCategoryDef {
+  key: string;
+  name: string;
+  emoji: string;
+}
+
 export interface FamilyCustomizations {
+  /** The family's main shopping categories. Unset = DEFAULT_SHOPPING_CATEGORIES. */
+  shoppingCategories?: ShoppingCategoryDef[];
   grocerySubcategories?: Partial<Record<ShoppingCategory, GrocerySubcategory[]>>;
   /** Family avatar shown at the top of the home screen. */
   familyEmoji?: string;
@@ -35,6 +48,25 @@ export const DEFAULT_FAMILY_EMOJI = "🏡";
 
 /** Default theme accent when the family hasn't picked one (mirrors C.primary). */
 export const DEFAULT_THEME_COLOR = "#003333";
+
+/**
+ * Default main shopping categories, used when a family hasn't customized them.
+ * The keys match the legacy ShoppingCategory union so existing items + the
+ * DEFAULT_GROCERY_SUBCATEGORIES table keep resolving with no migration.
+ */
+export const DEFAULT_SHOPPING_CATEGORIES: ShoppingCategoryDef[] = [
+  { key: "grocery", name: "מכולת", emoji: "🛒" },
+  { key: "health", name: "פארם", emoji: "🧴" },
+  { key: "home", name: "לבית", emoji: "🏠" },
+];
+
+/** The family's main categories, or the defaults when none are set. */
+export function effectiveShoppingCategories(
+  customizations: FamilyCustomizations | null | undefined,
+): ShoppingCategoryDef[] {
+  const raw = customizations?.shoppingCategories;
+  return raw && raw.length > 0 ? raw : DEFAULT_SHOPPING_CATEGORIES;
+}
 
 /**
  * Hebrew defaults with icons and colors, used when a family hasn't set its
@@ -137,7 +169,9 @@ export function effectiveSubcategories(
   let list: GrocerySubcategory[];
 
   if (!raw || raw.length === 0) {
-    list = DEFAULT_GROCERY_SUBCATEGORIES[category];
+    // Default categories have a rich default list; a newly-added custom
+    // category has none yet → start with just the "אחר" bucket.
+    list = DEFAULT_GROCERY_SUBCATEGORIES[category] ?? [];
   } else {
     // Normalize legacy string[] format that may still be in some families' JSONB.
     list = (raw as (string | GrocerySubcategory)[]).map((item) =>

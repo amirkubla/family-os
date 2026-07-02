@@ -1,4 +1,10 @@
-export type ShoppingCategory = "grocery" | "health" | "home";
+/**
+ * A shopping section key. Historically a fixed union (grocery/health/home);
+ * now free-form — families can add/rename/remove main categories, each keyed
+ * by a stable id (the three above remain the default keys). Kept as `string`
+ * so item.shoppingCategory can reference any configured category.
+ */
+export type ShoppingCategory = string;
 
 export interface GroceryItem {
   id: string;

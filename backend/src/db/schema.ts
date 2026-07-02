@@ -40,11 +40,13 @@ const timestamps = {
  * shape change.
  */
 export type FamilyCustomizations = {
-  grocerySubcategories?: {
-    grocery?: string[];
-    health?: string[];
-    home?: string[];
-  };
+  /** Configurable main shopping categories (key + display name/emoji). */
+  shoppingCategories?: { key: string; name: string; emoji: string }[];
+  /** Sub-categories keyed by main-category key (defaults or custom). */
+  grocerySubcategories?: Record<
+    string,
+    { name: string; icon: string; color: string }[]
+  >;
   familyEmoji?: string;
   /** Brand/theme accent (hex). Free-form — stored in the JSONB blob. */
   themeColor?: string;
