@@ -238,11 +238,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
 
         {paymentType === "recurring" && (
           <>
-            <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionLabel}>{t("budget.frequency")}</Text>
-              <Text style={MS.sectionIcon}>🔁</Text>
-            </View>
-            <View style={MS.chipRow}>
+            <View style={[MS.chipRow, { marginTop: S.sm }]}>
               {RECURRENCE_TYPES.map((rt) => {
                 const sel = form.recurrenceType === rt.key;
                 return (
@@ -262,12 +258,7 @@ export default function ExpenseModal({ visible, onDismiss, editExpense, onSave }
               })}
             </View>
 
-            {/* Day selector — day-of-week chips, styled like the events modal. */}
-            <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionLabel}>{t("payment.onDay")}</Text>
-              <Text style={MS.sectionIcon}>📆</Text>
-            </View>
-
+            {/* Day selector — chips styled like the events modal (no label). */}
             {form.recurrenceType === "weekly" && (
               <View style={[MS.chipRow, { gap: S.xs, flexWrap: "nowrap" }]}>
                 {Array.from({ length: 7 }, (_, idx) => {
