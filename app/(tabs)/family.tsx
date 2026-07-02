@@ -6,12 +6,13 @@
  * used to live on the home dashboard; it now lives here.
  */
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { DEFAULT_FAMILY_EMOJI } from "@src/models/customization";
@@ -26,6 +27,9 @@ import { useThemeColor } from "@src/ui/useThemeColor";
 const PARENT_FALLBACK = "#6C63FF";
 const KID_FALLBACK = "#E0699B";
 
+/** Per-tile shimmer stagger (ms) — makes the wave flow across the grid. */
+const WAVE_STEP = 160;
+
 export default function FamilyScreen() {
   const router = useRouter();
   const members = useFamilyStore((s) => s.familyMembers);
@@ -37,6 +41,16 @@ export default function FamilyScreen() {
   const activeMembers = useMemo(() => members.filter((m) => m.isActive), [members]);
   const activeKids = useMemo(() => kids.filter((k) => k.isActive), [kids]);
   const theme = useThemeColor();
+
+  // Replay the member-tile shimmer every time the family page gains focus.
+  // Bumping this key remounts each FeatureTile, so its one-shot mount sweep
+  // fires again — a fresh wave on each visit.
+  const [waveKey, setWaveKey] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setWaveKey((k) => k + 1);
+    }, []),
+  );
 
   // Decorative "family lineup" — everyone's avatar in one row.
   const lineup = [
@@ -58,9 +72,6 @@ export default function FamilyScreen() {
             numberOfLines={1}
           >
             {familyName ? `${t("familyBadge.prefix")} ${familyName}` : t("family.title")}
-          </Text>
-          <Text style={[styles.familyMeta, onPhoto && styles.familyMetaPhoto]}>
-            {`${activeMembers.length} ${t("family.parents")} · ${activeKids.length} ${t("family.kids")}`}
           </Text>
         </View>
       </View>
@@ -98,14 +109,15 @@ export default function FamilyScreen() {
           <Text style={styles.empty}>{t("family.noParents")}</Text>
         ) : (
           <View style={styles.grid}>
-            {activeMembers.map((m) => (
+            {activeMembers.map((m, i) => (
               <FeatureTile
-                key={m.id}
+                key={`${m.id}-${waveKey}`}
                 title={m.name}
                 emoji={m.avatarEmoji ?? "👤"}
                 accent={m.color ?? PARENT_FALLBACK}
                 onPress={() => router.push(`/parent/${m.id}`)}
                 testID={`tile-parent-${m.id}`}
+                sweepDelay={i * WAVE_STEP}
               />
             ))}
           </View>
@@ -117,14 +129,15 @@ export default function FamilyScreen() {
           <Text style={styles.empty}>{t("family.noKids")}</Text>
         ) : (
           <View style={styles.grid}>
-            {activeKids.map((kid) => (
+            {activeKids.map((kid, j) => (
               <FeatureTile
-                key={kid.id}
+                key={`${kid.id}-${waveKey}`}
                 title={kid.name}
                 emoji={kid.emoji ?? "🧒"}
                 accent={kid.color ?? KID_FALLBACK}
                 onPress={() => router.push(`/kid/${kid.id}`)}
                 testID={`tile-kid-${kid.id}`}
+                sweepDelay={(activeMembers.length + j) * WAVE_STEP}
               />
             ))}
           </View>
@@ -163,7 +176,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-  familyMetaPhoto: { color: "rgba(255,255,255,0.92)" },
   heroTop: { flexDirection: RTL_ROW, alignItems: "center", gap: S.md },
   emojiCircle: {
     width: 56,
@@ -179,13 +191,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
-  },
-  familyMeta: {
-    fontSize: 13,
-    color: C.textSecondary,
-    textAlign: TEXT_RIGHT,
-    writingDirection: "rtl",
-    marginTop: 2,
   },
   avatarRow: { flexDirection: RTL_ROW, flexWrap: "wrap", gap: S.xs, marginTop: S.md },
   avatar: {
