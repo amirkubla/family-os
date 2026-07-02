@@ -362,7 +362,12 @@ export default function FamilyEventModal({
         <View style={[MS.segmented, { marginTop: S.sm }]}>
           <SegmentedPills
             value={isRecurring ? "recurring" : "oneTime"}
-            onChange={(v) => setValue("isRecurring", v === "recurring")}
+            onChange={(v) => {
+              const on = v === "recurring";
+              setValue("isRecurring", on);
+              // Start each repeat fresh — don't carry a stale "every N".
+              if (on) setValue("repeatInterval", 1);
+            }}
             options={[
               { value: "oneTime", label: t("eventModal.oneTime") },
               { value: "recurring", label: t("eventModal.recurring") },
@@ -376,7 +381,12 @@ export default function FamilyEventModal({
             <View style={[MS.segmented, { marginTop: S.sm }]}>
               <SegmentedPills
                 value={repeatUnit}
-                onChange={(v) => setValue("repeatUnit", v as "week" | "month")}
+                onChange={(v) => {
+                  setValue("repeatUnit", v as "week" | "month");
+                  // Reset the counter — "every 3 weeks" shouldn't become
+                  // "every 3 months" just by switching the unit.
+                  setValue("repeatInterval", 1);
+                }}
                 options={[
                   { value: "week", label: t("eventModal.unitWeeks") },
                   { value: "month", label: t("eventModal.unitMonths") },
