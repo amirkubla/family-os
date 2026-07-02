@@ -1,10 +1,10 @@
 /**
  * NowIndicator — the "current time" line for the Week / Day time-grids.
  *
- * A thin horizontal line at the current minute, with a dot at its centre that
- * emits expanding, fading ripple rings (~every ¾s) for a live "pulse" effect.
- * Purely decorative + non-interactive (pointerEvents none), so it never blocks
- * slot / event taps underneath.
+ * A thin horizontal line at the current minute, with a dot at its START (the
+ * right edge in RTL) that emits expanding, fading ripple rings (~every ¾s) for
+ * a live "pulse" effect. Purely decorative + non-interactive (pointerEvents
+ * none), so it never blocks slot / event taps underneath.
  *
  * The parent computes `top` (px within the grid) from its own geometry and only
  * renders this on today's column; `useNowMinutes` keeps the clock ticking.
@@ -14,9 +14,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Platform, StyleSheet, View } from "react-native";
 
 const LINE_H = 2;
-const DOT = 9;
-const RING = 30; // max ripple diameter
+const DOT = 13;
+const RING = 44; // max ripple diameter
 const PERIOD = 1500; // one ripple ≈ 1.5s; two rings stagger → a wave ~every 0.75s
+
+// Pin to the writing-direction START (physical RIGHT in RTL). Native mirrors
+// absolute left/right under RTL, so `left` lands on the right; web doesn't, so
+// use `right`. Same trick as fabAnchor. The ring is centred on the dot, so its
+// inset is offset inward by half the size difference.
+const isWeb = Platform.OS === "web";
+const DOT_POS = isWeb ? { right: 0 } : { left: 0 };
+const RING_POS = isWeb ? { right: (DOT - RING) / 2 } : { left: (DOT - RING) / 2 };
 
 /** Current time as minutes-from-midnight, re-read every 60s. */
 export function useNowMinutes(): number {
@@ -73,11 +81,9 @@ export default function NowIndicator({ top, color }: { top: number; color: strin
   return (
     <View pointerEvents="none" style={[styles.wrap, { top }]}>
       <View style={[styles.line, { backgroundColor: color }]} />
-      <View style={styles.anchor}>
-        <Animated.View style={[styles.ring, { borderColor: color }, ringStyle(a)]} />
-        <Animated.View style={[styles.ring, { borderColor: color }, ringStyle(b)]} />
-        <View style={[styles.dot, { backgroundColor: color }]} />
-      </View>
+      <Animated.View style={[styles.ring, RING_POS, { borderColor: color }, ringStyle(a)]} />
+      <Animated.View style={[styles.ring, RING_POS, { borderColor: color }, ringStyle(b)]} />
+      <View style={[styles.dot, DOT_POS, { backgroundColor: color }]} />
     </View>
   );
 }
@@ -92,28 +98,20 @@ const styles = StyleSheet.create({
     height: LINE_H,
     borderRadius: LINE_H / 2,
   },
-  // A zero-size anchor at the horizontal centre; the dot + rings hang off it,
-  // centred via negative margins so they sit exactly on the line's midpoint.
-  anchor: { position: "absolute", left: "50%", top: 0, width: 0, height: 0 },
+  // Dot sits flush against the line's start edge; ring is concentric with it.
   dot: {
     position: "absolute",
-    left: 0,
-    top: 0,
+    top: -DOT / 2,
     width: DOT,
     height: DOT,
     borderRadius: DOT / 2,
-    marginLeft: -DOT / 2,
-    marginTop: -DOT / 2,
   },
   ring: {
     position: "absolute",
-    left: 0,
-    top: 0,
+    top: -RING / 2,
     width: RING,
     height: RING,
     borderRadius: RING / 2,
-    marginLeft: -RING / 2,
-    marginTop: -RING / 2,
     borderWidth: 2,
   },
 });
