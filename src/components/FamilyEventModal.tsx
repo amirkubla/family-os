@@ -384,30 +384,28 @@ export default function FamilyEventModal({
 
         {!isRecurring && (
           <>
-            <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
-              <Text style={MS.sectionLabel}>{t("eventModal.date")}</Text>
-              <Text style={MS.sectionIcon}>📆</Text>
+            {/* Start date — label removed; the calendar pill is self-evident. */}
+            <View style={{ marginTop: S.sm }}>
+              <Controller
+                control={control}
+                name="date"
+                render={({ field: { onChange, value } }) => (
+                  <DateTimeField
+                    mode="date"
+                    value={value ?? toYMD(new Date())}
+                    onChange={onChange}
+                    title={t("eventModal.date")}
+                    error={!!errors.date}
+                  />
+                )}
+              />
             </View>
-            <Controller
-              control={control}
-              name="date"
-              render={({ field: { onChange, value } }) => (
-                <DateTimeField
-                  mode="date"
-                  value={value ?? toYMD(new Date())}
-                  onChange={onChange}
-                  title={t("eventModal.date")}
-                  error={!!errors.date}
-                />
-              )}
-            />
             {errors.date && <Text style={MS.error}>{errors.date.message}</Text>}
 
-            {/* Optional multi-day end date — leave equal to the start for a
-                single-day event; pick a later date to span a range. */}
+            {/* "עד תאריך" label sits between the two date pills (no emoji).
+                Leave equal to the start for a single-day event. */}
             <View style={[MS.sectionHeader, { marginTop: S.sm }]}>
               <Text style={MS.sectionLabel}>{t("eventModal.endDate")}</Text>
-              <Text style={MS.sectionIcon}>📆</Text>
             </View>
             <Controller
               control={control}
