@@ -25,7 +25,7 @@ import type { Kid } from "@src/models/kid";
 import { t, memberRoleLabel } from "@src/i18n";
 import SectionHeader from "@src/components/SectionHeader";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { C, R, S } from "@src/ui/tokens";
+import { C, R, S, SHADOW } from "@src/ui/tokens";
 
 // ── Polished action button ──
 // solid = filled accent with a soft colored shadow; soft = tinted + bordered
@@ -80,6 +80,109 @@ function ActionButton({
     </Pressable>
   );
 }
+
+// Refined, cohesive accent palette for the settings action rows — deeper and
+// slightly muted vs. the brighter app primaries, for a more premium feel. Each
+// row uses its accent at low opacity for the icon chip + full strength on the icon.
+const ACTION_ACCENT = {
+  invite: "#0E8C7F", // deep teal
+  telegram: "#3A6EA5", // muted slate blue
+  customization: "#6E5DC6", // muted amethyst
+} as const;
+
+// ── Premium action row — tappable card with a soft icon chip, title +
+// subtitle, and a trailing chevron/spinner. Replaces the loud full-width
+// solid buttons for the primary settings actions. ──
+
+function ActionRow({
+  icon,
+  color,
+  title,
+  subtitle,
+  onPress,
+  loading,
+  disabled,
+  testID,
+}: {
+  icon: string;
+  color: string;
+  title: string;
+  subtitle?: string;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  testID?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      testID={testID}
+      style={({ pressed }: any) => [
+        rowStyles.row,
+        pressed && rowStyles.rowPressed,
+        (disabled || loading) && { opacity: 0.6 },
+        Platform.OS === "web" && ({ cursor: "pointer" } as any),
+      ]}
+    >
+      <View style={[rowStyles.iconChip, { backgroundColor: color + "16" }]}>
+        <MaterialCommunityIcons name={icon as any} size={22} color={color} />
+      </View>
+      <View style={rowStyles.textWrap}>
+        <Text style={rowStyles.title}>{title}</Text>
+        {subtitle ? <Text style={rowStyles.subtitle}>{subtitle}</Text> : null}
+      </View>
+      {loading ? (
+        <ActivityIndicator size="small" color={color} />
+      ) : (
+        <MaterialCommunityIcons name="chevron-left" size={22} color={C.textMuted} />
+      )}
+    </Pressable>
+  );
+}
+
+const rowStyles = StyleSheet.create({
+  row: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.md,
+    backgroundColor: C.surface,
+    borderRadius: R.lg,
+    paddingVertical: S.md,
+    paddingHorizontal: S.md,
+    marginBottom: S.lg,
+    ...SHADOW.sm,
+  },
+  rowPressed: {
+    backgroundColor: C.bg,
+    transform: [{ scale: 0.995 }],
+  },
+  iconChip: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textWrap: { flex: 1 },
+  title: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  subtitle: {
+    fontSize: 12.5,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    marginTop: 2,
+    lineHeight: 17,
+  },
+});
 
 // ── Member row ──
 
@@ -488,15 +591,11 @@ export default function SettingsScreen() {
           </Card.Content>
         </Card>
 
-        {/* ── Invite Partner card ── */}
+        {/* ── Invite Partner ── */}
         <SectionHeader label={t("settings.invite")} />
-        <Card style={styles.card} mode="elevated">
-          <Card.Content>
-            <Text style={styles.subtitle}>
-              {t("settings.inviteSubtitle")}
-            </Text>
-
-            {inviteCode ? (
+        {inviteCode ? (
+          <Card style={styles.card} mode="elevated">
+            <Card.Content>
               <View style={styles.inviteCodeContainer}>
                 <View style={styles.inviteCodeBox}>
                   <Text style={styles.inviteCodeText}>{inviteCode}</Text>
@@ -522,56 +621,41 @@ export default function SettingsScreen() {
                   {t("settings.inviteExpires", { days: "7" })}
                 </Text>
               </View>
-            ) : (
-              <ActionButton
-                color={C.teal}
-                onPress={generateInvite}
-                loading={generatingInvite}
-                disabled={generatingInvite}
-                icon="account-plus"
-                label={t("settings.generateInvite")}
-              />
-            )}
-          </Card.Content>
-        </Card>
+            </Card.Content>
+          </Card>
+        ) : (
+          <ActionRow
+            icon="account-plus"
+            color={ACTION_ACCENT.invite}
+            title={t("settings.generateInvite")}
+            subtitle={t("settings.inviteSubtitle")}
+            onPress={generateInvite}
+            loading={generatingInvite}
+            disabled={generatingInvite}
+          />
+        )}
 
-        {/* ── Telegram Assistant card ── */}
+        {/* ── Telegram Assistant ── */}
         <SectionHeader label={t("settings.telegram")} />
-        <Card style={styles.card} mode="elevated">
-          <Card.Content>
-            <Text style={styles.telegramTitle}>
-              {t("settings.telegramTitle")} 🤖
-            </Text>
-            <Text style={styles.subtitle}>
-              {t("settings.telegramSubtitle")}
-            </Text>
-            <ActionButton
-              color={C.selectText}
-              onPress={connectTelegram}
-              loading={connectingTelegram}
-              disabled={connectingTelegram}
-              icon="send"
-              label={t("settings.connectTelegram")}
-              style={{ marginTop: S.md }}
-            />
-          </Card.Content>
-        </Card>
+        <ActionRow
+          icon="send"
+          color={ACTION_ACCENT.telegram}
+          title={t("settings.telegramTitle")}
+          subtitle={t("settings.telegramSubtitle")}
+          onPress={connectTelegram}
+          loading={connectingTelegram}
+          disabled={connectingTelegram}
+        />
 
-        {/* ── Customization card — links to /customization ── */}
+        {/* ── Customization — links to /customization ── */}
         <SectionHeader label={t("settings.customization")} />
-        <Card style={styles.card} mode="elevated">
-          <Card.Content>
-            <Text style={styles.subtitle}>
-              {t("settings.customizationSubtitle")}
-            </Text>
-            <ActionButton
-              color={C.purple}
-              onPress={() => router.push("/customization" as any)}
-              icon="tune"
-              label={t("settings.openCustomization")}
-            />
-          </Card.Content>
-        </Card>
+        <ActionRow
+          icon="tune"
+          color={ACTION_ACCENT.customization}
+          title={t("settings.openCustomization")}
+          subtitle={t("settings.customizationSubtitle")}
+          onPress={() => router.push("/customization" as any)}
+        />
 
         {/* ── Account card ── */}
         <SectionHeader label={t("auth.account")} />
@@ -715,13 +799,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: C.textMuted,
     textAlign: "center" as const,
-  },
-  telegramTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: C.textPrimary,
-    textAlign: TEXT_RIGHT,
-    marginBottom: S.sm,
   },
 });
 
