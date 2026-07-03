@@ -42,6 +42,7 @@ export interface ApiNote {
   ownerMemberId: string | null;
   title: string | null;
   body: string;
+  category: string | null;
   pinned: boolean;
   sortOrder: number;
   createdAt: string;

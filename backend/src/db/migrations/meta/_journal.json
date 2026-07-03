@@ -246,6 +246,13 @@
       "when": 1782700000000,
       "tag": "0034_projects_subtasks_duedate",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1782800000000,
+      "tag": "0035_notes_category",
+      "breakpoints": true
     }
   ]
 }

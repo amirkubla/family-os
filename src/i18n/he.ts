@@ -285,11 +285,45 @@ const he = {
     addTitle: "הוספת פתק",
     editTitle: "עריכת פתק",
     titleLabel: "כותרת (אופציונלי)",
+    titlePlaceholder: "כותרת",
     bodyLabel: "תוכן הפתק",
+    contentPlaceholder: "כתוב כאן…",
+    category: "קטגוריה",
+    pinnedLabel: "נעוץ",
     assignToKid: "שייך לילד/ה (אופציונלי)",
     assignTo: "שייך אל (אופציונלי)",
     ownerParents: "הורים",
     ownerKids: "ילדים",
+  },
+
+  // ── Notes page (toolbar + card metadata) ──
+  notes: {
+    searchPlaceholder: "חיפוש פתקים…",
+    pinnedOnly: "נעוצים בלבד",
+    allCategories: "הכל",
+    manageCategories: "עריכת קטגוריות",
+    sortEdited: "נערך לאחרונה",
+    sortCreated: "נוצר לאחרונה",
+    sortAlpha: "לפי א־ב",
+    count: "{{count}} פתקים",
+    noResults: "לא נמצאו פתקים תואמים",
+    editedToday: "נערך היום",
+    editedYesterday: "נערך אתמול",
+    editedOn: "נערך {{date}}",
+    createdOn: "נוצר {{date}}",
+  },
+
+  // ── Note categories manager ──
+  noteCategoriesModal: {
+    title: "עריכת קטגוריות",
+    newCategory: "קטגוריה חדשה",
+    editCategory: "עריכת קטגוריה",
+    name: "שם הקטגוריה",
+    namePlaceholder: "לדוגמה: עבודה",
+    emoji: "אייקון",
+    add: "הוספת קטגוריה",
+    max: "אפשר עד {{count}} קטגוריות",
+    deleteConfirm: "הקטגוריה תוסר מ־{{count}} פתקים",
   },
 
   // ── Chore Add Modal ──

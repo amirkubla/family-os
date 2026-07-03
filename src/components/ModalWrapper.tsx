@@ -46,6 +46,9 @@ interface Props {
   saveLabel?: string;
   /** Optional carousel arrows shown at the screen edges (kid "add" modals). */
   carousel?: ModalCarousel;
+  /** Max width of the scrollable content column (default 560). Larger values
+   *  give a document-editor feel (e.g. the note editor). */
+  contentMaxWidth?: number;
 }
 
 /**
@@ -66,6 +69,7 @@ export default function ModalWrapper({
   saveLoading,
   saveLabel,
   carousel,
+  contentMaxWidth,
 }: Props) {
   const theme = useThemeColor();
   const { height } = useWindowDimensions();
@@ -163,7 +167,11 @@ export default function ModalWrapper({
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + S.xl }]}
+            contentContainerStyle={[
+              styles.content,
+              contentMaxWidth ? { maxWidth: contentMaxWidth } : null,
+              { paddingBottom: insets.bottom + S.xl },
+            ]}
           >
             {children}
           </ScrollView>

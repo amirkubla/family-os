@@ -47,6 +47,8 @@ export type FamilyCustomizations = {
     string,
     { name: string; icon: string; color: string }[]
   >;
+  /** Configurable note categories (key + display name/emoji + optional color). */
+  noteCategories?: { key: string; name: string; emoji: string; color?: string }[];
   familyEmoji?: string;
   /** Family photo (data: URI) — background behind the family name in the
    *  drawer / home header / family page. */
@@ -191,6 +193,9 @@ export const notes = pgTable(
     }),
     title: text("title"),
     body: text("body").notNull(),
+    // Optional category key (home/finance/kids/…) — drives the Notes page
+    // pills + filtering. NULL = uncategorized.
+    category: text("category"),
     pinned: boolean("pinned").default(false).notNull(),
     // Manual drag-to-reorder position; lower sorts first.
     sortOrder: integer("sort_order").default(0).notNull(),

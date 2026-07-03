@@ -154,8 +154,8 @@ interface FamilyState {
   clearAllCategory: (shoppingCategory: ShoppingCategory) => string[];
 
   // Notes actions
-  addNote: (input: { title?: string; body: string; kidId?: string; ownerMemberId?: string }) => Note;
-  updateNote: (id: string, patch: Partial<Pick<Note, "title" | "body" | "kidId" | "ownerMemberId">>) => void;
+  addNote: (input: { title?: string; body: string; category?: string; kidId?: string; ownerMemberId?: string }) => Note;
+  updateNote: (id: string, patch: Partial<Pick<Note, "title" | "body" | "category" | "kidId" | "ownerMemberId">>) => void;
   /** Reassign note sortOrder from the given top-to-bottom id order. */
   reorderNotes: (ids: string[]) => void;
   toggleNotePinned: (id: string) => void;
@@ -483,13 +483,14 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Notes ── */
 
-      addNote: ({ title, body, kidId, ownerMemberId }) => {
+      addNote: ({ title, body, category, kidId, ownerMemberId }) => {
         const now = Date.now();
         const minOrder = get().notes.reduce((m, n) => Math.min(m, n.sortOrder ?? 0), 0);
         const item: Note = {
           id: makeId(),
           title,
           body,
+          category,
           pinned: false,
           sortOrder: minOrder - 1, // prepend → sorts first
           kidId,

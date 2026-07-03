@@ -196,6 +196,7 @@ export function clearAllCategoryRemote(shoppingCategory: import("@src/models/gro
 export function addNoteRemote(input: {
   title?: string;
   body: string;
+  category?: string;
   kidId?: string;
   ownerMemberId?: string;
 }) {
@@ -210,20 +211,21 @@ export function addNoteRemote(input: {
 
 export function updateNoteRemote(
   id: string,
-  patch: Partial<Pick<Note, "title" | "body" | "kidId" | "ownerMemberId">>,
+  patch: Partial<Pick<Note, "title" | "body" | "category" | "kidId" | "ownerMemberId">>,
 ) {
   useFamilyStore.getState().updateNote(id, patch);
   // PATCH with only changed fields — see BUG-N1 note in module header.
   const apiPatch: Partial<{
     title: string | null;
     body: string;
+    category: string | null;
     kidId: string | null;
     ownerMemberId: string | null;
   }> = {};
   if (patch.title !== undefined) apiPatch.title = patch.title ?? null;
   if (patch.body !== undefined) apiPatch.body = patch.body;
-  // Treat the key being present (even with value undefined) as an explicit
-  // (un)assign — frontend sends null so the backend updates the column.
+  // Key present (even with value undefined) = explicit set/clear → send null.
+  if ("category" in patch) apiPatch.category = patch.category ?? null;
   if ("kidId" in patch) apiPatch.kidId = patch.kidId ?? null;
   if ("ownerMemberId" in patch) apiPatch.ownerMemberId = patch.ownerMemberId ?? null;
   fireAndForget(

@@ -2,6 +2,8 @@ export interface Note {
   id: string;
   title?: string;
   body: string;
+  /** Optional category key from NOTE_CATEGORIES (home/finance/kids/…). */
+  category?: string;
   pinned: boolean;
   /** Manual drag-to-reorder position; lower sorts first. */
   sortOrder: number;

@@ -43,6 +43,7 @@ export const notesRepo = {
         set: {
           title: sql`excluded.title`,
           body: sql`excluded.body`,
+          category: sql`excluded.category`,
           pinned: sql`excluded.pinned`,
           // kid_id has to be listed explicitly here or PUT requests that
           // change the kid assignment (or unassign by sending kidId=null)

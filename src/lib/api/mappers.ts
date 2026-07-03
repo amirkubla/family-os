@@ -69,6 +69,7 @@ export function apiToLocalNote(a: ApiNote): Note {
     id: a.id,
     title: a.title ?? undefined,
     body: a.body,
+    category: a.category ?? undefined,
     pinned: a.pinned,
     sortOrder: a.sortOrder ?? 0,
     kidId: a.kidId ?? undefined,
@@ -83,6 +84,7 @@ export function localToApiNote(item: Note) {
     id: item.id,
     title: item.title ?? null,
     body: item.body,
+    category: item.category ?? null,
     pinned: item.pinned,
     sortOrder: item.sortOrder ?? 0,
     // Send explicit null so the backend's upsert sees the key and can

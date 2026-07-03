@@ -11,6 +11,7 @@
  */
 
 import type { ShoppingCategory } from "@src/models/grocery";
+import type { NoteCategoryDef } from "@src/models/noteCategory";
 
 export interface GrocerySubcategory {
   name: string;
@@ -33,6 +34,8 @@ export interface FamilyCustomizations {
   /** The family's main shopping categories. Unset = DEFAULT_SHOPPING_CATEGORIES. */
   shoppingCategories?: ShoppingCategoryDef[];
   grocerySubcategories?: Partial<Record<ShoppingCategory, GrocerySubcategory[]>>;
+  /** The family's note categories. Unset = DEFAULT_NOTE_CATEGORIES. */
+  noteCategories?: NoteCategoryDef[];
   /** Family avatar shown at the top of the home screen. */
   familyEmoji?: string;
   /**
