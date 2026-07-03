@@ -9,8 +9,8 @@
  * RTL_ROW. The pie is geometry, direction-agnostic.
  */
 
-import React from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, ScrollView, StyleSheet, Animated, Easing, Platform } from "react-native";
 import { Text } from "react-native-paper";
 import Svg, { Path, Circle } from "react-native-svg";
 
@@ -33,11 +33,21 @@ interface Props {
   slices: SpendSlice[];
   total: number;
   formatAmount: (agorot: number) => string;
+  /** When it flips true, the bar chart slides in from the left and the pie
+   *  from the right. Driven by the parent's scroll-into-view detection. */
+  revealed?: boolean;
 }
 
 const BAR_AREA_HEIGHT = 120;
-const BAR_COL_WIDTH = 52;
+// Bars sit flush against each other (no gap) — each column IS the bar width.
+const BAR_COL_WIDTH = 44;
 const PIE_SIZE = 168;
+const SLIDE_MS = 1600; // gentle, deliberate reveal
+const SLIDE_DX = 60;
+// Last-resort reveal if the scroll signal never fires — long enough that a
+// user scrolling to the charts triggers the real reveal (and its animation)
+// first, short enough that the card is never left blank.
+const SLIDE_FALLBACK_MS = 2500;
 
 /** Build SVG wedge path data for a pie slice spanning [start, end] radians. */
 function wedgePath(cx: number, cy: number, r: number, start: number, end: number): string {
@@ -49,7 +59,40 @@ function wedgePath(cx: number, cy: number, r: number, start: number, end: number
   return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
 }
 
-export default function SpendByCategoryCharts({ slices, total, formatAmount }: Props) {
+export default function SpendByCategoryCharts({ slices, total, formatAmount, revealed }: Props) {
+  // Slide-in reveal. When `revealed` is undefined the caller isn't driving it,
+  // so render fully shown (p=1); otherwise start hidden and animate in on true.
+  const p = useRef(new Animated.Value(revealed === undefined ? 1 : 0)).current;
+  const settled = useRef(revealed === undefined);
+  useEffect(() => {
+    const play = () => {
+      if (settled.current) return;
+      settled.current = true;
+      Animated.timing(p, {
+        toValue: 1,
+        duration: SLIDE_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: Platform.OS !== "web",
+      }).start();
+    };
+    if (revealed) {
+      play();
+      return;
+    }
+    // Fail-safe: if the scroll-into-view signal never arrives (edge platforms /
+    // non-scrollable layouts), reveal anyway so the charts never stay blank.
+    const id = setTimeout(play, SLIDE_FALLBACK_MS);
+    return () => clearTimeout(id);
+  }, [revealed, p]);
+  const barSlide = {
+    opacity: p,
+    transform: [{ translateX: p.interpolate({ inputRange: [0, 1], outputRange: [-SLIDE_DX, 0] }) }],
+  };
+  const pieSlide = {
+    opacity: p,
+    transform: [{ translateX: p.interpolate({ inputRange: [0, 1], outputRange: [SLIDE_DX, 0] }) }],
+  };
+
   if (slices.length === 0 || total <= 0) {
     return <Text style={styles.empty}>{t("budget.noSpendThisMonth")}</Text>;
   }
@@ -72,54 +115,59 @@ export default function SpendByCategoryCharts({ slices, total, formatAmount }: P
 
   return (
     <View style={styles.card}>
-      {/* Bar chart — vertical bars, scrollable for many categories. */}
-      <Text style={styles.chartTitle}>{t("budget.chartByCategory")}</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.barRow, { flexDirection: RTL_ROW }]}
-      >
-        {slices.map((s) => {
-          const h = Math.max(4, (s.amount / maxAmount) * BAR_AREA_HEIGHT);
-          return (
-            <View key={s.name} style={styles.barCol}>
-              <Text style={styles.barValue} numberOfLines={1}>
-                {formatAmount(s.amount)}
-              </Text>
-              <View style={styles.barTrack}>
-                <View style={[styles.bar, { height: h, backgroundColor: s.color }]} />
-              </View>
-              <Text style={styles.barEmoji}>{s.icon}</Text>
-            </View>
-          );
-        })}
-      </ScrollView>
-
-      {/* Pie chart + legend. */}
-      <Text style={[styles.chartTitle, styles.pieTitle]}>{t("budget.chartShare")}</Text>
-      <View style={styles.pieWrap}>
-        <Svg width={PIE_SIZE} height={PIE_SIZE}>
-          {singleSlice ? (
-            <Circle cx={cx} cy={cy} r={r} fill={slices[0].color} />
-          ) : (
-            wedges.map((w, i) => <Path key={i} d={w.d} fill={w.color} />)
-          )}
-        </Svg>
-        <View style={styles.legend}>
+      {/* Bar chart — vertical bars, scrollable for many categories.
+          Slides in from the left on reveal. */}
+      <Animated.View style={barSlide}>
+        <Text style={styles.chartTitle}>{t("budget.chartByCategory")}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.barRow, { flexDirection: RTL_ROW }]}
+        >
           {slices.map((s) => {
-            const pct = Math.round((s.amount / total) * 100);
+            const h = Math.max(4, (s.amount / maxAmount) * BAR_AREA_HEIGHT);
             return (
-              <View key={s.name} style={styles.legendRow}>
-                <View style={[styles.legendDot, { backgroundColor: s.color }]} />
-                <Text style={styles.legendName} numberOfLines={1}>
-                  {s.icon} {s.name}
+              <View key={s.name} style={styles.barCol}>
+                <Text style={styles.barValue} numberOfLines={1}>
+                  {formatAmount(s.amount)}
                 </Text>
-                <Text style={styles.legendPct}>{pct}%</Text>
+                <View style={styles.barTrack}>
+                  <View style={[styles.bar, { height: h, backgroundColor: s.color }]} />
+                </View>
+                <Text style={styles.barEmoji}>{s.icon}</Text>
               </View>
             );
           })}
+        </ScrollView>
+      </Animated.View>
+
+      {/* Pie chart + legend — slides in from the right on reveal. */}
+      <Animated.View style={pieSlide}>
+        <Text style={[styles.chartTitle, styles.pieTitle]}>{t("budget.chartShare")}</Text>
+        <View style={styles.pieWrap}>
+          <Svg width={PIE_SIZE} height={PIE_SIZE}>
+            {singleSlice ? (
+              <Circle cx={cx} cy={cy} r={r} fill={slices[0].color} />
+            ) : (
+              wedges.map((w, i) => <Path key={i} d={w.d} fill={w.color} />)
+            )}
+          </Svg>
+          <View style={styles.legend}>
+            {slices.map((s) => {
+              const pct = Math.round((s.amount / total) * 100);
+              return (
+                <View key={s.name} style={styles.legendRow}>
+                  <View style={[styles.legendDot, { backgroundColor: s.color }]} />
+                  <Text style={styles.legendName} numberOfLines={1}>
+                    {s.icon} {s.name}
+                  </Text>
+                  <Text style={styles.legendPct}>{pct}%</Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -151,12 +199,14 @@ const styles = StyleSheet.create({
 
   // Bar chart — flexGrow + center so the bars sit next to each other as a
   // centered cluster (and stay scrollable when there are too many to fit).
+  // No gap: adjacent columns touch, and each bar fills its column, so the bars
+  // read as one flush histogram (wider than the old spaced-out thin bars).
   barRow: {
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "flex-end",
     paddingHorizontal: S.xs,
-    gap: S.sm,
+    gap: 0,
     minHeight: BAR_AREA_HEIGHT + 44,
   },
   barCol: {
@@ -173,26 +223,23 @@ const styles = StyleSheet.create({
   barTrack: {
     height: BAR_AREA_HEIGHT,
     justifyContent: "flex-end",
+    alignSelf: "stretch",
   },
   bar: {
-    width: 28,
+    alignSelf: "stretch",
     borderTopLeftRadius: R.sm,
     borderTopRightRadius: R.sm,
     minHeight: 4,
   },
   barEmoji: { fontSize: 18, marginTop: 4 },
 
-  // Pie + legend — centered cluster that wraps the legend below the pie on
-  // narrow screens. The legend is width-capped so it never stretches the row
-  // (which on wide web flung the pie right and the percentages far left).
+  // Pie + legend — a centered column: the pie sits on top, the legend directly
+  // below it (never beside/under it), everything horizontally centered.
   pieWrap: {
-    flexDirection: RTL_ROW,
-    flexWrap: "wrap",
-    justifyContent: "center",
     alignItems: "center",
-    gap: S.lg,
+    gap: S.md,
   },
-  legend: { minWidth: 200, maxWidth: 280, gap: S.xs },
+  legend: { width: "100%", maxWidth: 280, gap: S.xs },
   legendRow: {
     flexDirection: RTL_ROW,
     alignItems: "center",

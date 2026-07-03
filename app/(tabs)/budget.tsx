@@ -1,9 +1,13 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   View,
   StyleSheet,
   Pressable,
   Platform,
+  Dimensions,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+  type LayoutChangeEvent,
 } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text, FAB, IconButton, Button } from "react-native-paper";
@@ -102,6 +106,32 @@ function BudgetScreen() {
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [catModalVisible, setCatModalVisible] = useState(false);
 
+  // Scroll-into-view reveal for the spend charts. The onScroll handler stays
+  // cheap: it only does anything until the charts cross into view once, then
+  // flips `chartsRevealed` (a single setState) and no-ops forever after.
+  const [chartsRevealed, setChartsRevealed] = useState(false);
+  const chartsRevealedRef = useRef(false);
+  const chartsY = useRef(Infinity);
+  const viewportH = useRef(Dimensions.get("window").height);
+  const maybeRevealCharts = (offsetY: number) => {
+    if (chartsRevealedRef.current) return;
+    // Reveal once the top of the charts section is ~80px into the viewport.
+    if (offsetY + viewportH.current - 80 > chartsY.current) {
+      chartsRevealedRef.current = true;
+      setChartsRevealed(true);
+    }
+  };
+  const onScrollReveal = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    viewportH.current = e.nativeEvent.layoutMeasurement.height || viewportH.current;
+    maybeRevealCharts(e.nativeEvent.contentOffset.y);
+  };
+  const onChartsLayout = (e: LayoutChangeEvent) => {
+    chartsY.current = e.nativeEvent.layout.y;
+    // Short content: the charts may already sit within the first viewport with
+    // no scroll possible — reveal immediately in that case.
+    maybeRevealCharts(0);
+  };
+
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   // ── Voice → payment ──
@@ -198,6 +228,18 @@ function BudgetScreen() {
       )
       .sort((a, b) => a.periodDate.localeCompare(b.periodDate));
   }, [allExpenses]);
+
+  // Split kid payments so one-time pending sit ABOVE the recurring ones (and
+  // right after the general pending section). Order within each group is
+  // preserved from outstandingKidPayments (oldest-period first).
+  const outstandingKidOneTime = useMemo(
+    () => outstandingKidPayments.filter((x) => !x.payment.isRecurring),
+    [outstandingKidPayments],
+  );
+  const outstandingKidRecurring = useMemo(
+    () => outstandingKidPayments.filter((x) => x.payment.isRecurring),
+    [outstandingKidPayments],
+  );
 
   // Non-kid one-time payments still pending (paid===false). Marked paid from
   // the row's ✓; excluded from spending totals until then (monthExpenses
@@ -486,12 +528,61 @@ function BudgetScreen() {
     );
   };
 
+  // Shared row for a pending kid payment — used by both the one-time and the
+  // recurring kid-payment sections.
+  const renderKidPaymentRow = ({
+    payment,
+    periodDate,
+    late,
+  }: (typeof outstandingKidPayments)[number]) => {
+    const kid = kids.find((k) => k.id === payment.kidId);
+    const dateLabel = `${periodDate.slice(8, 10)}/${periodDate.slice(5, 7)}`;
+    const recur = payment.isRecurring
+      ? payment.recurrenceType === "weekly"
+        ? t("payment.everyWeek")
+        : t("payment.everyMonth")
+      : "";
+    const metaText = [late ? t("payment.overdue") : "", recur, dateLabel]
+      .filter(Boolean)
+      .join(" • ");
+    return (
+      <Pressable
+        key={payment.id + periodDate}
+        style={styles.kidPayRow}
+        onPress={() => kid && router.push(`/kid/${kid.id}`)}
+      >
+        <View style={[styles.kidPayAvatar, { backgroundColor: (kid?.color ?? C.purple) + "22" }]}>
+          <Text style={styles.kidPayEmoji}>{kid?.emoji ?? "🧒"}</Text>
+        </View>
+        <View style={styles.kidPayInfo}>
+          <Text style={[styles.kidPayTitle, { textAlign: TEXT_RIGHT }]} numberOfLines={1}>
+            {payment.note || t("payment.add")}
+            {kid ? `  •  ${kid.name}` : ""}
+          </Text>
+          <Text style={[styles.kidPayMeta, { textAlign: TEXT_RIGHT }, late && styles.kidPayMetaOverdue]}>
+            {metaText}
+          </Text>
+        </View>
+        <Text style={styles.kidPayAmount}>{formatILS(payment.amount)}</Text>
+        <IconButton
+          icon="check-circle-outline"
+          size={20}
+          iconColor={C.teal}
+          accessibilityLabel={t("payment.markPaid")}
+          onPress={() => markKidPaymentPaidRemote(payment, periodDate)}
+        />
+      </Pressable>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScreenScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        onScroll={onScrollReveal}
+        scrollEventThrottle={16}
       >
         {/* Month navigation — RTL_ROW: first child appears on RIGHT, last on LEFT.
             In Hebrew RTL calendars, LEFT = forward in time, RIGHT = backward.
@@ -566,46 +657,20 @@ function BudgetScreen() {
           </>
         )}
 
-        {/* Outstanding kid payments (תשלומים) across all kids */}
-        {outstandingKidPayments.length > 0 && (
+        {/* Kids' one-time pending payments — after the general pending section,
+            above the kids' recurring payments. */}
+        {outstandingKidOneTime.length > 0 && (
           <>
-            <SectionHeader label={t("budget.kidPayments")} />
-            {outstandingKidPayments.map(({ payment, periodDate, late }) => {
-              const kid = kids.find((k) => k.id === payment.kidId);
-              const dateLabel = `${periodDate.slice(8, 10)}/${periodDate.slice(5, 7)}`;
-              const recur = payment.isRecurring
-                ? payment.recurrenceType === "weekly" ? t("payment.everyWeek") : t("payment.everyMonth")
-                : "";
-              const metaText = [late ? t("payment.overdue") : "", recur, dateLabel].filter(Boolean).join(" • ");
-              return (
-                <Pressable
-                  key={payment.id + periodDate}
-                  style={styles.kidPayRow}
-                  onPress={() => kid && router.push(`/kid/${kid.id}`)}
-                >
-                  <View style={[styles.kidPayAvatar, { backgroundColor: (kid?.color ?? C.purple) + "22" }]}>
-                    <Text style={styles.kidPayEmoji}>{kid?.emoji ?? "🧒"}</Text>
-                  </View>
-                  <View style={styles.kidPayInfo}>
-                    <Text style={[styles.kidPayTitle, { textAlign: TEXT_RIGHT }]} numberOfLines={1}>
-                      {payment.note || t("payment.add")}
-                      {kid ? `  •  ${kid.name}` : ""}
-                    </Text>
-                    <Text style={[styles.kidPayMeta, { textAlign: TEXT_RIGHT }, late && styles.kidPayMetaOverdue]}>
-                      {metaText}
-                    </Text>
-                  </View>
-                  <Text style={styles.kidPayAmount}>{formatILS(payment.amount)}</Text>
-                  <IconButton
-                    icon="check-circle-outline"
-                    size={20}
-                    iconColor={C.teal}
-                    accessibilityLabel={t("payment.markPaid")}
-                    onPress={() => markKidPaymentPaidRemote(payment, periodDate)}
-                  />
-                </Pressable>
-              );
-            })}
+            <SectionHeader label={t("budget.kidPaymentsOneTime")} />
+            {outstandingKidOneTime.map(renderKidPaymentRow)}
+          </>
+        )}
+
+        {/* Kids' recurring pending payments. */}
+        {outstandingKidRecurring.length > 0 && (
+          <>
+            <SectionHeader label={t("budget.kidPaymentsRecurring")} />
+            {outstandingKidRecurring.map(renderKidPaymentRow)}
           </>
         )}
 
@@ -786,9 +851,18 @@ function BudgetScreen() {
           })
         )}
 
-        {/* Spend charts — bar + pie of the selected month's spend by category. */}
-        <SectionHeader label={t("budget.spendCharts")} />
-        <SpendByCategoryCharts slices={chartSlices} total={totalSpent} formatAmount={formatILS} />
+        {/* Spend charts — bar + pie of the selected month's spend by category.
+            The wrapper reports its Y so the charts reveal (bar from the left,
+            pie from the right) when scrolled into view. */}
+        <View onLayout={onChartsLayout}>
+          <SectionHeader label={t("budget.spendCharts")} />
+          <SpendByCategoryCharts
+            slices={chartSlices}
+            total={totalSpent}
+            formatAmount={formatILS}
+            revealed={chartsRevealed}
+          />
+        </View>
 
         {/* Per-payer breakdown — last section on the page. */}
         {renderPayerBreakdown()}
