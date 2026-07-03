@@ -16,6 +16,7 @@ import type { Chore } from "@src/models/chore";
 import type { Project } from "@src/models/project";
 import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
+import type { FamilyMember } from "@src/models/familyMember";
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import { useAllKidBlocksForDate } from "@src/store/scheduleSelectors";
@@ -31,19 +32,19 @@ import {
   updateFamilyEventRemote,
   updateScheduleBlockRemote,
 } from "@src/lib/sync/remoteCrud";
-import { t, LOCALE, assigneeTypeLabel, statusLabel } from "@src/i18n";
+import { t, LOCALE, assigneeTypeLabel } from "@src/i18n";
 import { minutesToHHMM } from "@src/utils/time";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { C, S, R, SHADOW } from "@src/ui/tokens";
-import { STATUS_COLORS } from "@src/ui/semanticColors";
 import { formatDateHe } from "@src/components/DatePicker";
 import SectionHeader from "@src/components/SectionHeader";
-import OwnerBadge from "@src/components/OwnerBadge";
 import NoteModal from "@src/components/NoteModal";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import ProjectModal from "@src/components/ProjectModal";
+import ProjectCard from "@src/components/ProjectCard";
+import NoteCard from "@src/components/NoteCard";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import SummaryHeroCard from "@src/components/budget/SummaryHeroCard";
 import TodayHero from "@src/components/TodayHero";
@@ -117,6 +118,7 @@ function TodayScreen() {
   const notes = useFamilyStore((s) => s.notes);
   const kids = useFamilyStore((s) => s.kids);
   const familyMembers = useFamilyStore((s) => s.familyMembers);
+  const memberById = useMemo(() => new Map(familyMembers.map((m) => [m.id, m])), [familyMembers]);
   const syncStatus = useFamilyStore((s) => s.syncStatus);
   const lastSyncedAt = useFamilyStore((s) => s.lastSyncedAt);
   const allExpenses = useFamilyStore((s) => s.expenses);
@@ -503,50 +505,15 @@ function TodayScreen() {
             />
             {notesExpanded && (
               <View style={styles.cardCol}>
-                {pinnedNotesList.map((note) => (
-                  <Pressable
+                {pinnedNotesList.map((note, i) => (
+                  <NoteCard
                     key={note.id}
-                    style={({ pressed, hovered }: any) => [
-                      styles.noteCard,
-                      hovered && styles.cardHover,
-                      pressed && { transform: [{ scale: 0.98 }] },
-                    ]}
-                    onPress={() => {
-                      setEditingNote(note);
-                      setNoteModalOpen(true);
-                    }}
-                  >
-                    <View style={styles.noteTopRow}>
-                      <View style={styles.noteIcon}>
-                        <Text style={{ fontSize: 18 }}>📌</Text>
-                      </View>
-                      <View style={{ flex: 1 }} />
-                      <IconButton
-                        icon="pin-off"
-                        size={16}
-                        iconColor={NOTE_COLORS.accent}
-                        style={styles.cardActionBtn}
-                        onPress={() => toggleNotePinnedRemote(note.id)}
-                      />
-                      <IconButton
-                        icon="trash-can-outline"
-                        size={16}
-                        iconColor={C.textMuted}
-                        style={styles.cardActionBtn}
-                        onPress={() => requestDelete(() => deleteNoteRemote(note.id))}
-                      />
-                    </View>
-                    <Text style={styles.noteTitle} numberOfLines={1}>
-                      {note.title || t("home.note")}
-                    </Text>
-                    {note.body ? (
-                      <Text style={styles.noteBody} numberOfLines={3}>
-                        {note.body}
-                      </Text>
-                    ) : null}
-                    <OwnerBadge kidId={note.kidId} ownerMemberId={note.ownerMemberId} style={{ marginTop: S.xs }} />
-                    <View style={styles.noteAccentBar} />
-                  </Pressable>
+                    note={note}
+                    index={i}
+                    onPress={() => { setEditingNote(note); setNoteModalOpen(true); }}
+                    onDelete={() => requestDelete(() => deleteNoteRemote(note.id))}
+                    onTogglePin={() => toggleNotePinnedRemote(note.id)}
+                  />
                 ))}
               </View>
             )}
@@ -564,66 +531,16 @@ function TodayScreen() {
             />
             {projectsExpanded && (
               <View style={styles.cardCol}>
-                {activeProjectsList.map((proj) => {
-                  const statusColor = STATUS_COLORS[proj.status];
-                  const statusEmoji = proj.status === "done" ? "✅" : proj.status === "in_progress" ? "🔨" : "💡";
-                  return (
-                    <Pressable
-                      key={proj.id}
-                      style={({ pressed, hovered }: any) => [
-                        styles.projectCard,
-                        hovered && styles.cardHover,
-                        pressed && { transform: [{ scale: 0.98 }] },
-                      ]}
-                      onPress={() => {
-                        setEditingProject(proj);
-                        setProjectModalOpen(true);
-                      }}
-                    >
-                      <View style={[styles.projectStripe, { backgroundColor: statusColor }]} />
-                      <View style={styles.projectBody}>
-                        <View style={styles.projectTopRow}>
-                          <View style={[styles.projectStatusChip, { backgroundColor: statusColor + "18" }]}>
-                            <Text style={{ fontSize: 12 }}>{statusEmoji}</Text>
-                            <Text style={[styles.projectStatusText, { color: statusColor }]}>
-                              {statusLabel(proj.status)}
-                            </Text>
-                          </View>
-                          <View style={{ flex: 1 }} />
-                          <IconButton
-                            icon="trash-can-outline"
-                            size={16}
-                            iconColor={C.textMuted}
-                            style={styles.cardActionBtn}
-                            onPress={() => requestDelete(() => deleteProjectRemote(proj.id))}
-                          />
-                        </View>
-                        <Text style={styles.projectTitle} numberOfLines={1}>
-                          {proj.title}
-                        </Text>
-                        {proj.description ? (
-                          <Text style={styles.projDesc} numberOfLines={2}>
-                            {proj.description}
-                          </Text>
-                        ) : null}
-                        <OwnerBadge kidId={proj.kidId} ownerMemberId={proj.ownerMemberId} style={{ marginTop: S.xs, marginBottom: S.xs }} />
-                        <View style={styles.projectProgressRow}>
-                          <View style={styles.projectProgressTrack}>
-                            <View
-                              style={[
-                                styles.projectProgressFill,
-                                { backgroundColor: statusColor, width: `${proj.progress}%` as any },
-                              ]}
-                            />
-                          </View>
-                          <Text style={[styles.projectProgressLabel, { color: statusColor }]}>
-                            {proj.progress}%
-                          </Text>
-                        </View>
-                      </View>
-                    </Pressable>
-                  );
-                })}
+                {activeProjectsList.map((proj, i) => (
+                  <ProjectCard
+                    key={proj.id}
+                    proj={proj}
+                    index={i}
+                    members={(proj.memberIds ?? []).map((id) => memberById.get(id)).filter(Boolean) as FamilyMember[]}
+                    onPress={() => { setEditingProject(proj); setProjectModalOpen(true); }}
+                    onDelete={() => requestDelete(() => deleteProjectRemote(proj.id))}
+                  />
+                ))}
               </View>
             )}
           </>
