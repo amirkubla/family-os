@@ -1,20 +1,23 @@
 /**
- * Chores — dedicated full screen (reached from the home launcher grid).
+ * Chores — the household "action center".
  *
- * Splits into "selected for today" + backlog. Add via the FAB or the
- * ?modal=add deep link.
+ * A sticky progress header + filter/sort toolbar sit above a scrollable list of
+ * compact, theme-tinted ChoreCards (active, then a collapsible Completed group).
+ * Add via the FAB, voice, or the ?modal=add deep link.
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Platform, ScrollView, TextInput } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
-import { Text, IconButton, FAB, Button } from "react-native-paper";
+import { Text, IconButton, FAB, Button, Menu } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 
 import { useFamilyStore } from "@src/store/useFamilyStore";
 import { useBlurRemountKey } from "@src/hooks/useBlurRemountKey";
 import type { Chore } from "@src/models/chore";
+import { isChoreOverdue, dueDiffDays, priorityRank } from "@src/models/chore";
 import {
   addChoreRemote,
   toggleChoreDoneRemote,
@@ -23,6 +26,7 @@ import {
   reorderChoresRemote,
   markAllChoresDoneRemote,
 } from "@src/lib/sync/remoteCrud";
+import ChoreCard from "@src/components/ChoreCard";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import VoiceReviewModal from "@src/components/VoiceReviewModal";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
@@ -37,112 +41,53 @@ import { useThemeColor } from "@src/ui/useThemeColor";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 
-const CHORE_COLORS = {
-  accent: "#0D9488",
-  accentLight: "#14B8A6",
-  bg: "#F0FDFA",
-  bgDone: "#F7F7F8",
-  border: "#CCFBF1",
-  borderDone: "#E5E5EA",
-  hover: "#E0FAF5",
-  checkBg: "#0D948818",
-  checkBgDone: "#0D948830",
-} as const;
+type StatusFilter = "all" | "open" | "done" | "overdue";
+type PriorityFilter = "all" | "low" | "medium" | "high";
+type DueFilter = "all" | "today" | "overdue" | "upcoming";
+type SortMode = "manual" | "due" | "priority" | "newest" | "oldest" | "alpha";
 
-function ChoreRow({
-  chore,
-  index,
-  count,
-  onEdit,
-  onDelete,
-  onMove,
+interface Opt<V> { value: V; label: string }
+
+// A chip that opens a dropdown Menu of options. Highlights when a non-default
+// value is selected.
+function FilterMenu<V extends string>({
+  options,
+  value,
+  defaultValue,
+  placeholder,
+  onSelect,
+  theme,
 }: {
-  chore: Chore;
-  index: number;
-  count: number;
-  onEdit: () => void;
-  onDelete: () => void;
-  onMove: (dir: -1 | 1) => void;
+  options: Opt<V>[];
+  value: V;
+  defaultValue: V;
+  placeholder: string;
+  onSelect: (v: V) => void;
+  theme: string;
 }) {
-  const assignedMember = useFamilyStore((s) =>
-    chore.assignedToMemberId
-      ? s.familyMembers.find((m) => m.id === chore.assignedToMemberId)
-      : undefined,
-  );
-  const assignedKid = useFamilyStore((s) =>
-    chore.kidId ? s.kids.find((k) => k.id === chore.kidId) : undefined,
-  );
-  const assigneeDisplay = assignedKid
-    ? `${assignedKid.emoji ?? "👶"} ${assignedKid.name}`
-    : assignedMember
-      ? `${assignedMember.avatarEmoji ?? ""} ${assignedMember.name}`
-      : chore.assignedTo;
-
+  const [open, setOpen] = useState(false);
+  const active = value !== defaultValue;
+  const current = options.find((o) => o.value === value);
   return (
-    <Pressable
-      testID={"chore-row-" + chore.title}
-      style={({ pressed, hovered }: any) => [
-        styles.choreCard,
-        chore.done && styles.choreCardDone,
-        hovered && !chore.done && styles.choreCardHover,
-        pressed && { transform: [{ scale: 0.98 }] },
-      ]}
-      onPress={onEdit}
-    >
-      <Pressable
-        testID={"chore-check-" + chore.title}
-        style={[styles.choreCheckCircle, chore.done && styles.choreCheckCircleDone]}
-        onPress={() => toggleChoreDoneRemote(chore.id)}
-      >
-        {chore.done ? <Text style={{ fontSize: 14, color: "#fff" }}>✓</Text> : null}
-      </Pressable>
-
-      <View style={styles.choreContent}>
-        <View style={styles.choreTopLine}>
-          {/* Owner label leads the top line → sits top-right in RTL. */}
-          {assigneeDisplay ? (
-            <Text style={styles.choreAssignee} numberOfLines={1}>{assigneeDisplay}</Text>
-          ) : null}
-          <Text style={[styles.choreTitle, chore.done && styles.choreTitleDone]} numberOfLines={1}>
-            {chore.title}
+    <Menu
+      visible={open}
+      onDismiss={() => setOpen(false)}
+      anchor={
+        <Pressable
+          onPress={() => setOpen(true)}
+          style={[styles.chip, active && { borderColor: theme, backgroundColor: theme + "14" }]}
+        >
+          <Text style={[styles.chipText, active && { color: theme, fontWeight: "700" }]}>
+            {active && current ? current.label : placeholder}
           </Text>
-        </View>
-      </View>
-
-      <View style={styles.choreActions}>
-        <IconButton
-          icon="chevron-up"
-          size={16}
-          disabled={index === 0}
-          iconColor={C.textMuted}
-          style={styles.choreActionBtn}
-          onPress={() => onMove(-1)}
-        />
-        <IconButton
-          icon="chevron-down"
-          size={16}
-          disabled={index === count - 1}
-          iconColor={C.textMuted}
-          style={styles.choreActionBtn}
-          onPress={() => onMove(1)}
-        />
-        <IconButton
-          icon="white-balance-sunny"
-          size={16}
-          iconColor={chore.selectedForToday ? C.amber : C.textMuted}
-          style={styles.choreActionBtn}
-          onPress={() => toggleChoreSelectedForTodayRemote(chore.id)}
-        />
-        <IconButton
-          testID={"chore-delete-" + chore.title}
-          icon="trash-can-outline"
-          size={16}
-          iconColor={C.textMuted}
-          style={styles.choreActionBtn}
-          onPress={onDelete}
-        />
-      </View>
-    </Pressable>
+          <Ionicons name="chevron-down" size={13} color={active ? theme : C.textMuted} />
+        </Pressable>
+      }
+    >
+      {options.map((o) => (
+        <Menu.Item key={o.value} onPress={() => { onSelect(o.value); setOpen(false); }} title={o.label} />
+      ))}
+    </Menu>
   );
 }
 
@@ -157,66 +102,147 @@ function ChoresScreen() {
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   const allChores = useFamilyStore((s) => s.chores);
-  // Single manual-ordered list (drag-to-reorder). The ⭐ badge + sun toggle
-  // still mark "selected for today"; the Today screen still groups by it.
-  const chores = useMemo(
-    () => [...allChores].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
-    [allChores],
-  );
-  const allDone = chores.length > 0 && chores.every((c) => c.done);
+  const members = useFamilyStore((s) => s.familyMembers);
+  const kids = useFamilyStore((s) => s.kids);
+
+  // Filters + sort.
+  const [search, setSearch] = useState("");
+  const [assignee, setAssignee] = useState<string>("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [priority, setPriority] = useState<PriorityFilter>("all");
+  const [dueF, setDueF] = useState<DueFilter>("all");
+  const [repeatingOnly, setRepeatingOnly] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("manual");
+  const [completedOpen, setCompletedOpen] = useState(false);
+
+  // Overall progress (whole list, not the filtered view).
+  const total = allChores.length;
+  const doneCount = useMemo(() => allChores.filter((c) => c.done).length, [allChores]);
+  const remaining = total - doneCount;
+  const pct = total ? doneCount / total : 0;
+  const allDone = total > 0 && remaining === 0;
+
+  const filtered = useMemo(() => {
+    let list = allChores;
+    const q = search.trim().toLowerCase();
+    if (q) list = list.filter((c) => c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q));
+    if (assignee !== "all") list = list.filter((c) => c.assignedToMemberId === assignee || c.kidId === assignee);
+    if (status === "open") list = list.filter((c) => !c.done);
+    else if (status === "done") list = list.filter((c) => c.done);
+    else if (status === "overdue") list = list.filter((c) => isChoreOverdue(c));
+    if (priority !== "all") list = list.filter((c) => c.priority === priority);
+    if (dueF !== "all") {
+      list = list.filter((c) => {
+        if (c.dueDate == null) return false;
+        const d = dueDiffDays(c.dueDate);
+        if (dueF === "today") return d === 0;
+        if (dueF === "overdue") return d < 0 && !c.done;
+        return d > 0; // upcoming
+      });
+    }
+    if (repeatingOnly) list = list.filter((c) => c.isRecurring);
+    return list;
+  }, [allChores, search, assignee, status, priority, dueF, repeatingOnly]);
+
+  const sorted = useMemo(() => {
+    const cmp: Record<SortMode, (a: Chore, b: Chore) => number> = {
+      manual: (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+      due: (a, b) => (a.dueDate ?? Infinity) - (b.dueDate ?? Infinity),
+      priority: (a, b) => priorityRank(a.priority) - priorityRank(b.priority),
+      newest: (a, b) => b.createdAt - a.createdAt,
+      oldest: (a, b) => a.createdAt - b.createdAt,
+      alpha: (a, b) => a.title.localeCompare(b.title, "he"),
+    };
+    return [...filtered].sort(cmp[sortMode]);
+  }, [filtered, sortMode]);
+
+  const active = useMemo(() => sorted.filter((c) => !c.done), [sorted]);
+  const completed = useMemo(() => sorted.filter((c) => c.done), [sorted]);
+  const canReorder = sortMode === "manual" && !search && assignee === "all" && status === "all" && priority === "all" && dueF === "all" && !repeatingOnly;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [voiceResult, setVoiceResult] = useState<VoiceChoreResult | null>(null);
-  const { status: voiceStatus, onMic } = useVoiceCapture(useChoreVoice, {
-    onResult: setVoiceResult,
-  });
+  const { status: voiceStatus, onMic } = useVoiceCapture(useChoreVoice, { onResult: setVoiceResult });
 
   useEffect(() => {
-    if (modal === "add") {
-      setEditingChore(null);
-      setModalOpen(true);
-    }
+    if (modal === "add") { setEditingChore(null); setModalOpen(true); }
   }, [modal]);
 
-  // Add the reviewed tasks through the normal optimistic chore CRUD.
   const handleVoiceConfirm = (items: VoiceChoreResult["items"]) => {
     for (const it of items) addChoreRemote({ title: it.title });
     setVoiceResult(null);
   };
 
-  const openEdit = (chore: Chore) => {
-    setEditingChore(chore);
-    setModalOpen(true);
-  };
+  const openEdit = (chore: Chore) => { setEditingChore(chore); setModalOpen(true); };
 
   const moveChore = useCallback(
     (index: number, dir: -1 | 1) => {
       const j = index + dir;
-      if (j < 0 || j >= chores.length) return;
-      const next = [...chores];
+      if (j < 0 || j >= active.length) return;
+      const next = [...active];
       [next[index], next[j]] = [next[j], next[index]];
-      reorderChoresRemote(next.map((c) => c.id));
+      reorderChoresRemote([...next.map((c) => c.id), ...completed.map((c) => c.id)]);
     },
-    [chores],
+    [active, completed],
+  );
+
+  const assigneeOpts: Opt<string>[] = [
+    { value: "all", label: t("chore.filterAssignee") },
+    ...members.filter((m) => m.isActive).map((m) => ({ value: m.id, label: `${m.avatarEmoji ?? "👤"} ${m.name}` })),
+    ...kids.filter((k) => k.isActive).map((k) => ({ value: k.id, label: `${k.emoji ?? "🧒"} ${k.name}` })),
+  ];
+  const statusOpts: Opt<StatusFilter>[] = [
+    { value: "all", label: t("chore.filterStatus") },
+    { value: "open", label: t("chore.statusOpen") },
+    { value: "done", label: t("chore.statusDone") },
+    { value: "overdue", label: t("chore.statusOverdue") },
+  ];
+  const priorityOpts: Opt<PriorityFilter>[] = [
+    { value: "all", label: t("chore.filterPriority") },
+    { value: "high", label: t("chore.priority_high") },
+    { value: "medium", label: t("chore.priority_medium") },
+    { value: "low", label: t("chore.priority_low") },
+  ];
+  const dueOpts: Opt<DueFilter>[] = [
+    { value: "all", label: t("chore.filterDue") },
+    { value: "today", label: t("chore.dueToday") },
+    { value: "overdue", label: t("chore.filterDueOverdue") },
+    { value: "upcoming", label: t("chore.filterDueUpcoming") },
+  ];
+  const sortOpts: Opt<SortMode>[] = [
+    { value: "manual", label: t("chore.sortManual") },
+    { value: "due", label: t("chore.sortDue") },
+    { value: "priority", label: t("chore.sortPriority") },
+    { value: "newest", label: t("chore.sortNewest") },
+    { value: "oldest", label: t("chore.sortOldest") },
+    { value: "alpha", label: t("chore.sortAlpha") },
+  ];
+
+  const renderCard = (item: Chore, index: number, arr: Chore[], reorder: boolean) => (
+    <ChoreCard
+      key={item.id}
+      chore={item}
+      index={index}
+      onPress={() => openEdit(item)}
+      onToggleDone={() => toggleChoreDoneRemote(item.id)}
+      onToggleToday={() => toggleChoreSelectedForTodayRemote(item.id)}
+      onDelete={() => requestDelete(() => deleteChoreRemote(item.id))}
+      onMoveUp={reorder ? () => moveChore(index, -1) : undefined}
+      onMoveDown={reorder ? () => moveChore(index, 1) : undefined}
+      isFirst={index === 0}
+      isLast={index === arr.length - 1}
+    />
   );
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <ScreenScrollView style={styles.list} contentContainerStyle={styles.container}>
-        {chores.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={{ fontSize: 32 }}>🎉</Text>
-            <Text style={styles.emptyText}>{t("home.allClear")}</Text>
-          </View>
-        ) : (
-          <>
-            <View style={styles.statsRow}>
-              <View style={styles.statsPill}>
-                <Text style={styles.statsText}>
-                  {chores.filter((c) => c.done).length}/{chores.length} ✓
-                </Text>
-              </View>
+      {total > 0 && (
+        <View style={styles.stickyHead}>
+          {/* Progress header */}
+          <View style={styles.progressCard}>
+            <View style={styles.progressTop}>
+              <Text style={styles.progressTitle}>{t("chore.overviewTitle")}</Text>
               <Button
                 compact
                 icon={allDone ? "checkbox-multiple-blank-outline" : "check-all"}
@@ -227,29 +253,77 @@ function ChoresScreen() {
                 {allDone ? t("home.unmarkAll") : t("home.markAll")}
               </Button>
             </View>
-            {chores.map((item, index) => (
-              <ChoreRow
-                key={item.id}
-                chore={item}
-                index={index}
-                count={chores.length}
-                onEdit={() => openEdit(item)}
-                onDelete={() => requestDelete(() => deleteChoreRemote(item.id))}
-                onMove={(dir) => moveChore(index, dir)}
-              />
-            ))}
+            <View style={[styles.progressTrack, { backgroundColor: theme + "1A" }]}>
+              <View style={[styles.progressFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: theme }]} />
+            </View>
+            <Text style={styles.progressMeta}>
+              {t("chore.progressDone", { done: doneCount, total })}
+              {remaining > 0 ? `  ·  ${t("chore.progressRemaining", { count: remaining })}` : ""}
+            </Text>
+          </View>
+
+          {/* Filter / sort toolbar */}
+          <View style={styles.searchRow}>
+            <Ionicons name="search" size={16} color={C.textMuted} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder={t("chore.searchPlaceholder")}
+              placeholderTextColor={C.textMuted}
+              style={styles.searchInput}
+            />
+            {search ? <IconButton icon="close" size={14} onPress={() => setSearch("")} style={{ margin: 0 }} /> : null}
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.toolbar}
+          >
+            <FilterMenu options={assigneeOpts} value={assignee} defaultValue="all" placeholder={t("chore.filterAssignee")} onSelect={setAssignee} theme={theme} />
+            <FilterMenu options={statusOpts} value={status} defaultValue="all" placeholder={t("chore.filterStatus")} onSelect={setStatus} theme={theme} />
+            <FilterMenu options={priorityOpts} value={priority} defaultValue="all" placeholder={t("chore.filterPriority")} onSelect={setPriority} theme={theme} />
+            <FilterMenu options={dueOpts} value={dueF} defaultValue="all" placeholder={t("chore.filterDue")} onSelect={setDueF} theme={theme} />
+            <Pressable
+              onPress={() => setRepeatingOnly((v) => !v)}
+              style={[styles.chip, repeatingOnly && { borderColor: theme, backgroundColor: theme + "14" }]}
+            >
+              <Text style={[styles.chipText, repeatingOnly && { color: theme, fontWeight: "700" }]}>↻ {t("chore.filterRepeating")}</Text>
+            </Pressable>
+            <FilterMenu options={sortOpts} value={sortMode} defaultValue="manual" placeholder={t("chore.sort")} onSelect={setSortMode} theme={theme} />
+          </ScrollView>
+        </View>
+      )}
+
+      <ScreenScrollView style={styles.list} contentContainerStyle={styles.container}>
+        {total === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={{ fontSize: 32 }}>🎉</Text>
+            <Text style={styles.emptyText}>{t("home.allClear")}</Text>
+          </View>
+        ) : active.length === 0 && completed.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>{t("chore.noResults")}</Text>
+          </View>
+        ) : (
+          <>
+            {active.map((item, i) => renderCard(item, i, active, canReorder))}
+
+            {completed.length > 0 && (
+              <>
+                <Pressable style={styles.completedHeader} onPress={() => setCompletedOpen((v) => !v)}>
+                  <Ionicons name={completedOpen ? "chevron-down" : "chevron-back"} size={16} color={C.textMuted} />
+                  <Text style={styles.completedHeaderText}>
+                    {t("chore.completedSection", { count: completed.length })}
+                  </Text>
+                </Pressable>
+                {completedOpen && completed.map((item, i) => renderCard(item, i, completed, false))}
+              </>
+            )}
           </>
         )}
       </ScreenScrollView>
 
-      {/* Voice → tasks: record, transcribe via the Assistant, then open the
-          review sheet. Stacked above the "+" add FAB. */}
-      <VoiceFab
-        status={voiceStatus}
-        onPress={onMic}
-        bottom={insets.bottom + S.lg + 68}
-        testID="chore-voice-fab"
-      />
+      <VoiceFab status={voiceStatus} onPress={onMic} bottom={insets.bottom + S.lg + 68} testID="chore-voice-fab" />
 
       <FAB
         customSize={50}
@@ -258,18 +332,12 @@ function ChoresScreen() {
         accessibilityLabel="btn-add-chore"
         style={[styles.fab, { bottom: insets.bottom + S.lg, backgroundColor: theme, borderRadius: 26 }]}
         color="#FFF"
-        onPress={() => {
-          setEditingChore(null);
-          setModalOpen(true);
-        }}
+        onPress={() => { setEditingChore(null); setModalOpen(true); }}
       />
 
       <ChoreAddModal
         visible={modalOpen}
-        onDismiss={() => {
-          setModalOpen(false);
-          setEditingChore(null);
-        }}
+        onDismiss={() => { setModalOpen(false); setEditingChore(null); }}
         editChore={editingChore}
       />
 
@@ -290,95 +358,62 @@ function ChoresScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   list: { flex: 1 },
-  container: { padding: S.lg, paddingBottom: S.xxl + S.xxl, gap: S.xs },
-  statsRow: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: S.sm,
-  },
-  statsPill: {
-    backgroundColor: CHORE_COLORS.accent + "14",
-    paddingHorizontal: S.md,
-    paddingVertical: S.xs,
-    borderRadius: 20,
-  },
-  statsText: { fontSize: 13, fontWeight: "700", color: CHORE_COLORS.accent },
-  emptyState: { alignItems: "center", paddingVertical: S.xxl, gap: S.sm },
-  emptyText: { color: C.textMuted, fontSize: 14 },
-  sectionHeader: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    gap: S.sm,
-    marginTop: S.sm,
-    marginBottom: S.xs,
-  },
-  sectionDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: CHORE_COLORS.accent },
-  sectionTitle: { color: CHORE_COLORS.accent, fontWeight: "700", fontSize: 14 },
-  sectionCount: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: C.textMuted,
-    backgroundColor: C.hoverBg,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  divider: { paddingVertical: S.md, alignItems: "center" },
-  dividerLine: { height: 1, width: "90%" as any, backgroundColor: CHORE_COLORS.border },
-  choreCard: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    backgroundColor: CHORE_COLORS.bg,
+  container: { padding: S.lg, paddingTop: S.sm, paddingBottom: S.xxl + S.xxl },
+
+  // Sticky header block (progress + toolbar) above the scroll.
+  stickyHead: { paddingHorizontal: S.lg, paddingTop: S.sm, gap: S.sm },
+  progressCard: {
+    backgroundColor: C.surface,
+    borderRadius: R.lg,
     borderWidth: 1,
-    borderColor: CHORE_COLORS.border,
-    borderRadius: R.md,
+    borderColor: C.border,
     padding: S.md,
-    marginBottom: S.sm,
-    gap: S.md,
     ...SHADOW.sm,
-    ...(Platform.OS === "web" ? { cursor: "pointer" as any, transition: "all 0.2s ease" } : {}),
   },
-  choreCardDone: {
-    backgroundColor: CHORE_COLORS.bgDone,
-    borderColor: CHORE_COLORS.borderDone,
-    opacity: 0.75,
-  },
-  choreCardHover: {
-    backgroundColor: CHORE_COLORS.hover,
-    borderColor: CHORE_COLORS.accentLight + "40",
-    transform: [{ translateY: -1 }],
-    ...SHADOW.md,
-  },
-  choreCheckCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: CHORE_COLORS.accent,
-    backgroundColor: CHORE_COLORS.checkBg,
+  progressTop: { flexDirection: RTL_ROW, alignItems: "center", justifyContent: "space-between" },
+  progressTitle: { fontSize: 16, fontWeight: "800", color: C.textPrimary, textAlign: TEXT_RIGHT, writingDirection: "rtl" },
+  progressTrack: { height: 8, borderRadius: 4, overflow: "hidden", marginTop: S.sm },
+  progressFill: { height: 8, borderRadius: 4 },
+  progressMeta: { fontSize: 12, fontWeight: "600", color: C.textSecondary, textAlign: TEXT_RIGHT, writingDirection: "rtl", marginTop: S.xs },
+
+  searchRow: {
+    flexDirection: RTL_ROW,
     alignItems: "center",
-    justifyContent: "center",
+    gap: S.xs,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 999,
+    paddingHorizontal: S.md,
   },
-  choreCheckCircleDone: { backgroundColor: CHORE_COLORS.accent, borderColor: CHORE_COLORS.accent },
-  choreContent: { flex: 1, gap: 2 },
-  choreTopLine: { flexDirection: RTL_ROW, alignItems: "center", gap: S.sm },
-  choreTitle: {
-    fontSize: 15,
-    fontWeight: "600",
+  searchInput: {
+    flex: 1,
+    paddingVertical: Platform.OS === "web" ? 8 : 6,
+    fontSize: 14,
     color: C.textPrimary,
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
-    flex: 1,
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : {}),
   },
-  choreTitleDone: {
-    textDecorationLine: "line-through",
-    color: C.textMuted,
-    fontWeight: "400",
+  toolbar: { flexDirection: RTL_ROW, gap: S.sm, paddingVertical: 2, alignItems: "center" },
+  chip: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 999,
+    paddingHorizontal: S.md,
+    paddingVertical: 6,
   },
-  choreAssignee: { fontSize: 12, color: C.textSecondary, textAlign: TEXT_RIGHT },
-  choreActions: { flexDirection: RTL_ROW, alignItems: "center" },
-  choreActionBtn: { margin: 0, width: 28, height: 28 },
+  chipText: { fontSize: 12, fontWeight: "600", color: C.textSecondary, writingDirection: "rtl" },
+
+  emptyState: { alignItems: "center", paddingVertical: S.xxl, gap: S.sm },
+  emptyText: { color: C.textMuted, fontSize: 14, textAlign: "center" },
+
+  completedHeader: { flexDirection: RTL_ROW, alignItems: "center", gap: S.xs, marginTop: S.md, marginBottom: S.xs },
+  completedHeaderText: { fontSize: 13, fontWeight: "700", color: C.textMuted, writingDirection: "rtl" },
+
   fab: { position: "absolute", ...FAB_LEFT, bottom: S.lg },
 });

@@ -52,6 +52,7 @@ import {
 } from "../api/mappers";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
+import { nextChoreDue } from "@src/models/chore";
 import type { Project, SubTask } from "@src/models/project";
 import type { ScheduleBlock } from "@src/models/schedule";
 import type { Kid } from "@src/models/kid";
@@ -280,6 +281,13 @@ export function addChoreRemote(input: {
   assignedTo?: string;
   assignedToMemberId?: string;
   kidId?: string;
+  description?: string;
+  priority?: import("@src/models/chore").ChorePriority;
+  dueDate?: number;
+  isRecurring?: boolean;
+  repeatUnit?: import("@src/models/chore").RepeatUnit;
+  repeatInterval?: number;
+  daysOfWeek?: number[];
 }) {
   const item = useFamilyStore.getState().addChore(input);
   fireAndForget(
@@ -292,21 +300,38 @@ export function addChoreRemote(input: {
 
 export function updateChoreRemote(
   id: string,
-  patch: Partial<Pick<Chore, "title" | "assignedToMemberId" | "kidId">>,
+  patch: Partial<
+    Pick<
+      Chore,
+      | "title"
+      | "description"
+      | "assignedToMemberId"
+      | "kidId"
+      | "priority"
+      | "dueDate"
+      | "isRecurring"
+      | "repeatUnit"
+      | "repeatInterval"
+      | "daysOfWeek"
+    >
+  >,
 ) {
   useFamilyStore.getState().updateChore(id, patch);
   // PATCH with only changed fields — see BUG-N1 note in module header.
-  // Use "key in patch" (not `!== undefined`) for the assignee fields so an
-  // explicit un-assign (value undefined) is sent as null — the assignee is a
-  // member XOR a kid, so saving always clears whichever isn't chosen.
-  const apiPatch: Partial<{
-    title: string;
-    assignedToMemberId: string | null;
-    kidId: string | null;
-  }> = {};
+  // Use "key in patch" (not `!== undefined`) for optional/clearable fields so
+  // an explicit clear (value undefined) is sent as null.
+  const apiPatch: Record<string, unknown> = {};
   if (patch.title !== undefined) apiPatch.title = patch.title;
+  if ("description" in patch) apiPatch.description = patch.description ?? null;
   if ("assignedToMemberId" in patch) apiPatch.assignedToMemberId = patch.assignedToMemberId ?? null;
   if ("kidId" in patch) apiPatch.kidId = patch.kidId ?? null;
+  if ("priority" in patch) apiPatch.priority = patch.priority ?? null;
+  if ("dueDate" in patch)
+    apiPatch.dueDate = patch.dueDate != null ? new Date(patch.dueDate).toISOString() : null;
+  if (patch.isRecurring !== undefined) apiPatch.isRecurring = patch.isRecurring;
+  if ("repeatUnit" in patch) apiPatch.repeatUnit = patch.repeatUnit ?? null;
+  if (patch.repeatInterval !== undefined) apiPatch.repeatInterval = patch.repeatInterval;
+  if ("daysOfWeek" in patch) apiPatch.daysOfWeek = patch.daysOfWeek ?? null;
   fireAndForget(
     getFamilyId().then((fid) => choresApi.update(fid, id, apiPatch)),
     "Update chore",
@@ -314,12 +339,43 @@ export function updateChoreRemote(
 }
 
 export function toggleChoreDoneRemote(id: string) {
-  useFamilyStore.getState().toggleChoreDone(id);
-  const item = useFamilyStore.getState().chores.find((c) => c.id === id);
-  if (!item) return;
+  const before = useFamilyStore.getState().chores.find((c) => c.id === id);
+  if (!before) return;
+  const turningDone = !before.done;
+
+  // Recurring + has a due date + being completed → advance to the next
+  // occurrence and keep it open (Todoist-style), recording the completion time.
+  if (turningDone && before.isRecurring && before.dueDate != null) {
+    const nextDue = nextChoreDue(
+      before.dueDate,
+      before.repeatUnit ?? "week",
+      before.repeatInterval ?? 1,
+      before.daysOfWeek,
+    );
+    const completedAt = Date.now();
+    useFamilyStore.getState().updateChore(id, { dueDate: nextDue, completedAt, done: false });
+    fireAndForget(
+      getFamilyId().then((fid) =>
+        choresApi.update(fid, id, {
+          dueDate: new Date(nextDue).toISOString(),
+          completedAt: new Date(completedAt).toISOString(),
+          done: false,
+        }),
+      ),
+      "Complete recurring chore",
+    );
+    return;
+  }
+
+  // Normal toggle — set completedAt on completion, clear it on re-open.
+  const completedAt = turningDone ? Date.now() : undefined;
+  useFamilyStore.getState().updateChore(id, { done: turningDone, completedAt });
   fireAndForget(
     getFamilyId().then((fid) =>
-      choresApi.update(fid, id, { done: item.done }),
+      choresApi.update(fid, id, {
+        done: turningDone,
+        completedAt: completedAt != null ? new Date(completedAt).toISOString() : null,
+      }),
     ),
     "Toggle chore",
   );

@@ -3,7 +3,7 @@ import { persist, createJSONStorage, type StateStorage } from "zustand/middlewar
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
-import type { Chore } from "@src/models/chore";
+import type { Chore, ChorePriority, RepeatUnit } from "@src/models/chore";
 import type { Project, ProjectStatus, SubTask } from "@src/models/project";
 import { computeProjectProgress } from "@src/models/project";
 import type { ScheduleBlock } from "@src/models/schedule";
@@ -162,10 +162,38 @@ interface FamilyState {
   deleteNote: (id: string) => void;
 
   // Chores actions
-  addChore: (input: { title: string; assignedTo?: string; assignedToMemberId?: string; kidId?: string }) => Chore;
+  addChore: (input: {
+    title: string;
+    assignedTo?: string;
+    assignedToMemberId?: string;
+    kidId?: string;
+    description?: string;
+    priority?: ChorePriority;
+    dueDate?: number;
+    isRecurring?: boolean;
+    repeatUnit?: RepeatUnit;
+    repeatInterval?: number;
+    daysOfWeek?: number[];
+  }) => Chore;
   updateChore: (
     id: string,
-    patch: Partial<Pick<Chore, "title" | "assignedToMemberId" | "kidId">>
+    patch: Partial<
+      Pick<
+        Chore,
+        | "title"
+        | "description"
+        | "assignedToMemberId"
+        | "kidId"
+        | "priority"
+        | "dueDate"
+        | "completedAt"
+        | "done"
+        | "isRecurring"
+        | "repeatUnit"
+        | "repeatInterval"
+        | "daysOfWeek"
+      >
+    >
   ) => void;
   toggleChoreDone: (id: string) => void;
   /** Mark every chore done (or undone) at once. */
@@ -533,17 +561,24 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Chores ── */
 
-      addChore: ({ title, assignedTo, assignedToMemberId, kidId }) => {
+      addChore: (input) => {
         const now = Date.now();
         const minOrder = get().chores.reduce((m, c) => Math.min(m, c.sortOrder ?? 0), 0);
         const item: Chore = {
           id: makeId(),
-          title,
-          assignedTo,
-          assignedToMemberId,
-          kidId,
+          title: input.title,
+          description: input.description,
+          assignedTo: input.assignedTo,
+          assignedToMemberId: input.assignedToMemberId,
+          kidId: input.kidId,
           done: false,
           selectedForToday: false,
+          priority: input.priority,
+          dueDate: input.dueDate,
+          isRecurring: input.isRecurring ?? false,
+          repeatUnit: input.repeatUnit,
+          repeatInterval: input.repeatInterval ?? 1,
+          daysOfWeek: input.daysOfWeek,
           sortOrder: minOrder - 1, // prepend → sorts first
           updatedAt: now,
           createdAt: now,
