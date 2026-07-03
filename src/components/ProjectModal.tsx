@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet, PanResponder, LayoutChangeEvent, Platform, TextInput, Pressable } from "react-native";
-import { Text, Button, IconButton } from "react-native-paper";
+import { Text, IconButton } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import ModalTextInput from "./ModalTextInput";
 import type { Project, ProjectStatus, SubTask } from "@src/models/project";
@@ -13,8 +13,9 @@ import { MS } from "@src/ui/modalStyles";
 import { C, R, S } from "@src/ui/tokens";
 import { useThemeColor } from "@src/ui/useThemeColor";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { CATEGORY_ICON_OPTIONS } from "@src/ui/semanticColors";
+import { CATEGORY_ICON_OPTIONS, STATUS_COLORS } from "@src/ui/semanticColors";
 import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
+import SelectChip from "./SelectChip";
 import PaginatedPicker from "./PaginatedPicker";
 import DateTimeField from "./DateTimeField";
 
@@ -23,6 +24,13 @@ const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "in_progress", label: statusLabel("in_progress") },
   { value: "done", label: statusLabel("done") },
 ];
+
+// Same status dots as the project card, so the picker reads consistently.
+const STATUS_DOT: Record<ProjectStatus, string> = {
+  idea: "🟡",
+  in_progress: "🟣",
+  done: "🟢",
+};
 
 // ---------------------------------------------------------------------------
 // Date <-> ms helpers ("YYYY-MM-DD" is the DateTimeField contract; the model
@@ -539,18 +547,16 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       {editProject && (
         <>
           <Text style={MS.label}>{t("projectModal.status")}</Text>
-          <View style={{ flexDirection: RTL_ROW, gap: 6, marginBottom: 12 }}>
+          <View style={MS.chipRow}>
             {STATUS_OPTIONS.map((opt) => (
-              <Button
+              <SelectChip
                 key={opt.value}
-                mode={status === opt.value ? "contained" : "outlined"}
-                compact
+                label={opt.label}
+                emoji={STATUS_DOT[opt.value]}
+                color={STATUS_COLORS[opt.value]}
+                selected={status === opt.value}
                 onPress={() => setStatus(opt.value)}
-                style={MS.chip}
-                labelStyle={MS.chipLabel}
-              >
-                {opt.label}
-              </Button>
+              />
             ))}
           </View>
         </>
