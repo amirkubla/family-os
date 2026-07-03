@@ -3,9 +3,20 @@ import { db } from "../db/client.js";
 import { chores } from "../db/schema.js";
 import type { Chore, NewChore, UpdateChore } from "../types/models.js";
 
+// The API sends timestamp fields (dueDate, completedAt) as ISO strings, but
+// Drizzle's timestamp columns expect Date objects on write (it calls
+// .toISOString() on the value). Coerce those two fields before any insert/update
+// so a raw JSON string doesn't crash with "value.toISOString is not a function".
+function coerceDates<T extends Record<string, any>>(data: T): T {
+  const out: any = { ...data };
+  if (typeof out.dueDate === "string") out.dueDate = new Date(out.dueDate);
+  if (typeof out.completedAt === "string") out.completedAt = new Date(out.completedAt);
+  return out;
+}
+
 export const choresRepo = {
   async create(data: NewChore): Promise<Chore> {
-    const [row] = await db.insert(chores).values(data).returning();
+    const [row] = await db.insert(chores).values(coerceDates(data)).returning();
     return row;
   },
 
@@ -28,7 +39,7 @@ export const choresRepo = {
   async update(id: string, data: UpdateChore): Promise<Chore | undefined> {
     const [row] = await db
       .update(chores)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ ...coerceDates(data), updatedAt: new Date() })
       .where(eq(chores.id, id))
       .returning();
     return row;
@@ -37,7 +48,7 @@ export const choresRepo = {
   async upsert(data: NewChore & { id: string }): Promise<Chore> {
     const [row] = await db
       .insert(chores)
-      .values(data)
+      .values(coerceDates(data))
       .onConflictDoUpdate({
         target: chores.id,
         set: {
