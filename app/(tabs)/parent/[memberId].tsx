@@ -1,16 +1,16 @@
 /**
  * Parent (member) profile — an editable "person page", mirroring the kid page.
  *
- * Reached from the Family page. A stats strip on top, a month calendar + day
- * agenda of the member's events, then their collected items — chores
- * (assignedToMemberId), notes + projects (ownerMemberId), and the expenses they
- * paid (payerMemberId). Notes / projects / chores are fully editable here via
- * the shared modals (locked to this member); events + payments are tap-to-edit
- * (they're created on /calendar and /budget respectively).
+ * A stats strip on top, a month calendar + day agenda of the member's events,
+ * then their collected items in the same card language as the kid page —
+ * chores (assignedToMemberId), notes + projects (ownerMemberId), and the
+ * expenses they paid (payerMemberId). Notes / projects / chores are fully
+ * editable here via the shared modals (locked to this member); events +
+ * payments are tap-to-edit (created on /calendar and /budget respectively).
  */
 
 import React, { useMemo, useState, useCallback } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
 import ScreenScrollView from "@src/components/ScreenScrollView";
 import { Text, IconButton, Card } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -36,11 +36,13 @@ import type { Expense } from "@src/models/budget";
 import type { Note } from "@src/models/note";
 import type { Project } from "@src/models/project";
 import type { Chore } from "@src/models/chore";
+import type { FamilyMember } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 
 import PersonStats from "@src/components/person/PersonStats";
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import SectionHeader from "@src/components/SectionHeader";
+import ProjectCard from "@src/components/ProjectCard";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
 import ChoreAddModal from "@src/components/ChoreAddModal";
 import NoteModal from "@src/components/NoteModal";
@@ -49,50 +51,49 @@ import FamilyEventModal from "@src/components/FamilyEventModal";
 import ExpenseModal from "@src/components/ExpenseModal";
 import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 
-import { t, statusLabel, dayName } from "@src/i18n";
+import { t, dayName } from "@src/i18n";
 import { formatILS } from "@src/models/budget";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
-import { STATUS_COLORS } from "@src/ui/semanticColors";
 
-function SectionShell({
-  title,
-  count,
+// Notes card palette — identical to /home, /notes and the kid page.
+const NOTE_COLORS = {
+  accent: "#D97706",
+  bg: "#FFFBF0",
+  border: "#F5E6C8",
+  barDefault: "#E8D5B0",
+  hover: "#FFF3D6",
+} as const;
+
+/** A collapsible section: header (label + collapse chevron) + trailing add "+". */
+function Section({
+  label,
   accent,
   onAdd,
+  expanded,
+  onToggle,
   children,
 }: {
-  title: string;
-  count: number;
+  label: string;
   accent: string;
   onAdd?: () => void;
+  expanded: boolean;
+  onToggle: () => void;
   children: React.ReactNode;
 }) {
   return (
     <>
       <View style={styles.sectionHeaderRow}>
-        <View style={{ flex: 1 }}>
-          <SectionHeader label={`${title}  (${count})`} />
+        <View style={styles.sectionHeaderLabel}>
+          <SectionHeader label={label} collapsible expanded={expanded} onToggle={onToggle} />
         </View>
         {onAdd ? (
-          <IconButton
-            icon="plus-circle"
-            size={28}
-            iconColor={accent}
-            onPress={onAdd}
-            accessibilityLabel={title}
-          />
+          <IconButton icon="plus-circle" size={28} iconColor={accent} onPress={onAdd} accessibilityLabel={label} />
         ) : null}
       </View>
-      {count === 0 ? (
-        <Text style={styles.emptyText}>{t("parent.noneYet")}</Text>
-      ) : (
-        <Card style={styles.card} mode="elevated">
-          <Card.Content style={{ paddingVertical: S.xs }}>{children}</Card.Content>
-        </Card>
-      )}
+      {expanded && children}
     </>
   );
 }
@@ -107,6 +108,7 @@ function ParentScreen() {
   const members = useFamilyStore((s) => s.familyMembers);
   const member = members.find((m) => m.id === memberId);
   const accent = member?.color ?? C.purple;
+  const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
 
   const allChores = useFamilyStore((s) => s.chores);
   const allEvents = useFamilyStore((s) => s.familyEvents);
@@ -165,6 +167,12 @@ function ParentScreen() {
     return marks;
   }, [recurringByDay, oneTime, memberId, accent]);
 
+  // ── Section collapse state ──
+  const [choresExpanded, setChoresExpanded] = useState(true);
+  const [notesExpanded, setNotesExpanded] = useState(true);
+  const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [paymentsExpanded, setPaymentsExpanded] = useState(true);
+
   // ── Modals ──
   const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
   const [choreModal, setChoreModal] = useState(false);
@@ -192,8 +200,8 @@ function ParentScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <ScreenScrollView contentContainerStyle={styles.container}>
-        {/* Member identity — the person's name + avatar as a plain heading
-            (no back-button header; navigation is via the floating drawer). */}
+        {/* Member identity — name + avatar as a plain heading (nav is via the
+            floating drawer, so there's no back-button header). */}
         <Text style={styles.personTitle}>
           {`${member.avatarEmoji ?? "👤"}  ${member.name}`}
         </Text>
@@ -244,79 +252,123 @@ function ParentScreen() {
         )}
 
         {/* ── Chores ── */}
-        <SectionShell
-          title={t("parent.chores")}
-          count={chores.length}
+        <Section
+          label={t("parent.chores")}
           accent={accent}
+          expanded={choresExpanded}
+          onToggle={() => setChoresExpanded((v) => !v)}
           onAdd={() => { setEditChore(null); setChoreModal(true); }}
         >
-          {chores.map((c) => (
-            <View key={c.id} style={styles.row}>
-              <Pressable onPress={() => toggleChoreDoneRemote(c.id)} hitSlop={8}>
-                <Text style={[styles.rowCheck, c.done && { color: accent }]}>{c.done ? "✓" : "○"}</Text>
-              </Pressable>
-              <Pressable style={styles.rowMain} onPress={() => { setEditChore(c); setChoreModal(true); }}>
-                <Text style={[styles.rowTitle, c.done && styles.rowTitleDone]} numberOfLines={1}>{c.title}</Text>
-              </Pressable>
-              <IconButton icon="trash-can-outline" size={16} iconColor={C.textMuted}
-                onPress={() => requestDelete(() => deleteChoreRemote(c.id))} />
+          {chores.length === 0 ? (
+            <Text style={styles.emptyText}>{t("parent.noneYet")}</Text>
+          ) : (
+            <View style={styles.itemList}>
+              {chores.map((c) => (
+                <View key={c.id} style={styles.itemCard}>
+                  <Pressable onPress={() => toggleChoreDoneRemote(c.id)} hitSlop={8}>
+                    <Text style={[styles.choreCheck, c.done && { color: accent }]}>{c.done ? "✓" : "○"}</Text>
+                  </Pressable>
+                  <Pressable style={{ flex: 1 }} onPress={() => { setEditChore(c); setChoreModal(true); }}>
+                    <Text style={[styles.itemTitle, c.done && styles.choreTitleDone]} numberOfLines={1}>{c.title}</Text>
+                  </Pressable>
+                  <IconButton icon="trash-can-outline" size={16} iconColor={C.textMuted} style={styles.itemTrash}
+                    onPress={() => requestDelete(() => deleteChoreRemote(c.id))} />
+                </View>
+              ))}
             </View>
-          ))}
-        </SectionShell>
+          )}
+        </Section>
 
-        {/* ── Notes ── */}
-        <SectionShell
-          title={t("parent.notes")}
-          count={notes.length}
+        {/* ── Notes (kid-page note grid) ── */}
+        <Section
+          label={t("parent.notes")}
           accent={accent}
+          expanded={notesExpanded}
+          onToggle={() => setNotesExpanded((v) => !v)}
           onAdd={() => { setEditNote(null); setNoteModal(true); }}
         >
-          {notes.map((n) => (
-            <View key={n.id} style={styles.row}>
-              <Pressable style={styles.rowMain} onPress={() => { setEditNote(n); setNoteModal(true); }}>
-                <Text style={styles.rowTitle} numberOfLines={1}>{n.title || n.body}</Text>
-              </Pressable>
-              <IconButton icon="trash-can-outline" size={16} iconColor={C.textMuted}
-                onPress={() => requestDelete(() => deleteNoteRemote(n.id))} />
+          {notes.length === 0 ? (
+            <Text style={styles.emptyText}>{t("parent.noneYet")}</Text>
+          ) : (
+            <View style={styles.notesGrid}>
+              {notes.map((n) => (
+                <Pressable
+                  key={n.id}
+                  style={({ pressed, hovered }: any) => [
+                    styles.noteCard,
+                    hovered && styles.noteCardHover,
+                    pressed && styles.noteCardPressed,
+                  ]}
+                  onPress={() => { setEditNote(n); setNoteModal(true); }}
+                >
+                  <View style={styles.noteTopRow}>
+                    <View style={styles.noteIcon}>
+                      <Text style={{ fontSize: 18 }}>📝</Text>
+                    </View>
+                    <View style={{ flex: 1 }} />
+                    <IconButton icon="trash-can-outline" size={16} iconColor={C.textMuted} style={styles.noteActionBtn}
+                      onPress={() => requestDelete(() => deleteNoteRemote(n.id))} />
+                  </View>
+                  <Text style={styles.noteTitle} numberOfLines={1}>{n.title || t("home.note")}</Text>
+                  {n.body ? <Text style={styles.noteBody} numberOfLines={3}>{n.body}</Text> : null}
+                  <View style={styles.noteAccentBar} />
+                </Pressable>
+              ))}
             </View>
-          ))}
-        </SectionShell>
+          )}
+        </Section>
 
-        {/* ── Projects ── */}
-        <SectionShell
-          title={t("parent.projects")}
-          count={projects.length}
+        {/* ── Projects (shared ProjectCard — same as dashboard + kid page) ── */}
+        <Section
+          label={t("parent.projects")}
           accent={accent}
+          expanded={projectsExpanded}
+          onToggle={() => setProjectsExpanded((v) => !v)}
           onAdd={() => { setEditProject(null); setProjectModal(true); }}
         >
-          {projects.map((p) => (
-            <View key={p.id} style={styles.row}>
-              <View style={[styles.stripe, { backgroundColor: STATUS_COLORS[p.status] }]} />
-              <Pressable style={styles.rowMain} onPress={() => { setEditProject(p); setProjectModal(true); }}>
-                <Text style={styles.rowTitle} numberOfLines={1}>{p.title}</Text>
-              </Pressable>
-              <Text style={styles.rowMeta} numberOfLines={1}>{statusLabel(p.status)}  ·  {p.progress}%</Text>
-              <IconButton icon="trash-can-outline" size={16} iconColor={C.textMuted}
-                onPress={() => requestDelete(() => deleteProjectRemote(p.id))} />
+          {projects.length === 0 ? (
+            <Text style={styles.emptyText}>{t("parent.noneYet")}</Text>
+          ) : (
+            <View style={styles.itemList}>
+              {projects.map((p, index) => (
+                <ProjectCard
+                  key={p.id}
+                  proj={p}
+                  index={index}
+                  members={(p.memberIds ?? []).map((id) => memberById.get(id)).filter(Boolean) as FamilyMember[]}
+                  onPress={() => { setEditProject(p); setProjectModal(true); }}
+                  onDelete={() => requestDelete(() => deleteProjectRemote(p.id))}
+                />
+              ))}
             </View>
-          ))}
-        </SectionShell>
+          )}
+        </Section>
 
         {/* ── Payments (paid by this member) ── */}
-        <SectionShell title={t("parent.payments")} count={payments.length} accent={accent}>
-          {payments.map((e) => (
-            <View key={e.id} style={styles.row}>
-              <Pressable style={styles.rowMain} onPress={() => { setEditExpense(e); setExpenseModal(true); }}>
-                <Text style={styles.rowTitle} numberOfLines={1}>{e.note || e.categoryName}</Text>
-              </Pressable>
-              <Text style={styles.rowMeta} numberOfLines={1}>
-                {formatILS(e.amount)}  ·  {e.date.slice(8, 10)}/{e.date.slice(5, 7)}
-              </Text>
-              <IconButton icon="trash-can-outline" size={16} iconColor={C.textMuted}
-                onPress={() => requestDelete(() => deleteExpenseRemote(e.id))} />
+        <Section
+          label={t("parent.payments")}
+          accent={accent}
+          expanded={paymentsExpanded}
+          onToggle={() => setPaymentsExpanded((v) => !v)}
+        >
+          {payments.length === 0 ? (
+            <Text style={styles.emptyText}>{t("parent.noneYet")}</Text>
+          ) : (
+            <View style={styles.itemList}>
+              {payments.map((e) => (
+                <View key={e.id} style={styles.itemCard}>
+                  <Pressable style={{ flex: 1 }} onPress={() => { setEditExpense(e); setExpenseModal(true); }}>
+                    <Text style={styles.itemTitle} numberOfLines={1}>{e.note || e.categoryName}</Text>
+                  </Pressable>
+                  <Text style={styles.paymentAmount} numberOfLines={1}>{formatILS(e.amount)}</Text>
+                  <Text style={styles.paymentMeta} numberOfLines={1}>{e.date.slice(8, 10)}/{e.date.slice(5, 7)}</Text>
+                  <IconButton icon="trash-can-outline" size={16} iconColor={C.textMuted} style={styles.itemTrash}
+                    onPress={() => requestDelete(() => deleteExpenseRemote(e.id))} />
+                </View>
+              ))}
             </View>
-          ))}
-        </SectionShell>
+          )}
+        </Section>
       </ScreenScrollView>
 
       {/* ── Modals ── */}
@@ -382,8 +434,10 @@ const styles = StyleSheet.create({
     marginVertical: S.sm,
   },
 
-  sectionHeaderRow: { flexDirection: RTL_ROW, alignItems: "center" },
+  sectionHeaderRow: { flexDirection: RTL_ROW, alignItems: "center", justifyContent: "space-between" },
+  sectionHeaderLabel: { flex: 1 },
 
+  // Calendar + day-agenda card.
   card: {
     backgroundColor: C.surface,
     borderRadius: R.lg,
@@ -398,9 +452,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: C.border,
   },
-  rowMain: { flex: 1 },
   stripe: { width: 4, height: 28, borderRadius: 2 },
-  rowCheck: { fontSize: 18, color: C.textMuted, width: 22, textAlign: "center" },
   rowTitle: {
     flex: 1,
     fontSize: 14,
@@ -409,6 +461,79 @@ const styles = StyleSheet.create({
     textAlign: TEXT_RIGHT,
     writingDirection: "rtl",
   },
-  rowTitleDone: { color: C.textMuted, textDecorationLine: "line-through" },
   rowMeta: { fontSize: 12, color: C.textSecondary, writingDirection: "rtl" },
+
+  // ── Generic item cards (chores + payments) ──
+  itemList: { gap: S.sm, marginBottom: S.lg },
+  itemCard: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: S.sm,
+    backgroundColor: C.surface,
+    borderRadius: R.md,
+    paddingVertical: S.sm,
+    paddingHorizontal: S.md,
+    ...SHADOW.sm,
+  },
+  itemTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
+  itemTrash: { margin: 0, width: 28, height: 28 },
+  choreCheck: { fontSize: 20, color: C.textMuted, width: 24, textAlign: "center" },
+  choreTitleDone: { color: C.textMuted, textDecorationLine: "line-through" },
+  paymentAmount: { fontSize: 15, fontWeight: "700", color: C.textPrimary },
+  paymentMeta: { fontSize: 12, color: C.textSecondary, writingDirection: "rtl" },
+
+  // ── Notes grid (identical to /home + kid page) ──
+  notesGrid: { flexDirection: RTL_ROW, flexWrap: "wrap", gap: S.md, marginBottom: S.lg },
+  noteCard: {
+    backgroundColor: NOTE_COLORS.bg,
+    borderWidth: 1,
+    borderColor: NOTE_COLORS.border,
+    borderRadius: R.lg,
+    padding: S.lg,
+    minWidth: 160,
+    flex: 1,
+    maxWidth: "100%" as any,
+    ...SHADOW.sm,
+    ...(Platform.OS === "web" ? ({ cursor: "pointer", transition: "all 0.2s ease" } as any) : {}),
+    overflow: "hidden",
+  },
+  noteCardHover: {
+    backgroundColor: NOTE_COLORS.hover,
+    borderColor: "#EAD49B",
+    transform: [{ translateY: -2 }],
+    ...SHADOW.md,
+  },
+  noteCardPressed: { transform: [{ scale: 0.97 }] },
+  noteTopRow: { flexDirection: RTL_ROW, alignItems: "center", marginBottom: S.sm },
+  noteIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: NOTE_COLORS.accent + "14",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noteActionBtn: { margin: 0, width: 28, height: 28 },
+  noteTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: C.textPrimary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    marginBottom: 4,
+  },
+  noteBody: {
+    fontSize: 13,
+    color: C.textSecondary,
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+    lineHeight: 19,
+  },
+  noteAccentBar: { height: 3, borderRadius: 2, backgroundColor: NOTE_COLORS.barDefault, marginTop: S.md },
 });

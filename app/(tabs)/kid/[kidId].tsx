@@ -51,16 +51,16 @@ import type { ScheduleBlock } from "@src/models/schedule";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 import type { Note } from "@src/models/note";
 import type { Project } from "@src/models/project";
+import type { FamilyMember } from "@src/models/familyMember";
 import { type Expense, nextWeeklyDate, nextMonthlyDate } from "@src/models/budget";
 import { formatILS, outstandingPeriods, isPeriodLate } from "@src/models/budget";
 import { minutesToHHMM } from "@src/utils/time";
 import { toYMD, dayOfWeekFromYMD } from "@src/utils/date";
-import { t, dayName, statusLabel } from "@src/i18n";
+import { t, dayName } from "@src/i18n";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { FAB_LEFT } from "@src/ui/fabAnchor";
 import { C, R, S, SHADOW } from "@src/ui/tokens";
 import { useThemeColor } from "@src/ui/useThemeColor";
-import { STATUS_COLORS } from "@src/ui/semanticColors";
 
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
 import WeekCalendar from "@src/components/Calendar/WeekCalendar";
@@ -69,6 +69,7 @@ import ScheduleBlockModal from "@src/components/ScheduleBlockModal";
 import FamilyEventModal from "@src/components/FamilyEventModal";
 import NoteModal from "@src/components/NoteModal";
 import ProjectModal from "@src/components/ProjectModal";
+import ProjectCard from "@src/components/ProjectCard";
 import ExpenseModal from "@src/components/ExpenseModal";
 import type { ModalCarousel } from "@src/components/ModalWrapper";
 import SectionHeader from "@src/components/SectionHeader";
@@ -88,13 +89,6 @@ const NOTE_COLORS = {
   border: "#F5E6C8",
   barDefault: "#E8D5B0",
   hover: "#FFF3D6",
-} as const;
-
-const PROJECT_COLORS = {
-  accent: "#6C63FF",
-  bg: "#F8F7FF",
-  border: "#E8E5FF",
-  hover: "#EEEAFF",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -357,6 +351,10 @@ function KidScheduleScreen() {
         .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [allProjects, kidId],
   );
+
+  // Family members — resolve a project's assigned memberIds to avatars.
+  const familyMembers = useFamilyStore((s) => s.familyMembers);
+  const memberById = useMemo(() => new Map(familyMembers.map((m) => [m.id, m])), [familyMembers]);
 
   // This kid's payments (expenses tagged to the kid). Unpaid ("to pay") first,
   // ordered by due date; settled payments below, most recent first.
@@ -819,91 +817,20 @@ function KidScheduleScreen() {
                   <Text style={styles.emptyText}>{t("kid.noProjects")}</Text>
                 ) : (
                   <View style={styles.projectsContainer}>
-                    {kidProjects.map((proj, index) => {
-                      const statusColor = STATUS_COLORS[proj.status];
-                      const statusEmoji = proj.status === "done" ? "✅" : proj.status === "in_progress" ? "🔨" : "💡";
-                      return (
-                        <Pressable
-                          key={proj.id}
-                          style={({ pressed, hovered }: any) => [
-                            styles.projectCard,
-                            hovered && styles.projectCardHover,
-                            pressed && { transform: [{ scale: 0.98 }] },
-                          ]}
-                          onPress={() => {
-                            setEditingProject(proj);
-                            setProjectModalOpen(true);
-                          }}
-                        >
-                          {/* Left accent stripe */}
-                          <View style={[styles.projectStripe, { backgroundColor: statusColor }]} />
-
-                          {/* Main content */}
-                          <View style={styles.projectBody}>
-                            <View style={styles.projectTopRow}>
-                              <View style={[styles.projectStatusChip, { backgroundColor: statusColor + "18" }]}>
-                                <Text style={{ fontSize: 12 }}>{statusEmoji}</Text>
-                                <Text style={[styles.projectStatusText, { color: statusColor }]}>
-                                  {statusLabel(proj.status)}
-                                </Text>
-                              </View>
-                              <View style={{ flex: 1 }} />
-                              <IconButton
-                                icon="chevron-up"
-                                size={16}
-                                disabled={index === 0}
-                                iconColor={C.textMuted}
-                                style={styles.projectActionBtn}
-                                onPress={() => moveKidProject(index, -1)}
-                              />
-                              <IconButton
-                                icon="chevron-down"
-                                size={16}
-                                disabled={index === kidProjects.length - 1}
-                                iconColor={C.textMuted}
-                                style={styles.projectActionBtn}
-                                onPress={() => moveKidProject(index, 1)}
-                              />
-                              <IconButton
-                                icon="trash-can-outline"
-                                size={16}
-                                iconColor={C.textMuted}
-                                style={styles.projectActionBtn}
-                                onPress={() => requestDelete(() => deleteProjectRemote(proj.id))}
-                              />
-                            </View>
-
-                            <Text style={styles.projectTitle} numberOfLines={1}>
-                              {proj.title}
-                            </Text>
-
-                            {proj.description ? (
-                              <Text style={styles.projDesc} numberOfLines={2}>
-                                {proj.description}
-                              </Text>
-                            ) : null}
-
-                            {/* Progress bar */}
-                            <View style={styles.projectProgressRow}>
-                              <View style={styles.projectProgressTrack}>
-                                <View
-                                  style={[
-                                    styles.projectProgressFill,
-                                    {
-                                      backgroundColor: statusColor,
-                                      width: `${proj.progress}%` as any,
-                                    },
-                                  ]}
-                                />
-                              </View>
-                              <Text style={[styles.projectProgressLabel, { color: statusColor }]}>
-                                {proj.progress}%
-                              </Text>
-                            </View>
-                          </View>
-                        </Pressable>
-                      );
-                    })}
+                    {kidProjects.map((proj, index) => (
+                      <ProjectCard
+                        key={proj.id}
+                        proj={proj}
+                        index={index}
+                        members={(proj.memberIds ?? []).map((id) => memberById.get(id)).filter(Boolean) as FamilyMember[]}
+                        onPress={() => { setEditingProject(proj); setProjectModalOpen(true); }}
+                        onDelete={() => requestDelete(() => deleteProjectRemote(proj.id))}
+                        onMoveUp={() => moveKidProject(index, -1)}
+                        onMoveDown={() => moveKidProject(index, 1)}
+                        isFirst={index === 0}
+                        isLast={index === kidProjects.length - 1}
+                      />
+                    ))}
                   </View>
                 )
               )}
@@ -1358,95 +1285,8 @@ const styles = StyleSheet.create({
 
   // ── Projects (identical to /home) ──
   projectsContainer: {
-    gap: S.xs,
-    marginBottom: S.lg,
-  },
-  projectCard: {
-    flexDirection: RTL_ROW,
-    backgroundColor: PROJECT_COLORS.bg,
-    borderWidth: 1,
-    borderColor: PROJECT_COLORS.border,
-    borderRadius: R.lg,
-    marginBottom: S.md,
-    overflow: "hidden" as const,
-    ...SHADOW.sm,
-    ...(Platform.OS === "web"
-      ? { cursor: "pointer" as any, transition: "all 0.2s ease" }
-      : {}),
-  },
-  projectCardHover: {
-    backgroundColor: PROJECT_COLORS.hover,
-    borderColor: PROJECT_COLORS.accent + "40",
-    transform: [{ translateY: -2 }],
-    ...SHADOW.md,
-  },
-  projectStripe: {
-    width: 5,
-    alignSelf: "stretch" as const,
-  },
-  projectBody: {
-    flex: 1,
-    padding: S.lg,
-    gap: S.xs,
-  },
-  projectTopRow: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    marginBottom: S.xs,
-  },
-  projectStatusChip: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: S.sm + 2,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  projectStatusText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  projectActionBtn: {
-    margin: 0,
-    width: 28,
-    height: 28,
-  },
-  projectTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: C.textPrimary,
-    textAlign: TEXT_RIGHT,
-    writingDirection: "rtl",
-  },
-  projDesc: {
-    fontSize: 13,
-    color: C.textSecondary,
-    textAlign: TEXT_RIGHT,
-    writingDirection: "rtl",
-    lineHeight: 19,
-  },
-  projectProgressRow: {
-    flexDirection: RTL_ROW,
-    alignItems: "center",
     gap: S.sm,
-    marginTop: S.sm,
-  },
-  projectProgressTrack: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: PROJECT_COLORS.accent + "15",
-    overflow: "hidden" as const,
-  },
-  projectProgressFill: {
-    height: 6,
-    borderRadius: 3,
-  },
-  projectProgressLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    minWidth: 36,
-    textAlign: "left" as const,
+    marginBottom: S.lg,
   },
 
   // Block row — matches Today's blockRow pattern
