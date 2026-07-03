@@ -666,14 +666,6 @@ function BudgetScreen() {
           </>
         )}
 
-        {/* Kids' recurring pending payments. */}
-        {outstandingKidRecurring.length > 0 && (
-          <>
-            <SectionHeader label={t("budget.kidPaymentsRecurring")} />
-            {outstandingKidRecurring.map(renderKidPaymentRow)}
-          </>
-        )}
-
         {/* Categories — tap a category to expand its payments for the selected
             month. "ניהול קטגוריות" opens the add/edit/delete manager. */}
         <SectionHeader
@@ -753,6 +745,15 @@ function BudgetScreen() {
               </View>
             );
           })
+        )}
+
+        {/* Kids' recurring pending payments — between categories and the
+            recurring-expenses section. */}
+        {outstandingKidRecurring.length > 0 && (
+          <>
+            <SectionHeader label={t("budget.kidPaymentsRecurring")} />
+            {outstandingKidRecurring.map(renderKidPaymentRow)}
+          </>
         )}
 
         {/* Recurring expenses section */}
