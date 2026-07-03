@@ -10,14 +10,17 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Text } from "react-native-paper";
+import { Ionicons } from "@expo/vector-icons";
 import Svg, { Defs, LinearGradient, Stop, Rect } from "react-native-svg";
 
 import { S, R, SHADOW } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { t } from "@src/i18n";
+import { heroQuoteForDate } from "@src/lib/heroQuotes";
 
 interface Stat {
-  emoji: string;
+  /** Ionicons glyph — same icon set as the nav menu (see CustomTabBar). */
+  icon: keyof typeof Ionicons.glyphMap;
   count: number;
   label: string;
   onPress?: () => void;
@@ -45,12 +48,8 @@ export default function TodayHero({ name, stats }: Props) {
 
   const now = new Date();
   const greeting = t(greetingKey(now.getHours()));
-  const pending = stats.reduce((sum, s) => sum + s.count, 0);
-  // Calm line when nothing's on your plate; otherwise a rotating push (varies
-  // by day so it doesn't feel canned).
-  const push = ["today.heroPush1", "today.heroPush2", "today.heroPush3"];
-  const dayIdx = Math.floor(now.getTime() / 86_400_000) % push.length;
-  const subtitle = pending === 0 ? t("today.heroCalm") : t(push[dayIdx]);
+  // Productivity quote of the day — rotates daily through a generous pool.
+  const subtitle = heroQuoteForDate(now);
 
   return (
     <View style={styles.shadow}>
@@ -74,7 +73,7 @@ export default function TodayHero({ name, stats }: Props) {
         )}
 
         <Text style={styles.greeting}>
-          {name ? `${greeting}, ${name}! 👋` : `${greeting}! 👋`}
+          {name ? `${greeting}, ${name}!` : `${greeting}!`}
         </Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
 
@@ -87,9 +86,10 @@ export default function TodayHero({ name, stats }: Props) {
               accessibilityRole="button"
               accessibilityLabel={`${s.count} ${s.label}`}
             >
-              <Text style={styles.statCount}>
-                {s.emoji} {s.count}
-              </Text>
+              <View style={styles.statTop}>
+                <Ionicons name={s.icon} size={16} color="#FFFFFF" />
+                <Text style={styles.statCount}>{s.count}</Text>
+              </View>
               <Text style={styles.statLabel}>{s.label}</Text>
             </Pressable>
           ))}
@@ -134,6 +134,11 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: RTL_ROW,
     gap: S.sm,
+  },
+  statTop: {
+    flexDirection: RTL_ROW,
+    alignItems: "center",
+    gap: 6,
   },
   statChip: {
     flex: 1,

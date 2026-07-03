@@ -266,10 +266,10 @@ function TodayScreen() {
         <TodayHero
           name={me?.name ?? session?.user.username ?? ""}
           stats={[
-            { emoji: "✅", count: myChoresCount, label: t("today.statChores"), onPress: () => router.push("/chores" as any) },
-            { emoji: "🚀", count: myProjectsCount, label: t("today.statProjects"), onPress: () => router.push("/projects" as any) },
-            { emoji: "📅", count: myEventsCount, label: t("today.statEvents"), onPress: () => router.push("/calendar" as any) },
-            { emoji: "🛒", count: groceryToBuy, label: t("today.statGrocery"), onPress: () => router.push("/grocery" as any) },
+            { icon: "checkbox", count: myChoresCount, label: t("today.statChores"), onPress: () => router.push("/chores" as any) },
+            { icon: "rocket", count: myProjectsCount, label: t("today.statProjects"), onPress: () => router.push("/projects" as any) },
+            { icon: "calendar", count: myEventsCount, label: t("today.statEvents"), onPress: () => router.push("/calendar" as any) },
+            { icon: "cart", count: groceryToBuy, label: t("today.statGrocery"), onPress: () => router.push("/grocery" as any) },
           ]}
         />
 
