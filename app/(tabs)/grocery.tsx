@@ -98,6 +98,9 @@ function GroceryScreen() {
   // Delete a main category: remove its items (cascade), drop its sub-category
   // list, and remove it from the list — all in one customizations write.
   const deleteShoppingCategory = (key: string) => {
+    // Never delete the last main category — at least one must remain (else the
+    // effective list falls back to the defaults, which reads as "won't delete").
+    if (shoppingCategories.length <= 1) return;
     clearAllCategoryRemote(key);
     const nextSubs = { ...(customizations.grocerySubcategories ?? {}) };
     delete (nextSubs as Record<string, unknown>)[key];

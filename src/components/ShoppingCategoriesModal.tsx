@@ -15,8 +15,6 @@ import ModalTextInput from "./ModalTextInput";
 
 import ModalWrapper from "./ModalWrapper";
 import PaginatedPicker from "./PaginatedPicker";
-import ConfirmDeleteModal from "./ConfirmDeleteModal";
-import { useConfirmDelete } from "@src/hooks/useConfirmDelete";
 import { MS } from "@src/ui/modalStyles";
 import { C, R, S } from "@src/ui/tokens";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
@@ -27,6 +25,9 @@ import { CATEGORY_ICON_OPTIONS } from "@src/ui/semanticColors";
 import { makeId } from "@src/utils/id";
 
 const ICON_OPTIONS = CATEGORY_ICON_OPTIONS;
+
+/** Main categories are capped — the grocery tab bar only fits a few. */
+const MAX_MAIN_CATEGORIES = 4;
 
 interface Props {
   visible: boolean;
@@ -49,20 +50,22 @@ export default function ShoppingCategoriesModal({
   itemCount,
 }: Props) {
   const theme = useThemeColor();
-  const { confirmVisible, requestDelete, confirmDelete, dismissConfirm } = useConfirmDelete();
 
   const [mode, setMode] = useState<"list" | "form">("list");
   const [editItem, setEditItem] = useState<ShoppingCategoryDef | null>(null);
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("🛒");
   const [nameError, setNameError] = useState("");
-  const [deleteMsg, setDeleteMsg] = useState("");
+  // Inline per-row delete confirmation (a nested Paper Dialog renders invisibly
+  // inside this modal's Portal on web, so confirm inline instead).
+  const [confirmingKey, setConfirmingKey] = useState<string | null>(null);
 
   // Always (re)open on the list.
   useEffect(() => {
     if (visible) {
       setMode("list");
       setEditItem(null);
+      setConfirmingKey(null);
     }
   }, [visible]);
 
@@ -71,6 +74,7 @@ export default function ShoppingCategoriesModal({
     setName(item?.name ?? "");
     setEmoji(item?.emoji ?? "🛒");
     setNameError("");
+    setConfirmingKey(null);
     setMode("form");
   };
 
@@ -84,6 +88,7 @@ export default function ShoppingCategoriesModal({
       // Keep the key — items reference it; only name/emoji change.
       onChange(list.map((c) => (c.key === editItem.key ? { ...c, name: trimmed, emoji } : c)));
     } else {
+      if (list.length >= MAX_MAIN_CATEGORIES) { setMode("list"); return; } // cap guard
       onChange([...list, { key: makeId(), name: trimmed, emoji }]);
     }
     setMode("list");
@@ -100,16 +105,9 @@ export default function ShoppingCategoriesModal({
     }
   };
 
-  const requestDeleteCategory = (cat: ShoppingCategoryDef) => {
-    const n = itemCount(cat.key);
-    setDeleteMsg(t("grocery.deleteCategoryConfirm", { count: n }));
-    requestDelete(() => onDeleteCategory(cat.key));
-  };
-
   const isForm = mode === "form";
 
   return (
-    <>
       <ModalWrapper
         visible={visible}
         onDismiss={handleDismiss}
@@ -157,44 +155,67 @@ export default function ShoppingCategoriesModal({
           <View style={MS.section}>
             {list.map((cat) => (
               <View key={cat.key} style={styles.row}>
-                <View style={styles.dot}>
-                  <Text style={styles.emoji}>{cat.emoji}</Text>
-                </View>
-                <Text style={styles.name}>{cat.name}</Text>
-                <IconButton
-                  icon="pencil-outline"
-                  size={18}
-                  onPress={() => openForm(cat)}
-                  accessibilityLabel={t("grocery.editCategory")}
-                />
-                <IconButton
-                  icon="trash-can-outline"
-                  size={18}
-                  onPress={() => requestDeleteCategory(cat)}
-                  accessibilityLabel={t("grocery.deleteCategory")}
-                  testID={`maincat-delete-${cat.name}`}
-                />
+                {confirmingKey === cat.key ? (
+                  <>
+                    <IconButton
+                      icon="check"
+                      size={20}
+                      iconColor={C.red}
+                      onPress={() => { onDeleteCategory(cat.key); setConfirmingKey(null); }}
+                      accessibilityLabel={t("confirmDelete.confirm")}
+                      testID={`maincat-delete-confirm-${cat.name}`}
+                    />
+                    <IconButton
+                      icon="close"
+                      size={20}
+                      onPress={() => setConfirmingKey(null)}
+                      accessibilityLabel={t("confirmDelete.cancel")}
+                    />
+                    <Text style={styles.confirmText} numberOfLines={2}>
+                      {t("grocery.deleteCategoryConfirm", { count: itemCount(cat.key) })}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.dot}>
+                      <Text style={styles.emoji}>{cat.emoji}</Text>
+                    </View>
+                    <Text style={styles.name}>{cat.name}</Text>
+                    <IconButton
+                      icon="pencil-outline"
+                      size={18}
+                      onPress={() => openForm(cat)}
+                      accessibilityLabel={t("grocery.editCategory")}
+                    />
+                    {/* Keep at least one main category — hide delete on the last. */}
+                    {list.length > 1 && (
+                      <IconButton
+                        icon="trash-can-outline"
+                        size={18}
+                        onPress={() => setConfirmingKey(cat.key)}
+                        accessibilityLabel={t("grocery.deleteCategory")}
+                        testID={`maincat-delete-${cat.name}`}
+                      />
+                    )}
+                  </>
+                )}
               </View>
             ))}
 
-            <Pressable
-              style={[styles.addBtn, { borderColor: theme }]}
-              onPress={() => openForm(null)}
-              testID="add-maincat"
-            >
-              <Text style={[styles.addText, { color: theme }]}>+ {t("grocery.addCategory")}</Text>
-            </Pressable>
+            {list.length < MAX_MAIN_CATEGORIES ? (
+              <Pressable
+                style={[styles.addBtn, { borderColor: theme }]}
+                onPress={() => openForm(null)}
+                testID="add-maincat"
+              >
+                <Text style={[styles.addText, { color: theme }]}>+ {t("grocery.addCategory")}</Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.maxHint}>{t("grocery.categoriesMax")}</Text>
+            )}
           </View>
         )}
       </ModalWrapper>
-
-      <ConfirmDeleteModal
-        visible={confirmVisible}
-        onConfirm={confirmDelete}
-        onDismiss={dismissConfirm}
-        message={deleteMsg}
-      />
-    </>
   );
 }
 
@@ -219,4 +240,19 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
   },
   addText: { fontSize: 14, fontWeight: "600" },
+  maxHint: {
+    fontSize: 12,
+    color: C.textMuted,
+    textAlign: "center",
+    writingDirection: "rtl",
+    marginTop: S.sm,
+  },
+  confirmText: {
+    flex: 1,
+    fontSize: 12,
+    color: C.red,
+    fontWeight: "600",
+    textAlign: TEXT_RIGHT,
+    writingDirection: "rtl",
+  },
 });
