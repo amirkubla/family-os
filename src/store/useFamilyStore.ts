@@ -4,7 +4,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { GroceryItem, ShoppingCategory } from "@src/models/grocery";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
-import type { Project, ProjectStatus } from "@src/models/project";
+import type { Project, ProjectStatus, SubTask } from "@src/models/project";
+import { computeProjectProgress } from "@src/models/project";
 import type { ScheduleBlock } from "@src/models/schedule";
 import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
@@ -197,10 +198,35 @@ interface FamilyState {
   removeFamilyMember: (id: string) => void;
 
   // Projects actions
-  addProject: (input: { title: string; description?: string; kidId?: string; ownerMemberId?: string }) => Project;
+  addProject: (input: {
+    title: string;
+    description?: string;
+    kidId?: string;
+    ownerMemberId?: string;
+    status?: ProjectStatus;
+    progress?: number;
+    emoji?: string;
+    dueDate?: number;
+    subTasks?: SubTask[];
+    memberIds?: string[];
+  }) => Project;
   updateProject: (
     id: string,
-    patch: Partial<Pick<Project, "title" | "description" | "status" | "progress" | "kidId" | "ownerMemberId">>
+    patch: Partial<
+      Pick<
+        Project,
+        | "title"
+        | "description"
+        | "status"
+        | "progress"
+        | "kidId"
+        | "ownerMemberId"
+        | "emoji"
+        | "dueDate"
+        | "subTasks"
+        | "memberIds"
+      >
+    >
   ) => void;
   deleteProject: (id: string) => void;
   /** Reassign project sortOrder from the given top-to-bottom id order. */
@@ -564,18 +590,28 @@ export const useFamilyStore = create<FamilyState>()(
 
       /* ── Projects ── */
 
-      addProject: ({ title, description, kidId, ownerMemberId }) => {
+      addProject: ({ title, description, kidId, ownerMemberId, status, progress, emoji, dueDate, subTasks, memberIds }) => {
         const now = Date.now();
         const minOrder = get().projects.reduce((m, p) => Math.min(m, p.sortOrder ?? 0), 0);
+        const subs = subTasks ?? [];
+        const prog = computeProjectProgress(subs, progress ?? 0);
+        const baseStatus = status ?? ("idea" as ProjectStatus);
         const item: Project = {
           id: makeId(),
           title,
           description,
-          status: "idea" as ProjectStatus,
-          progress: 0,
+          // Any progress lifts a fresh "idea" into "in progress" (mirrors the
+          // manual-slider rule); explicit in_progress/done are left untouched.
+          status: prog > 0 && baseStatus === "idea" ? "in_progress" : baseStatus,
+          // Subtasks drive progress when present; otherwise use the manual value.
+          progress: prog,
           sortOrder: minOrder - 1, // prepend → sorts first
           kidId,
           ownerMemberId,
+          emoji,
+          dueDate,
+          subTasks: subs,
+          memberIds: memberIds ?? [],
           updatedAt: now,
           createdAt: now,
         };
@@ -585,9 +621,17 @@ export const useFamilyStore = create<FamilyState>()(
 
       updateProject: (id, patch) =>
         set((s) => ({
-          projects: s.projects.map((p) =>
-            p.id === id ? { ...p, ...patch, updatedAt: Date.now() } : p
-          ),
+          projects: s.projects.map((p) => {
+            if (p.id !== id) return p;
+            const merged = { ...p, ...patch, updatedAt: Date.now() };
+            // Keep progress consistent: subtasks drive it when present, else the
+            // (possibly just-edited) manual value passes through unchanged.
+            merged.progress = computeProjectProgress(merged.subTasks ?? [], merged.progress);
+            // Any progress lifts a fresh "idea" into "in progress" (mirrors the
+            // manual-slider rule); explicit in_progress/done are left untouched.
+            if (merged.progress > 0 && merged.status === "idea") merged.status = "in_progress";
+            return merged;
+          }),
         })),
 
       deleteProject: (id) =>
@@ -804,7 +848,7 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: "family-os-store-v2",
-      version: 18,
+      version: 19,
       storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => (_state, error) => {
         // Last-line-of-defense: if anything else in the rehydrate path throws
@@ -960,6 +1004,15 @@ export const useFamilyStore = create<FamilyState>()(
           // Add the family-documents slices (folder tree + file metadata).
           persisted.folders = persisted.folders ?? [];
           persisted.documents = persisted.documents ?? [];
+        }
+        if (version < 19) {
+          // Projects gain subtasks + assigned members (empty by default) and an
+          // optional icon / due date (left undefined for existing rows).
+          persisted.projects = (persisted.projects ?? []).map((p: any) => ({
+            ...p,
+            subTasks: p.subTasks ?? [],
+            memberIds: p.memberIds ?? [],
+          }));
         }
         return persisted;
       },

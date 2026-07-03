@@ -75,6 +75,12 @@ export interface ApiFamilyMember {
   updatedAt: string;
 }
 
+export interface ApiSubTask {
+  id: string;
+  title: string;
+  progress: number;
+}
+
 export interface ApiProject {
   id: string;
   familyId: string;
@@ -85,6 +91,10 @@ export interface ApiProject {
   status: "idea" | "in_progress" | "done";
   progress: number;
   sortOrder: number;
+  emoji: string | null;
+  dueDate: string | null;
+  subTasks: ApiSubTask[];
+  memberIds: string[];
   createdAt: string;
   updatedAt: string;
 }

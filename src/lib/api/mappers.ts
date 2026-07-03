@@ -139,6 +139,10 @@ export function apiToLocalProject(a: ApiProject): Project {
     sortOrder: a.sortOrder ?? 0,
     kidId: a.kidId ?? undefined,
     ownerMemberId: a.ownerMemberId ?? undefined,
+    emoji: a.emoji ?? undefined,
+    dueDate: a.dueDate ? toMs(a.dueDate) : undefined,
+    subTasks: a.subTasks ?? [],
+    memberIds: a.memberIds ?? [],
     updatedAt: toMs(a.updatedAt),
     createdAt: toMs(a.createdAt),
   };
@@ -154,6 +158,10 @@ export function localToApiProject(item: Project) {
     sortOrder: item.sortOrder ?? 0,
     kidId: item.kidId ?? null,
     ownerMemberId: item.ownerMemberId ?? null,
+    emoji: item.emoji ?? null,
+    dueDate: item.dueDate ? new Date(item.dueDate).toISOString() : null,
+    subTasks: item.subTasks ?? [],
+    memberIds: item.memberIds ?? [],
   };
 }
 

@@ -63,6 +63,10 @@ export const projectsRepo = {
           kidId: sql`excluded.kid_id`,
           ownerMemberId: sql`excluded.owner_member_id`,
           sortOrder: sql`excluded.sort_order`,
+          emoji: sql`excluded.emoji`,
+          dueDate: sql`excluded.due_date`,
+          subTasks: sql`excluded.sub_tasks`,
+          memberIds: sql`excluded.member_ids`,
           updatedAt: new Date(),
         },
       })

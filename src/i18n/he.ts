@@ -311,6 +311,27 @@ const he = {
     status: "סטטוס",
     progress: "התקדמות: {{n}}%",
     assignToKid: "שייך לילד/ה (אופציונלי)",
+    icon: "אייקון",
+    dueDate: "תאריך יעד",
+    setDueDate: "הוספת תאריך יעד",
+    clearDueDate: "הסרת תאריך היעד",
+    members: "משתתפים",
+    subtasks: "תת-משימות",
+    subtaskPlaceholder: "שם תת-משימה",
+    addSubtask: "הוספת תת-משימה",
+    removeSubtask: "מחיקת תת-משימה",
+  },
+
+  // ── Projects dashboard card ──
+  project: {
+    created: "נוצר",
+    due: "יעד",
+    dueToday: "היעד היום",
+    dueTomorrow: "היעד מחר",
+    overdue: "באיחור של {{count}} ימים",
+    overdueOne: "באיחור של יום",
+    tasks: "{{done}} / {{total}} משימות",
+    next: "הבא",
   },
 
   // ── Schedule Block Modal ──

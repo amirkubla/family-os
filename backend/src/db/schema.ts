@@ -272,6 +272,18 @@ export const projects = pgTable(
     progress: integer("progress").default(0).notNull(),
     // Manual sort position within the list (drag-to-reorder). Lower = first.
     sortOrder: integer("sort_order").default(0).notNull(),
+    // Contextual icon shown on the dashboard card (🏠 🍳 🚗 …). NULL = default glyph.
+    emoji: text("emoji"),
+    // Optional target date. NULL = no due date.
+    dueDate: timestamp("due_date", { withTimezone: true }),
+    // Ordered subtasks, each with its own 0–100 progress. Overall progress is
+    // derived from these on the client when non-empty.
+    subTasks: jsonb("sub_tasks")
+      .$type<{ id: string; title: string; progress: number }[]>()
+      .notNull()
+      .default([]),
+    // Assigned family-member ids (avatars on the card). Distinct from ownership.
+    memberIds: jsonb("member_ids").$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [

@@ -52,7 +52,7 @@ import {
 } from "../api/mappers";
 import type { Note } from "@src/models/note";
 import type { Chore } from "@src/models/chore";
-import type { Project } from "@src/models/project";
+import type { Project, SubTask } from "@src/models/project";
 import type { ScheduleBlock } from "@src/models/schedule";
 import type { Kid } from "@src/models/kid";
 import type { FamilyMember, MemberRole } from "@src/models/familyMember";
@@ -385,6 +385,12 @@ export function addProjectRemote(input: {
   description?: string;
   kidId?: string;
   ownerMemberId?: string;
+  status?: Project["status"];
+  progress?: number;
+  emoji?: string;
+  dueDate?: number;
+  subTasks?: SubTask[];
+  memberIds?: string[];
 }) {
   const item = useFamilyStore.getState().addProject(input);
   fireAndForget(
@@ -397,7 +403,21 @@ export function addProjectRemote(input: {
 
 export function updateProjectRemote(
   id: string,
-  patch: Partial<Pick<Project, "title" | "description" | "status" | "progress" | "kidId" | "ownerMemberId">>,
+  patch: Partial<
+    Pick<
+      Project,
+      | "title"
+      | "description"
+      | "status"
+      | "progress"
+      | "kidId"
+      | "ownerMemberId"
+      | "emoji"
+      | "dueDate"
+      | "subTasks"
+      | "memberIds"
+    >
+  >,
 ) {
   useFamilyStore.getState().updateProject(id, patch);
   // PATCH with only changed fields — see BUG-N1 note in module header.
@@ -408,6 +428,10 @@ export function updateProjectRemote(
     progress: number;
     kidId: string | null;
     ownerMemberId: string | null;
+    emoji: string | null;
+    dueDate: string | null;
+    subTasks: SubTask[];
+    memberIds: string[];
   }> = {};
   if (patch.title !== undefined) apiPatch.title = patch.title;
   if (patch.description !== undefined) apiPatch.description = patch.description ?? null;
@@ -417,6 +441,16 @@ export function updateProjectRemote(
   // value) is honored — the backend needs to see the key in the PATCH body.
   if ("kidId" in patch) apiPatch.kidId = patch.kidId ?? null;
   if ("ownerMemberId" in patch) apiPatch.ownerMemberId = patch.ownerMemberId ?? null;
+  if ("emoji" in patch) apiPatch.emoji = patch.emoji ?? null;
+  if ("dueDate" in patch) apiPatch.dueDate = patch.dueDate ? new Date(patch.dueDate).toISOString() : null;
+  if ("memberIds" in patch) apiPatch.memberIds = patch.memberIds ?? [];
+  if ("subTasks" in patch) {
+    apiPatch.subTasks = patch.subTasks ?? [];
+    // Subtasks drive the derived progress — persist the recomputed value the
+    // store just wrote, even when the caller didn't pass `progress` explicitly.
+    const updated = useFamilyStore.getState().projects.find((p) => p.id === id);
+    if (updated) apiPatch.progress = updated.progress;
+  }
   fireAndForget(
     getFamilyId().then((fid) => projectsApi.update(fid, id, apiPatch)),
     "Update project",
