@@ -125,8 +125,10 @@ function ParentScreen() {
     [allEvents, memberId],
   );
   const notes = useMemo(() => allNotes.filter((n) => n.ownerMemberId === memberId), [allNotes, memberId]);
+  // Projects this member takes part in — a participant (memberIds) or, for
+  // legacy rows created before the participants model, their owner.
   const projects = useMemo(
-    () => allProjects.filter((p) => p.ownerMemberId === memberId),
+    () => allProjects.filter((p) => (p.memberIds ?? []).includes(memberId) || p.ownerMemberId === memberId),
     [allProjects, memberId],
   );
   const payments = useMemo(
@@ -390,8 +392,7 @@ function ParentScreen() {
         visible={projectModal}
         onDismiss={() => { setProjectModal(false); setEditProject(null); }}
         editProject={editProject}
-        defaultOwnerMemberId={editProject ? undefined : memberId}
-        lockedMemberName={editProject ? undefined : member.name}
+        defaultMemberIds={editProject ? undefined : [memberId]}
       />
       <FamilyEventModal
         visible={eventModal}

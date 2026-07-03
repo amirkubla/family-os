@@ -15,7 +15,6 @@ import { useThemeColor } from "@src/ui/useThemeColor";
 import { RTL_ROW, TEXT_RIGHT } from "@src/ui/rtl";
 import { CATEGORY_ICON_OPTIONS } from "@src/ui/semanticColors";
 import ModalWrapper, { ModalCarousel } from "./ModalWrapper";
-import OwnerPicker from "./OwnerPicker";
 import PaginatedPicker from "./PaginatedPicker";
 import DateTimeField from "./DateTimeField";
 
@@ -298,15 +297,13 @@ interface Props {
   /** Pre-select a status for new projects (used by deep links, e.g. ?status=in_progress). */
   initialStatus?: ProjectStatus;
   /**
-   * When set (kid-page context), the project is locked to this kid: the owner
-   * picker is hidden and the kid's name is shown in the modal title.
+   * When set (kid-page context), the project belongs to this kid (its id comes
+   * from defaultKidId) and the kid's name is shown in the modal title.
    */
   lockedKidName?: string;
-  /** Pre-select a member owner when opening fresh (parent-page context). */
-  defaultOwnerMemberId?: string;
-  /** When set (parent-page context), lock the project to this member: the owner
-   *  picker is hidden and the member's name is shown in the modal title. */
-  lockedMemberName?: string;
+  /** Pre-select participants for a new project (e.g. the member whose page it
+   *  was opened from). Ignored when editing. */
+  defaultMemberIds?: string[];
   /** When set, shows carousel arrows to swap between the kid "add" modals. */
   carousel?: ModalCarousel;
   /**
@@ -316,7 +313,7 @@ interface Props {
   initialDraft?: { title?: string; description?: string };
 }
 
-export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName, defaultOwnerMemberId, lockedMemberName, carousel, initialDraft }: Props) {
+export default function ProjectModal({ visible, onDismiss, editProject, defaultKidId, initialStatus, lockedKidName, defaultMemberIds, carousel, initialDraft }: Props) {
   const theme = useThemeColor();
   const members = useFamilyStore((s) => s.familyMembers);
   const activeMembers = members.filter((m) => m.isActive);
@@ -326,7 +323,6 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
   const [status, setStatus] = useState<ProjectStatus>(initialStatus ?? "idea");
   const [progress, setProgress] = useState(0);
   const [kidId, setKidId] = useState<string | undefined>(undefined);
-  const [ownerMemberId, setOwnerMemberId] = useState<string | undefined>(undefined);
   const [emoji, setEmoji] = useState("");
   const [dueDate, setDueDate] = useState<string>(""); // "" = no due date
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
@@ -344,7 +340,6 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       setStatus(editProject.status);
       setProgress(editProject.progress);
       setKidId(editProject.kidId);
-      setOwnerMemberId(editProject.ownerMemberId);
       setEmoji(editProject.emoji ?? "");
       setDueDate(editProject.dueDate ? msToYMD(editProject.dueDate) : "");
       setSubTasks(editProject.subTasks ?? []);
@@ -353,14 +348,13 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       setTitle(initialDraft?.title ?? ""); setDescription(initialDraft?.description ?? "");
       setStatus(initialStatus ?? "idea"); setProgress(0);
       setKidId(defaultKidId);
-      setOwnerMemberId(defaultOwnerMemberId);
-      setEmoji(""); setDueDate(""); setSubTasks([]); setMemberIds([]);
+      setEmoji(""); setDueDate(""); setSubTasks([]); setMemberIds(defaultMemberIds ?? []);
     }
-  }, [editProject, visible, defaultKidId, defaultOwnerMemberId, initialStatus, initialDraft]);
+  }, [editProject, visible, defaultKidId, defaultMemberIds, initialStatus, initialDraft]);
 
   const reset = () => {
     setTitle(""); setDescription(""); setStatus("idea"); setProgress(0);
-    setKidId(undefined); setOwnerMemberId(undefined);
+    setKidId(undefined);
     setEmoji(""); setDueDate(""); setSubTasks([]); setMemberIds([]);
   };
 
@@ -387,7 +381,6 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
         status,
         progress: Math.round(progress),
         kidId,
-        ownerMemberId,
         emoji: emoji || undefined,
         dueDate: due,
         subTasks: subs,
@@ -399,7 +392,6 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
         description: description.trim() || undefined,
         status,
         kidId,
-        ownerMemberId,
         emoji: emoji || undefined,
         dueDate: due,
         subTasks: subs,
@@ -421,7 +413,7 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
       carousel={carousel}
       icon="rocket-outline"
       title={(editProject ? t("projectModal.editTitle") : t("projectModal.addTitle")) +
-        ((lockedKidName ?? lockedMemberName) ? ` ל${lockedKidName ?? lockedMemberName}` : "")}
+        (lockedKidName ? ` ל${lockedKidName}` : "")}
       onSave={handleSubmit}
       saveDisabled={!title.trim() || submitting}
       saveLoading={submitting}
@@ -563,20 +555,6 @@ export default function ProjectModal({ visible, onDismiss, editProject, defaultK
           </View>
         </>
       )}
-
-      {/* Hidden in kid/parent-page context — the project is locked to that person. */}
-      {!(lockedKidName || lockedMemberName) && (
-        <OwnerPicker
-          kidId={kidId}
-          ownerMemberId={ownerMemberId}
-          onChange={(next) => {
-            setKidId(next.kidId);
-            setOwnerMemberId(next.ownerMemberId);
-          }}
-          label={t("projectModal.assignToKid")}
-        />
-      )}
-
     </ModalWrapper>
   );
 }

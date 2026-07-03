@@ -57,7 +57,7 @@ export default function FamilyStats() {
         const mc = chores.filter((c) => c.assignedToMemberId === m.id);
         const ev = events.filter((e) => e.assigneeType === "member" && e.assigneeId === m.id).length;
         const nt = notes.filter((n) => n.ownerMemberId === m.id).length;
-        const pr = projects.filter((p) => p.ownerMemberId === m.id).length;
+        const pr = projects.filter((p) => (p.memberIds ?? []).includes(m.id) || p.ownerMemberId === m.id).length;
         const paid = expenses.filter((e) => e.payerMemberId === m.id).reduce((sum, e) => sum + e.amount, 0);
         return {
           id: m.id,

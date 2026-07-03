@@ -177,7 +177,13 @@ function TodayScreen() {
     [chores, me],
   );
   const myProjectsCount = useMemo(
-    () => projects.filter((p) => p.ownerMemberId === me?.id && p.status !== "done").length,
+    () =>
+      me?.id
+        ? projects.filter(
+            (p) =>
+              ((p.memberIds ?? []).includes(me.id) || p.ownerMemberId === me.id) && p.status !== "done",
+          ).length
+        : 0,
     [projects, me],
   );
   const myEventsCount = useMemo(
