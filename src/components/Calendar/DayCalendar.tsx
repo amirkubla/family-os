@@ -34,6 +34,8 @@ interface Props {
   onSlotPress?: (date: string, startMinutes: number, endMinutes: number) => void;
   // When set, show ONLY this kid's items (see WeekCalendar). Unset = all.
   kidId?: string;
+  // When set, show ONLY this member's assigned events (no schedule blocks).
+  memberId?: string;
 }
 
 interface EventItem {
@@ -161,6 +163,7 @@ export default function DayCalendar({
   onEventPress,
   onSlotPress,
   kidId,
+  memberId,
 }: Props) {
   const selectedDow = dayOfWeekFromYMD(selectedDate);
   const familyEventsAll = useFamilyEventsForDate(selectedDate, selectedDow);
@@ -168,19 +171,29 @@ export default function DayCalendar({
   const kids = useFamilyStore((s) => s.kids);
   const familyMembers = useFamilyStore((s) => s.familyMembers);
 
-  // Kid scope: keep only this kid's events/blocks. Unset = all.
+  // Scope: a member view keeps only that member's events (no blocks); a kid
+  // view keeps that kid's events/blocks; unset = all.
   const familyEvents = useMemo(
     () =>
-      kidId
+      memberId
         ? familyEventsAll.filter(
-            (e) => e.assigneeType === "kid" && e.assigneeId === kidId,
+            (e) => e.assigneeType === "member" && e.assigneeId === memberId,
           )
-        : familyEventsAll,
-    [familyEventsAll, kidId],
+        : kidId
+          ? familyEventsAll.filter(
+              (e) => e.assigneeType === "kid" && e.assigneeId === kidId,
+            )
+          : familyEventsAll,
+    [familyEventsAll, kidId, memberId],
   );
   const kidBlocks = useMemo(
-    () => (kidId ? kidBlocksAll.filter((b) => b.kidId === kidId) : kidBlocksAll),
-    [kidBlocksAll, kidId],
+    () =>
+      memberId
+        ? []
+        : kidId
+          ? kidBlocksAll.filter((b) => b.kidId === kidId)
+          : kidBlocksAll,
+    [kidBlocksAll, kidId, memberId],
   );
 
   const goBack = useCallback(

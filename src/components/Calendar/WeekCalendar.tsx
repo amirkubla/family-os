@@ -46,6 +46,9 @@ interface Props {
   // (assigneeType==="kid" && assigneeId===kidId) and the kid's schedule
   // blocks. Unset = the family-wide view (all events + all kids' blocks).
   kidId?: string;
+  // When set, show ONLY this member's assigned events (members have no
+  // schedule blocks). Mutually exclusive with kidId.
+  memberId?: string;
 }
 
 interface EventItem {
@@ -192,6 +195,7 @@ export default function WeekCalendar({
   onSlotPress,
   dayCount = 7,
   kidId,
+  memberId,
 }: Props) {
   // ── Week navigation ──
   const [weekOffset, setWeekOffset] = React.useState(0);
@@ -256,8 +260,12 @@ export default function WeekCalendar({
   const weekEvents = useMemo(() => {
     // Kid scope: keep only this kid's family events / blocks. Unset = all.
     const keepEvent = (e: { assigneeType: string; assigneeId?: string }) =>
-      !kidId || (e.assigneeType === "kid" && e.assigneeId === kidId);
-    const keepBlock = (b: { kidId: string }) => !kidId || b.kidId === kidId;
+      memberId
+        ? e.assigneeType === "member" && e.assigneeId === memberId
+        : !kidId || (e.assigneeType === "kid" && e.assigneeId === kidId);
+    // Members have no schedule blocks, so a member view shows none.
+    const keepBlock = (b: { kidId: string }) =>
+      memberId ? false : !kidId || b.kidId === kidId;
 
     // Colour an event by its assignee — the specific person's colour (so all of
     // a given kid/member's events match their own colour), falling back to the
@@ -305,7 +313,7 @@ export default function WeekCalendar({
       timed[dateStr] = layoutEvents(items.filter((i) => !i.allDay));
     }
     return { timed, allDay };
-  }, [days, familyEvents, scheduleBlocks, kids, familyMembers, kidId]);
+  }, [days, familyEvents, scheduleBlocks, kids, familyMembers, kidId, memberId]);
 
   const hasAllDay = useMemo(
     () => days.some((d) => (weekEvents.allDay[ymd(d)] ?? []).length > 0),

@@ -39,8 +39,10 @@ import type { Chore } from "@src/models/chore";
 import type { FamilyMember } from "@src/models/familyMember";
 import type { FamilyEvent, AssigneeType } from "@src/models/familyEvent";
 
-import PersonStats from "@src/components/person/PersonStats";
+import SegmentedPills from "@src/components/SegmentedPills";
 import MonthCalendar from "@src/components/Calendar/MonthCalendar";
+import WeekCalendar from "@src/components/Calendar/WeekCalendar";
+import DayCalendar from "@src/components/Calendar/DayCalendar";
 import SectionHeader from "@src/components/SectionHeader";
 import ProjectCard from "@src/components/ProjectCard";
 import ConfirmDeleteModal from "@src/components/ConfirmDeleteModal";
@@ -98,6 +100,8 @@ function Section({
   );
 }
 
+type CalendarView = "month" | "week" | "3day" | "day";
+
 export default function ParentScreenRoute() {
   return <ParentScreen key={useBlurRemountKey()} />;
 }
@@ -139,11 +143,9 @@ function ParentScreen() {
     [allExpenses, memberId],
   );
 
-  const choresDone = chores.filter((c) => c.done).length;
-  const paidTotal = payments.reduce((sum, e) => sum + e.amount, 0);
-
   // ── Calendar: the member's events ──
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
+  const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const selectedDow = dayOfWeekFromYMD(selectedDate);
   const eventsForDate = useFamilyEventsForDate(selectedDate, selectedDow);
   const dayEvents = useMemo(
@@ -195,6 +197,15 @@ function ParentScreen() {
     [editEvent],
   );
 
+  // Tapping an event box in the week/day grid opens it for editing.
+  const handleGridPress = useCallback(
+    (id: string) => {
+      const ev = events.find((e) => e.id === id);
+      if (ev) { setEditEvent(ev); setEventModal(true); }
+    },
+    [events],
+  );
+
   if (!member) {
     return <SafeAreaView style={styles.safe} edges={["top", "bottom"]} />;
   }
@@ -207,27 +218,60 @@ function ParentScreen() {
         <Text style={styles.personTitle}>
           {`${member.avatarEmoji ?? "👤"}  ${member.name}`}
         </Text>
-        {/* ── Stats strip ── */}
-        <PersonStats
-          accent={accent}
-          stats={[
-            { value: `${choresDone}/${chores.length}`, label: t("parent.statChores") },
-            { value: String(events.length), label: t("parent.statEvents") },
-            { value: String(notes.length), label: t("parent.statNotes") },
-            { value: String(projects.length), label: t("parent.statProjects") },
-            { value: formatILS(paidTotal), label: t("parent.statPaid") },
-          ]}
-        />
-
-        {/* ── Calendar + day agenda (member's events) ── */}
+        {/* ── Calendar (month / week / 3-day / day) + day agenda ── */}
+        <View style={styles.viewToggle}>
+          <SegmentedPills
+            value={calendarView}
+            onChange={(v) => setCalendarView(v as CalendarView)}
+            options={[
+              { value: "month", label: t("calendar.monthView"), color: accent },
+              { value: "week", label: t("calendar.weekView"), color: accent },
+              { value: "3day", label: t("calendar.threeDayView"), color: accent },
+              { value: "day", label: t("calendar.dayView"), color: accent },
+            ]}
+            testIDPrefix="parent-view"
+          />
+        </View>
         <Card style={styles.card} mode="elevated">
           <Card.Content>
-            <MonthCalendar
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              markedDates={markedDates}
-              accentColor={accent}
-            />
+            {calendarView === "month" && (
+              <MonthCalendar
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                markedDates={markedDates}
+                accentColor={accent}
+              />
+            )}
+            {calendarView === "week" && (
+              <WeekCalendar
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                markedDates={markedDates}
+                accentColor={accent}
+                memberId={memberId}
+                onEventPress={handleGridPress}
+              />
+            )}
+            {calendarView === "3day" && (
+              <WeekCalendar
+                dayCount={3}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                markedDates={markedDates}
+                accentColor={accent}
+                memberId={memberId}
+                onEventPress={handleGridPress}
+              />
+            )}
+            {calendarView === "day" && (
+              <DayCalendar
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                accentColor={accent}
+                memberId={memberId}
+                onEventPress={handleGridPress}
+              />
+            )}
           </Card.Content>
         </Card>
         <SectionHeader label={t("kid.daySchedule", { day: dayName(selectedDow) })} />
@@ -426,6 +470,7 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
     marginBottom: S.md,
   },
+  viewToggle: { marginBottom: S.sm },
 
   emptyText: {
     fontSize: 13,
