@@ -11,12 +11,9 @@ export default function TabLayout() {
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
-      // "history" makes goBack() return to the previously visited screen
-      // instead of jumping to the first tab.
-      backBehavior="history"
       // Every screen gets the slim back bar except the home launcher (the
       // main menu itself).
-      screenOptions={{ headerShown: true, header: (props) => <BackHeader {...props} /> }}
+      screenOptions={{ headerShown: true, header: () => <BackHeader /> }}
     >
       <Tabs.Screen name="today" options={{ title: t("tabs.today") }} />
       <Tabs.Screen name="calendar" options={{ title: t("tabs.calendar") }} />
